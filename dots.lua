@@ -2,14 +2,12 @@
 --
 -- See docs.
 
-n_samples = 64
-
-waveform = {}
-scale = 30
-
+move_time = 0.5
+move_length = 0.5
 positions = {0, 0, 0, 0}
+reverse_rate = 0.5
 
-poll_time = 1
+poll_time = 0.5
 amp_threshold = 0.01
 
 amp_l = 0
@@ -26,9 +24,9 @@ function init()
   poll_amp_r.time = poll_time
   poll_amp_r:start()
 
-  -- set bounce times
+  -- set move times
   time = metro.init()
-  time.time = 0.5
+  time.time = move_time
   time.event = move
   time:start()
 
@@ -48,19 +46,20 @@ function update_amp_r(a)
 end
 
 function move()
-  if sound then
-    for i = 3,4 do
-      pos = math.random() * params:get('loop_length')
-      softcut.position(i, pos)
+  local p = nil
+  for i = 3,4 do
+    if sound then
+      p = math.random() * (params:get('loop_length') - move_length)
+      softcut.position(i, p)
+      softcut.loop_end(i, p + move_length)
       softcut.play(i, 1)
-    end
-  else
-    for i = 3,4 do
+    else
+      p = 0
+      softcut.position(i, p)
+      softcut.loop_end(i, p + move_length)
       softcut.play(i, 0)
-      softcut.position(i, 0)
     end
   end
-  
   redraw()
 end
 
@@ -83,7 +82,7 @@ function sc_reset()
     softcut.loop_start(i, 0)
     softcut.loop_end(i, params:get('loop_length'))
     softcut.position(i, 0)
-    softcut.play(i, 1)
+    softcut.play(i, 0)
     softcut.fade_time(i, 0.1)
     softcut.pan(i, i % 2 == 0 and 1 or -1)
 
@@ -109,7 +108,7 @@ end
 
 -- position of voice i in terms of 1 to 100 pixels
 function position_to_pixels(i)
-  p = positions[i]
+  local p = positions[i]
   -- the line is 100 pixels long
   return (p / params:get('loop_length')) * 100
 end
@@ -123,10 +122,16 @@ function redraw()
 
   -- voice position (above or below line)
   for i=1,4 do
-    lr = i % 2 == 0 and 1 or 0
-    screen.move(14 + position_to_pixels(i), 10 + 10 * lr)
-    screen.line_rel(0, 10)
+    lr = i % 2 == 0 and 1 or -1
+    screen.move(14 + position_to_pixels(i), 20)
+    if i < 3 then
+      screen.line_rel(0, 12 * lr)
+    else
+      screen.line_rel(0, 6 * lr * (i == 3 and 1.2 or 1))
+    end
   end
+
+  -- contrived waveform
 
   screen.stroke()
   screen.update()
