@@ -20,7 +20,7 @@ move_length = 0.1
 positions = {0, 0, 0, 0}
 reverse_rate = 0.5
 
-poll_time = 0.5
+poll_amp_time = 0.5
 amp_threshold = 0.01
 
 amp_l = 0
@@ -31,11 +31,11 @@ function init()
 
   -- track amplitude for input page
   poll_amp_l = poll.set("amp_in_l", update_amp_l)
-  poll_amp_l.time = poll_time
+  poll_amp_l.time = poll_amp_time
   poll_amp_l:start()
 
   poll_amp_r = poll.set("amp_in_r", update_amp_r)
-  poll_amp_r.time = poll_time
+  poll_amp_r.time = poll_amp_time
   poll_amp_r:start()
 
   -- set move times
@@ -87,16 +87,14 @@ function sc_reset()
   softcut.buffer_clear()
 
   for i=1,4 do
-    -- init
+    -- init for all four
     softcut.enable(i, 1)
     softcut.buffer(i, 1)
-    softcut.level(i, 1)
     softcut.rate(i, 1)
     softcut.loop(i, 1)
     softcut.loop_start(i, 0)
     softcut.loop_end(i, params:get('loop_length'))
     softcut.position(i, 0)
-    softcut.play(i, 0)
     softcut.fade_time(i, 0.1)
     softcut.pan(i, i % 2 == 0 and 1 or -1)
 
@@ -105,12 +103,18 @@ function sc_reset()
     softcut.event_phase(update_position)
     softcut.poll_start_phase()
 
-    if i < 2 then
+    -- input
+    if i < 3 then
       softcut.rec_level(i, 1)
       softcut.pre_level(i, 0)
       softcut.level_input_cut(i, i, 1)
-      softcut.rec(i, 1)
+      softcut.level(i, 0)
       softcut.play(i, 1)
+      softcut.rec(i, 1)
+    -- dots
+    else
+      softcut.level(i, 1)
+      softcut.play(i, 0)
     end
   end
 end
