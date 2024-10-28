@@ -34,13 +34,14 @@ function ui.draw_nav(page)
   nav_bar_len = 128 - (2 + n - 1) * nav_buffer
   nav_bar_len = nav_bar_len / n
 
+  -- TODO: fix call to glyphs ...
   for i = 1,#ui.pages do
     x = nav_buffer + (i - 1) * (nav_bar_len + nav_buffer)
     screen.move(x, nav_y)
     screen.level(ui.pages[i] == page and 15 or 5)
     screen.line(x + nav_bar_len, nav_y)
     screen.move(x + nav_bar_len / 2, nav_y - 2)
-    screen.text_center(ui.glyphs[i])
+    screen.text_center(ui.glyphs[page])
     screen.stroke()
   end
 end
@@ -50,7 +51,7 @@ end
 function ui.draw_params(page)
   screen.move(10, 62)
   screen.text(ui.params[page][1])
-  screen.move(118)
+  screen.move(118, 62)
   screen.text_right(ui.params[page][2])
 end
 

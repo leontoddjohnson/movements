@@ -2,12 +2,15 @@
 --
 -- See docs.
 
-ui = require('d_ui')
--- grid_ = require('d_grid')
+-- norns `require` ...
+-- x = require('module')
+
+ui = include 'lib/d_ui'
+-- grid_ = include 'lib/d_grid'
 
 -- page functionality
-d_input = require('d_input')
--- d_blank = require('d_blank')
+d_input = include 'lib/d_input'
+-- d_blank = include 'lib/d_blank'
 
 page_i = 1
 page = ui.pages[page_i]
