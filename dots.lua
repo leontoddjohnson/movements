@@ -2,8 +2,18 @@
 --
 -- See docs.
 
+ui = require('d_ui')
+-- grid_ = require('d_grid')
+
+-- page functionality
+d_input = require('d_input')
+-- d_blank = require('d_blank')
+
+page_i = 1
+page = ui.pages[page_i]
+
 move_time = 0.5
-move_length = 0.5
+move_length = 0.1
 positions = {0, 0, 0, 0}
 reverse_rate = 0.5
 
@@ -16,6 +26,7 @@ amp_r = 0
 function init()
   audio.level_adc_cut(1)
 
+  -- track amplitude for input page
   poll_amp_l = poll.set("amp_in_l", update_amp_l)
   poll_amp_l.time = poll_time
   poll_amp_l:start()
@@ -116,24 +127,17 @@ end
 function redraw()
   screen.clear()
 
-  -- baseline
-  screen.move(14, 20)
-  screen.line(114, 20)
+  ui.draw_nav(page)
+  ui[page .. '_redraw']()
+  ui.draw_params(page)
 
-  -- voice position (above or below line)
-  for i=1,4 do
-    lr = i % 2 == 0 and 1 or -1
-    screen.move(14 + position_to_pixels(i), 20)
-    if i < 3 then
-      screen.line_rel(0, 12 * lr)
-    else
-      screen.line_rel(0, 6 * lr * (i == 3 and 1.2 or 1))
-    end
-  end
-
-  -- contrived waveform
-
-  screen.stroke()
   screen.update()
+end
+
+function enc(n, d)
+  if n == 1 then
+    page_i = util.wrap(page_i + d, 1, #ui.pages)
+    page = ui.pages[page_i]
+  end
 end
 
