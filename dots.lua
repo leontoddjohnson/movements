@@ -16,7 +16,6 @@ page_i = 1
 page = ui.pages[page_i]
 
 move_time = 0.2
-dot_fade_time = 1  -- 
 positions = {0, 0, 0, 0}
 reverse_rate = 0.5
 
@@ -62,7 +61,7 @@ end
 function move()
   local p = nil
   for i = 3,4 do
-    p = math.random() * (params:get('loop_length'))
+    p = math.random() * (params:get('loop_length') - 0.1)
 
     if sound then
       softcut.position(i, p)
@@ -92,7 +91,6 @@ function sc_reset()
     softcut.loop(i, 1)
     softcut.loop_start(i, 0)
     softcut.loop_end(i, params:get('loop_length'))
-    softcut.position(i, 0)
     softcut.fade_time(i, 0.1)
     softcut.pan(i, i % 2 == 0 and 1 or -1)
 
@@ -103,6 +101,7 @@ function sc_reset()
 
     -- input
     if i < 3 then
+      softcut.position(i, 0)
       softcut.rec_level(i, 1)
       softcut.pre_level(i, 0)
       softcut.level_input_cut(i, i, 1)
@@ -111,9 +110,9 @@ function sc_reset()
       softcut.rec(i, 1)
     -- dots
     else
+      softcut.position(i, params:get('loop_length'))
       softcut.level(i, 1)
       softcut.play(i, 0)
-      softcut.fade_time(i, dot_fade_time)
     end
   end
 end

@@ -41,7 +41,7 @@ function ui.draw_nav(page)
     screen.level(ui.pages[i] == page and 15 or 5)
     screen.line(x + nav_bar_len, nav_y)
     screen.move(x + nav_bar_len / 2, nav_y - 2)
-    screen.text_center(ui.glyphs[page])
+    screen.text_center(ui.glyphs[ui.pages[i]])
     screen.stroke()
   end
 end
