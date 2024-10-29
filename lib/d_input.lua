@@ -19,7 +19,8 @@ function input.build_params()
   params:set_action('input_move_time', function(x) time.time = x end)
   params:add_number('input_check_time', 'input check time', 0.1, 2, 1)
   params:set_action('input_check_time', update_amp_poll_times)
-  params:add_number('input_amp_threshold', 'amp threshold', 0.001, 1, 0.01)
+  params:add_control('input_amp_threshold', 'amp threshold',
+    controlspec.new(0.001, 1, 'lin', 0, 0.001, '', 0.005, false))
 
 end
 
