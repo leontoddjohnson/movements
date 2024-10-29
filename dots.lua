@@ -15,12 +15,12 @@ d_input = include 'lib/d_input'
 page_i = 1
 page = ui.pages[page_i]
 
-move_time = 0.5
-move_length = 0.1
+move_time = 0.2
+dot_fade_time = 1  -- 
 positions = {0, 0, 0, 0}
 reverse_rate = 0.5
 
-poll_amp_time = 0.5
+poll_amp_time = 1
 amp_threshold = 0.01
 
 amp_l = 0
@@ -62,16 +62,14 @@ end
 function move()
   local p = nil
   for i = 3,4 do
+    p = math.random() * (params:get('loop_length'))
+
     if sound then
-      p = math.random() * (params:get('loop_length') - move_length)
       softcut.position(i, p)
-      softcut.loop_end(i, p + move_length)
+      softcut.loop(i, 1)
       softcut.play(i, 1)
     else
-      p = 0
-      softcut.position(i, p)
-      softcut.loop_end(i, p + move_length)
-      softcut.play(i, 0)
+      softcut.loop(i, 0)
     end
   end
   redraw()
@@ -79,7 +77,7 @@ end
 
 function build_params()
 
-  params:add_number('loop_length', 'loop_length', 0, 10, 3)
+  params:add_number('loop_length', 'loop_length', 0, 10, 5)
 
 end
 
@@ -115,6 +113,7 @@ function sc_reset()
     else
       softcut.level(i, 1)
       softcut.play(i, 0)
+      softcut.fade_time(i, dot_fade_time)
     end
   end
 end

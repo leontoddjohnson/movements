@@ -69,7 +69,8 @@ function ui.input_redraw()
     if i < 3 then
       screen.line_rel(0, 12 * lr)
     else
-      screen.line_rel(0, 6 * lr * (i == 3 and 1.2 or 1))
+      screen.move_rel(0, 6 * lr)
+      screen.text('.')
     end
   end
 
