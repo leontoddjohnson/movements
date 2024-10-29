@@ -79,9 +79,10 @@ function input.sc_reset()
 
     -- dots
     else
-      softcut.position(i, params:get('input_loop_length'))
-      softcut.level(i, 1)
       softcut.play(i, 0)
+      softcut.level(i, 1)
+      softcut.position(i, params:get('input_loop_length'))
+      input.positions[i] = params:get('input_loop_length')
     end
   end
 end
