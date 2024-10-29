@@ -13,6 +13,7 @@ amp_r = 0
 
 function input.build_params()
 
+  -- TODO: fix these (e.g., look into lib.formatters)
   params:add_separator('input', 'input')
   params:add_number('input_loop_length', 'loop length', 0, 10, 5)
   params:add_number('input_move_time', 'dot move time', 0.1, 1, 0.2)
@@ -104,6 +105,7 @@ function input.move_dots()
 end
 
 function input.update_position(i,pos)
+  softcut.loop_end(i, params:get('input_loop_length'))
   input.positions[i] = pos
   redraw()
 end
