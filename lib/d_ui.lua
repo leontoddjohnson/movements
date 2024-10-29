@@ -12,6 +12,8 @@
 
 local ui = {}
 
+d_input = include 'lib/d_input'
+
 ui.pages = {'input', 'blank'}
 
 ui.glyphs = {
@@ -34,7 +36,6 @@ function ui.draw_nav(page)
   nav_bar_len = 128 - (2 + n - 1) * nav_buffer
   nav_bar_len = nav_bar_len / n
 
-  -- TODO: fix call to glyphs ...
   for i = 1,#ui.pages do
     x = nav_buffer + (i - 1) * (nav_bar_len + nav_buffer)
     screen.move(x, nav_y)
@@ -58,14 +59,20 @@ end
 ------------------- INPUT PAGE -------------------
 
 function ui.input_redraw()
+  local p = nil
+
   -- baseline
   screen.move(14, 20)
   screen.line(114, 20)
 
   -- voice position (above or below line)
   for i=1,4 do
+    p = d_input.positions[i]
+    p = util.linlin(0, params:get('input_loop_length'), 14, 114, p)
+
+    screen.move(p, 20)
     lr = i % 2 == 0 and 1 or -1
-    screen.move(14 + position_to_pixels(i), 20)
+
     if i < 3 then
       screen.line_rel(0, 12 * lr)
     else
@@ -74,7 +81,7 @@ function ui.input_redraw()
     end
   end
 
-  -- contrived waveform using amp poll?
+  -- TODO: contrived waveform using amp poll?
 
   screen.stroke()
 end
