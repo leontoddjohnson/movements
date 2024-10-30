@@ -10,55 +10,55 @@
 -- grid page change --> affect display page
 -- display page change --> NO grid page change
 
-local ui = {}
+local d_ui = {}
 
 d_input = include 'lib/d_input'
 
-ui.pages = {'input', 'blank'}
+d_ui.pages = {'input', 'blank'}
 
-ui.glyphs = {
+d_ui.glyphs = {
   input = "'.•",
   blank = "--"
 }
 
 -- these map to named parameter indices
 -- might add more (3 and 4) with shift
-ui.params = {
+d_ui.params = {
   input = {'a', 'b'},
   blank = {'c', 'd'}
 }
 
 -- main navigation bar
-function ui.draw_nav(page)
+function d_ui.draw_nav(page)
   nav_buffer = 10
   nav_y = 6
   n = 2
   nav_bar_len = 128 - (2 + n - 1) * nav_buffer
   nav_bar_len = nav_bar_len / n
 
-  for i = 1,#ui.pages do
+  for i = 1,#d_ui.pages do
     x = nav_buffer + (i - 1) * (nav_bar_len + nav_buffer)
     screen.move(x, nav_y)
-    screen.level(ui.pages[i] == page and 15 or 5)
+    screen.level(d_ui.pages[i] == page and 15 or 5)
     screen.line(x + nav_bar_len, nav_y)
     screen.move(x + nav_bar_len / 2, nav_y - 2)
-    screen.text_center(ui.glyphs[ui.pages[i]])
+    screen.text_center(d_ui.glyphs[d_ui.pages[i]])
     screen.stroke()
   end
 end
 
 
 -- parameters to adjust with K2 and K3
-function ui.draw_params(page)
+function d_ui.draw_params(page)
   screen.move(10, 62)
-  screen.text(ui.params[page][1])
+  screen.text(d_ui.params[page][1])
   screen.move(118, 62)
-  screen.text_right(ui.params[page][2])
+  screen.text_right(d_ui.params[page][2])
 end
 
 ------------------- INPUT PAGE -------------------
 
-function ui.input_redraw()
+function d_ui.input_redraw()
   local p = nil
 
   -- baseline
@@ -89,11 +89,11 @@ end
 
 ------------------- BLANK PAGE -------------------
 
-function ui.blank_redraw()
+function d_ui.blank_redraw()
   screen.move(64, 32)
   screen.text_center('blank!')
   screen.stroke()
 end
 
 
-return ui
+return d_ui

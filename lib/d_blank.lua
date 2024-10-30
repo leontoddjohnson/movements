@@ -1,7 +1,7 @@
 -- BLANK (temp) page
 -- all the stuff that drives this ...
 
-local blank = {}
+local d_blank = {}
 
-return blank
+return d_blank
 

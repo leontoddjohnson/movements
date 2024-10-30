@@ -3,6 +3,6 @@
 
 -- also, is it okay to name these files this way??
 
-local grid_ = {}
+local d_grid = {}
 
-return grid_
+return d_grid

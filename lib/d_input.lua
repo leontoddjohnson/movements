@@ -3,15 +3,15 @@
 
 -- TODO: add reverse functionality (later)
 
-local input = {}
+local d_input = {}
 
-input.positions = {0, 0, 0, 0}
+d_input.positions = {0, 0, 0, 0}
 
 ---------------------- INIT ---------------------
 amp_l = 0
 amp_r = 0
 
-function input.build_params()
+function d_input.build_params()
 
   -- TODO: fix these (e.g., look into lib.formatters)
   params:add_separator('input', 'input')
@@ -25,7 +25,7 @@ function input.build_params()
 
 end
 
-function input.init()
+function d_input.init()
   -- input level
   audio.level_adc_cut(1)
 
@@ -41,15 +41,15 @@ function input.init()
   -- set move_dots times
   time = metro.init()
   time.time = params:get('input_move_time')
-  time.event = input.move_dots
+  time.event = d_input.move_dots
   time:start()
 
-  input.sc_reset()
+  d_input.sc_reset()
 end
 
 -------------------- FUNCTIONALITY -------------------
 
-function input.sc_reset()
+function d_input.sc_reset()
   softcut.buffer_clear()
 
   for i=1,4 do
@@ -65,7 +65,7 @@ function input.sc_reset()
 
     -- watch position
     softcut.phase_quant(i, 0.01)
-    softcut.event_phase(input.update_position)
+    softcut.event_phase(d_input.update_position)
     softcut.poll_start_phase()
 
     -- input
@@ -83,12 +83,12 @@ function input.sc_reset()
       softcut.play(i, 0)
       softcut.level(i, 1)
       softcut.position(i, params:get('input_loop_length'))
-      input.positions[i] = params:get('input_loop_length')
+      d_input.positions[i] = params:get('input_loop_length')
     end
   end
 end
 
-function input.move_dots()
+function d_input.move_dots()
   local p = nil
   for i = 3,4 do
     p = math.random() * (params:get('input_loop_length') - 0.1)
@@ -104,9 +104,9 @@ function input.move_dots()
   redraw()
 end
 
-function input.update_position(i,pos)
+function d_input.update_position(i,pos)
   softcut.loop_end(i, params:get('input_loop_length'))
-  input.positions[i] = pos
+  d_input.positions[i] = pos
   redraw()
 end
 
@@ -125,5 +125,5 @@ function update_amp_poll_times(t)
   poll_amp_r.time = t
 end
 
-return input
+return d_input
 
