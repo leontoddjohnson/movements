@@ -5,6 +5,8 @@
 -- norns `require` statements
 -- x = require('module')
 
+engine.name = "d_Timber"
+
 -- script components
 d_ui = include 'lib/d_ui'
 d_input = include 'lib/d_input'
