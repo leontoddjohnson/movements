@@ -353,6 +353,16 @@ Engine_d_Timber : CroneEngine {
 				});
 				signal = Decimator.ar(signal, downSampleTo, bitDepth);
 
+				// Noise
+				noise = HPF.ar(in: Mix.new([PinkNoise.ar(0.5), Dust.ar(5,1)]),
+											 freq: 2000,
+											 mul: Amplitude.kr(signal,
+											 									 attackTime: 0.1,
+											 									 releaseTime: 0.5,
+																				 mul: noiseLevel));
+
+				signal = Mix.new([signal, noise]);
+
 				// 12dB LP/HP filter
 				filterFreqRatio = Select.kr((freq < i_cFreq), [
 					i_cFreq + ((freq - i_cFreq) * filterTracking),
@@ -375,9 +385,6 @@ Engine_d_Timber : CroneEngine {
 				// Amp
 				signal = signal * lfo1.range(1 - ampModLfo1, 1) * lfo2.range(1 - ampModLfo2, 1) * ampEnvelope * killEnvelope * vel.linlin(0, 1, 0.1, 1);
 				signal = tanh(signal * amp.dbamp * (1 + pressure)).softclip;
-
-        noise = WhiteNoise.ar(noiseLevel);
-        signal = Mix.ar([signal, noise]);
 
 				Out.ar(out, signal);
 			}).add;

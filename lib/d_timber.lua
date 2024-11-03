@@ -53,7 +53,7 @@ local param_ids = {
   "scale_by", "by_percentage", "by_length", "by_bars",
   "freq_mod_lfo_1", "freq_mod_lfo_2", "freq_mod_env",
   "filter_type", "filter_freq", "filter_resonance", "filter_freq_mod_lfo_1", "filter_freq_mod_lfo_2", "filter_freq_mod_env", "filter_freq_mod_vel", "filter_freq_mod_pressure", "filter_tracking",
-  "pan", "pan_mod_lfo_1", "pan_mod_lfo_2", "pan_mod_env", "amp", "amp_mod_lfo_1", "amp_mod_lfo_2",
+  "pan", "pan_mod_lfo_1", "pan_mod_lfo_2", "pan_mod_env", "amp", "amp_mod_lfo_1", "amp_mod_lfo_2", "noise",
   "amp_env_attack", "amp_env_decay", "amp_env_sustain", "amp_env_release",
   "mod_env_attack", "mod_env_decay", "mod_env_sustain", "mod_env_release",
   "lfo_1_fade", "lfo_2_fade"
@@ -98,6 +98,7 @@ specs.MOD_ENV_SUSTAIN = ControlSpec.new(0, 1, "lin", 0, 0.65, "")
 specs.MOD_ENV_RELEASE = ControlSpec.new(0.003, 10, "lin", 0, 1, "s")
 options.QUALITY = {"Nasty", "Low", "Medium", "High"}
 specs.AMP = ControlSpec.new(-48, 16, 'db', 0, 0, "dB")
+specs.NOISE = ControlSpec.new(0, 5, 'lin', 0, 0, 'x', 0.01)
 
 QUALITY_SAMPLE_RATES = {8000, 16000, 32000, 48000}
 QUALITY_BIT_DEPTHS = {8, 10, 12, 24}
@@ -795,6 +796,14 @@ function Timber.add_sample_params(id, include_beat_params, extra_params)
     Timber.views_changed_callback(id)
     Timber.setup_params_dirty = true
   end}
+
+  params:add{type = "control", id = "noise_" .. id, name = "Noise", 
+  controlspec = specs.NOISE, formatter = function(p) return p:get() .. "x" end, action = function(value)
+    engine.noiseLevel(id, value)
+    Timber.views_changed_callback(id)
+    Timber.setup_params_dirty = true
+  end}
+
   params:add{type = "number", id = "transpose_" .. id, name = "Transpose", min = -48, max = 48, default = 0, formatter = format_st, action = function(value)
     engine.transpose(id, value)
     Timber.views_changed_callback(id)
@@ -1093,6 +1102,7 @@ local function update_setup_params(self)
     "",
     "",
     "",
+    "noise_" .. self.sample_id,
     "quality_" .. self.sample_id,
     "transpose_" .. self.sample_id,
     "detune_cents_" .. self.sample_id,
@@ -1100,7 +1110,7 @@ local function update_setup_params(self)
     scale
   }
   
-  self.names_list.entries = {"Load", "Clear", "Move", "Copy", "Copy Params", "Quality", "Transpose", "Detune", "Scale By", "Scale"}
+  self.names_list.entries = {"Load", "Clear", "Move", "Copy", "Copy Params", "Noise", "Quality", "Transpose", "Detune", "Scale By", "Scale"}
   self.selected_param_name = self.param_names[self.index]
   
   for _, v in ipairs(extra_param_ids) do
