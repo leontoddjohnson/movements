@@ -4,27 +4,42 @@
 
 -- norns `require` statements
 -- x = require('module')
+local MusicUtil = require "musicutil"
+local UI = require "ui"
+local Formatters = require "formatters"
+local BeatClock = require "beatclock"
 
 engine.name = "d_Timber"
 
 -- script components
+d_timber = include 'lib/d_timber'
 d_ui = include 'lib/d_ui'
-d_input = include 'lib/d_input'
--- grid_ = include 'lib/d_grid'
+d_dots = include 'lib/d_dots'
+d_grid = include 'lib/d_grid'
+
+-- general constants
+REDRAW_FRAMERATE = 30
 
 page_i = 1
 page = d_ui.pages[page_i]
 
+----------------------- TIMBER -----------------------
+
+
+
 ---------------------- INIT ---------------------
 
-function build_params()
-  d_input.build_params()
-end
-
 function init()
-  build_params()
-  d_input.init()
-  redraw()
+  -- parameters
+  d_dots.build_params()
+
+  -- inits
+  d_dots.init()
+  
+  -- redraw clock
+  screen_dirty = true
+  grid_dirty = true
+  clock.run(redraw_clock)
 end
 
 ----------------------- UI -----------------------
@@ -46,3 +61,21 @@ function enc(n, d)
   end
 end
 
+----------------------- UTIL -----------------------
+
+function redraw_clock()
+  while true do
+    clock.sleep(1/REDRAW_FRAMERATE)
+    
+    if screen_dirty then
+      redraw()
+      screen_dirty = false
+    end
+
+    if grid_dirty then
+      d_grid.grid_redraw()
+      grid_dirty = false
+    end
+
+  end
+end

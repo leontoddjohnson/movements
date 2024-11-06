@@ -12,20 +12,23 @@
 
 local d_ui = {}
 
-d_input = include 'lib/d_input'
+d_dots = include 'lib/d_dots'
 
-d_ui.pages = {'input', 'blank'}
+d_ui.pages = {'dots', 'rec'}
 
 d_ui.glyphs = {
-  input = "'.•",
-  blank = "--"
+  dots = "'.•",
+  rec = "--"
 }
+
+-- sample pages: --, ->, #, l.|
+-- rec pages: --, -> ??? maybe?? 
 
 -- these map to named parameter indices
 -- might add more (3 and 4) with shift
 d_ui.params = {
-  input = {'a', 'b'},
-  blank = {'c', 'd'}
+  dots = {'a', 'b'},
+  rec = {'c', 'd'}
 }
 
 -- main navigation bar
@@ -56,9 +59,9 @@ function d_ui.draw_params(page)
   screen.text_right(d_ui.params[page][2])
 end
 
-------------------- INPUT PAGE -------------------
+------------------- dots PAGE -------------------
 
-function d_ui.input_redraw()
+function d_ui.dots_redraw()
   local p = nil
 
   -- baseline
@@ -67,8 +70,8 @@ function d_ui.input_redraw()
 
   -- voice position (above or below line)
   for i=1,4 do
-    p = d_input.positions[i]
-    p = util.linlin(0, params:get('input_loop_length'), 14, 114, p)
+    p = d_dots.positions[i]
+    p = util.linlin(0, params:get('dots_loop_length'), 14, 114, p)
 
     screen.move(p, 20)
     lr = i % 2 == 0 and 1 or -1
@@ -87,11 +90,11 @@ function d_ui.input_redraw()
 end
 
 
-------------------- BLANK PAGE -------------------
+------------------- rec PAGE -------------------
 
-function d_ui.blank_redraw()
+function d_ui.rec_redraw()
   screen.move(64, 32)
-  screen.text_center('blank!')
+  screen.text_center('rec!')
   screen.stroke()
 end
 
