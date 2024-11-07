@@ -54,10 +54,15 @@ function redraw()
   screen.update()
 end
 
+function key(n, z)
+  d_ui[page .. '_key'](n,z)
+end
+
 function enc(n, d)
   if n == 1 then
     page_i = util.wrap(page_i + d, 1, #d_ui.pages)
     page = d_ui.pages[page_i]
+    screen_dirty = true
   end
 end
 

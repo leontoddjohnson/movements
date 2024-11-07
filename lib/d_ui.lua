@@ -59,7 +59,7 @@ function d_ui.draw_params(page)
   screen.text_right(d_ui.params[page][2])
 end
 
-------------------- dots PAGE -------------------
+------------------- DOTS PAGE -------------------
 
 function d_ui.dots_redraw()
   local p = nil
@@ -89,13 +89,37 @@ function d_ui.dots_redraw()
   screen.stroke()
 end
 
+function d_ui.dots_key(n,z)
+  if n == 3 and z == 1 then
+    if d_dots.moving then
+      d_dots:stop()
+    else
+      d_dots:start()
+    end
+  end
+end
 
-------------------- rec PAGE -------------------
+
+------------------- REC PAGE -------------------
+rec_toggle = 0
 
 function d_ui.rec_redraw()
   screen.move(64, 32)
   screen.text_center('rec!')
+
+  if rec_toggle == 1 then
+    screen.move(64, 50)
+    screen.text_center('ooooh!')
+  end
+
   screen.stroke()
+end
+
+function d_ui.rec_key(n,z)
+  if n == 3 and z == 1 then
+    rec_toggle = rec_toggle ~ 1
+  end
+  screen_dirty = true
 end
 
 
