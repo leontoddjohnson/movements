@@ -22,6 +22,8 @@ local STATUS = {
   STOPPING = 3
 }
 
+banks = {{}, {}, {}, {}}
+
 --------------------------------------------------------------------------------
 -- PARAMETERS
 --------------------------------------------------------------------------------
@@ -50,7 +52,7 @@ end
 for i = 0, NUM_SAMPLES - 1 do sample_status[i] = STATUS.STOPPED end
 
 function d_sample.init()
-  samples_loaded = false
+  
 end
 
 
@@ -86,8 +88,6 @@ function d_sample:load_bank(bank)
       self.load_folder(file, bank)
     end
   end)
-
-  samples_loaded = true
 end
 
 function d_sample.load_folder(file, bank)
@@ -96,9 +96,15 @@ function d_sample.load_folder(file, bank)
   
   Timber.clear_samples(sample_id, NUM_SAMPLES - 1)
   
+  -- filename
   local split_at = string.match(file, "^.*()/")
   local folder = string.sub(file, 1, split_at)
   file = string.sub(file, split_at + 1)
+
+  -- folder name
+  local folder_ = string.sub(folder, 1, -2)
+  split_at = string.match(folder_, "^.*()/")
+  local folder_name = string.sub(folder_, split_at + 1)
   
   local found = false
   for k, v in ipairs(Timber.FileSelect.list) do
@@ -129,6 +135,7 @@ function d_sample.load_folder(file, bank)
       end
     end
   end
+  banks[bank]['folder'] = folder_name
 end
 
 local function set_sample_id(id)
