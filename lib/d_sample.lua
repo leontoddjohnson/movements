@@ -9,21 +9,6 @@ local BeatClock = require "beatclock"
 
 local Timber = include "lib/d_timber"
 
-local options = {}
-options.OFF_ON = {"Off", "On"}
-options.QUANTIZATION = {"None", "1/32", "1/24", "1/16", "1/12", "1/8", "1/6", "1/4", "1/3", "1/2", "1 bar"}
-options.QUANTIZATION_DIVIDERS = {nil, 32, 24, 16, 12, 8, 6, 4, 3, 2, 1}
-
-local SCREEN_FRAMERATE = 15
-local screen_dirty = true
-local GRID_FRAMERATE = 30
-local grid_dirty = true
-local grid_w, grid_h = 16, 8
-
-local midi_in_device
-local midi_clock_in_device
-local grid_device
-
 local NUM_SAMPLES = 128  -- max 256
 
 local beat_clock
@@ -36,19 +21,60 @@ local STATUS = {
   PLAYING = 2,
   STOPPING = 3
 }
+
+---------------------- PARAMETERS ----------------------
+
+function d_sample.build_params()
+
+  Timber.add_params()
+
+  params:add_separator("Samples")
+  
+  -- Index zero to align with MIDI note numbers
+  for i = 0, NUM_SAMPLES - 1 do
+    local extra_params = {
+      {type = "option", id = "launch_mode_" .. i, name = "Launch Mode", options = {"Gate", "Toggle"}, default = 1, action = function(value)
+        Timber.setup_params_dirty = true
+      end}
+    }
+    Timber.add_sample_params(i, true, extra_params)
+  end
+end
+
+---------------------- INIT ---------------------
+
 for i = 0, NUM_SAMPLES - 1 do sample_status[i] = STATUS.STOPPED end
 
-function d_sample.load_folder(file, add)
+function d_sample.init()
+  samples_loaded = false
+end
+
+
+---------------------- FUNCTIONALITY ---------------------
+
+-- convert bank <rowcol> syntax to 0-indexed id for timber
+local function rowcol_id(rowcol, bank)
+  rowcol = tonumber(rowcol)
+  local bank_id = 8 * ((rowcol - 10) // 10) + (rowcol % 10) - 1
+  return 32 * (bank - 1) + bank_id
+end
+
+
+function d_sample:load_bank(bank)
+  Timber.FileSelect.enter(_path.audio, function(file)
+    file_select_active = false
+    screen_dirty = true
+    if file ~= "cancel" then
+      self.load_folder(file, bank)
+    end
+  end)
+
+  samples_loaded = true
+end
+
+function d_sample.load_folder(file, bank)
   
   local sample_id = 0
-  if add then
-    for i = NUM_SAMPLES - 1, 0, -1 do
-      if Timber.samples_meta[i].num_frames > 0 then
-        sample_id = i + 1
-        break
-      end
-    end
-  end
   
   Timber.clear_samples(sample_id, NUM_SAMPLES - 1)
   
@@ -63,13 +89,16 @@ function d_sample.load_folder(file, add)
       -- get lowercase filename
       local lower_v = v:lower()
         
-      -- check for <row0col> ... naming convention
-      local rowcol = string.match(lower_v, "^%d%d%d ")
+      -- find rowcol* if "<rowcol>*..." naming convention (* = space|-|_)
+      local rowcol = string.match(lower_v, "^%d%d[%s-_]")
+      
       if rowcol ~= nil then
-          rowcol = tonumber(rowcol)
-          sample_id = 16 * (rowcol // 100) + rowcol - (rowcol // 100) * 100
+        -- remove the split character
+        rowcol = string.sub(rowcol, 1, -2)
+        sample_id = rowcol_id(rowcol, bank)
       end
-      if sample_id > 255 then
+
+      if sample_id >= NUM_SAMPLES then
         print("Max files loaded")
         break
       end

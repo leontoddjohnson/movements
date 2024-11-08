@@ -31,6 +31,8 @@ d_ui.params = {
   rec = {'c', 'd'}
 }
 
+------------------- NAVIGATION -------------------
+
 -- main navigation bar
 function d_ui.draw_nav(page)
   nav_buffer = 10
@@ -59,7 +61,12 @@ function d_ui.draw_params(page)
   screen.text_right(d_ui.params[page][2])
 end
 
-------------------- DOTS PAGE -------------------
+------------------- SAMPLE: LOAD -------------------
+
+
+
+
+------------------- DOTS -------------------
 
 function d_ui.dots_redraw()
   local p = nil
@@ -100,7 +107,7 @@ function d_ui.dots_key(n,z)
 end
 
 
-------------------- REC PAGE -------------------
+------------------- REC: MAIN -------------------
 rec_toggle = 0
 
 function d_ui.rec_redraw()
