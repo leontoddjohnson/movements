@@ -22,7 +22,9 @@ local STATUS = {
   STOPPING = 3
 }
 
----------------------- PARAMETERS ----------------------
+--------------------------------------------------------------------------------
+-- PARAMETERS
+--------------------------------------------------------------------------------
 
 function d_sample.build_params()
 
@@ -41,7 +43,9 @@ function d_sample.build_params()
   end
 end
 
----------------------- INIT ---------------------
+--------------------------------------------------------------------------------
+-- INIT
+--------------------------------------------------------------------------------
 
 for i = 0, NUM_SAMPLES - 1 do sample_status[i] = STATUS.STOPPED end
 
@@ -50,13 +54,27 @@ function d_sample.init()
 end
 
 
----------------------- FUNCTIONALITY ---------------------
+--------------------------------------------------------------------------------
+-- SAMPLE: CONFIG
+--------------------------------------------------------------------------------
 
 -- convert bank <rowcol> syntax to 0-indexed id for timber
-local function rowcol_id(rowcol, bank)
+-- going L->R, Top->Bottom down 4 4x8 matrices, 0-indexed
+function rowcol_id(rowcol, bank)
   rowcol = tonumber(rowcol)
-  local bank_id = 8 * ((rowcol - 10) // 10) + (rowcol % 10) - 1
+  local n_rows_above = (rowcol - 10) // 10  -- in bank
+  local n_cols_over = rowcol % 10
+  local bank_id = 8 * n_rows_above + n_cols_over - 1 -- 0-index
   return 32 * (bank - 1) + bank_id
+end
+
+-- TODO: double triple verify these ...
+-- return a string <bankrowcol> from the id number
+function id_bankrowcol(id)
+  local bank = (id // 32) + 1
+  local row = (id - (bank - 1) * 32) // 8 + 1
+  local col = (id - (bank - 1) * 32) % 8 + 1
+  return {bank, row, col}
 end
 
 
