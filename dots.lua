@@ -83,7 +83,7 @@ function redraw_clock()
     end
 
     if grid_dirty then
-      d_grid.grid_redraw()
+      d_grid:grid_redraw()
       grid_dirty = false
     end
 

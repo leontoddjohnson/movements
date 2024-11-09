@@ -22,7 +22,7 @@ local STATUS = {
   STOPPING = 3
 }
 
--- [row][col] indexing
+-- [row][col] indexed to match filenames
 banks = {
   {{}, {}, {}, {}},
   {{}, {}, {}, {}},
@@ -30,6 +30,9 @@ banks = {
   {{}, {}, {}, {}}
 }
 bank_folders = {}
+
+-- currently selected sample bank
+BANK = 1
 
 -----------------------------------------------------------------
 -- PARAMETERS
@@ -152,6 +155,7 @@ function d_sample.load_folder(file, bank)
     end
   end
   bank_folders[bank] = folder_name
+  grid_dirty = true
 end
 
 local function set_sample_id(id)
