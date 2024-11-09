@@ -12,7 +12,7 @@ local BeatClock = require "beatclock"
 engine.name = "d_Timber"
 
 -- script components
--- d_timber = include 'lib/d_timber'
+d_timber = include 'lib/d_timber'
 d_ui = include 'lib/d_ui'
 d_dots = include 'lib/d_dots'
 d_grid = include 'lib/d_grid'

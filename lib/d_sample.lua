@@ -22,7 +22,14 @@ local STATUS = {
   STOPPING = 3
 }
 
-banks = {{}, {}, {}, {}}
+-- [row][col] indexing
+banks = {
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}}
+}
+bank_folders = {}
 
 -----------------------------------------------------------------
 -- PARAMETERS
@@ -76,7 +83,7 @@ function id_bankrowcol(id)
   local bank = (id // 32) + 1
   local row = (id - (bank - 1) * 32) // 8 + 1
   local col = (id - (bank - 1) * 32) % 8 + 1
-  return {bank, row, col}
+  return bank, row, col
 end
 
 
@@ -92,9 +99,10 @@ end
 
 function d_sample.load_folder(file, bank)
   
-  local sample_id = 0
+  -- first sample in bank
+  local sample_id = (bank - 1) * 32
   
-  Timber.clear_samples(sample_id, NUM_SAMPLES - 1)
+  Timber.clear_samples(sample_id, bank * 32 - 1)
   
   -- filename
   local split_at = string.match(file, "^.*()/")
@@ -118,24 +126,32 @@ function d_sample.load_folder(file, bank)
       
       if rowcol ~= nil then
         -- remove the split character
-        rowcol = string.sub(rowcol, 1, -2)
+        rowcol = string.sub(rowcol, 1, 2)
         sample_id = rowcol_id(rowcol, bank)
       end
 
-      if sample_id >= NUM_SAMPLES then
-        print("Max files loaded")
+      if sample_id >= bank * 32 then
+        print("Max files loaded in bank.")
         break
       end
 
-      if string.find(lower_v, ".wav") or string.find(lower_v, ".aif") or string.find(lower_v, ".aiff") or string.find(lower_v, ".ogg") then
+      if string.match(lower_v, ".wav$") or string.match(lower_v, ".aif$") or string.match(lower_v, ".aiff$") or string.match(lower_v, ".ogg$") then
         Timber.load_sample(sample_id, folder .. v)
+        bank_, row, col = id_bankrowcol(sample_id)
+
+        if bank ~= bank_ then
+          error("bank calculation is incorrect")
+        end
+
+        banks[bank][row][col] = sample_id
         sample_id = sample_id + 1
+
       else
         print("Skipped", v)
       end
     end
   end
-  banks[bank]['folder'] = folder_name
+  bank_folders[bank] = folder_name
 end
 
 local function set_sample_id(id)
