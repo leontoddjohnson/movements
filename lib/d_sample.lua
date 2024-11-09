@@ -3,7 +3,6 @@
 d_sample = {}
 
 local MusicUtil = require "musicutil"
-local UI = require "ui"
 local Formatters = require "formatters"
 local BeatClock = require "beatclock"
 

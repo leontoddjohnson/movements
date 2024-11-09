@@ -12,55 +12,121 @@
 
 local d_ui = {}
 
+local UI = require "ui"
+
 d_dots = include 'lib/d_dots'
 
-d_ui.pages = {'dots', 'rec'}
+display = {}
+display[1] = UI.Pages.new(1, 2)  -- sample
+display[2] = UI.Pages.new(2, 1)  -- rec
+display[3] = UI.Pages.new(3, 1)  -- dots
 
-d_ui.glyphs = {
-  dots = "'.•",
-  rec = "--"
-}
+-- display info in order
+display_names = {'sample', 'rec', 'dots'}
 
--- sample pages: --, ->, #, l.|
--- rec pages: --, -> ??? maybe?? 
-
--- these map to named parameter indices
--- might add more (3 and 4) with shift
-d_ui.params = {
-  dots = {'a', 'b'},
-  rec = {'c', 'd'}
-}
+function d_ui.init()
+  nav_headers = {
+    sample = "no loaded sample",
+    rec = "empty recording",
+    dots = "dots stuff"
+  }
+end
 
 -----------------------------------------------------------------
 -- NAVIGATION
 -----------------------------------------------------------------
 
 -- main navigation bar
-function d_ui.draw_nav(page)
-  nav_buffer = 10
-  nav_y = 6
-  n = 2
-  nav_bar_len = 128 - (2 + n - 1) * nav_buffer
-  nav_bar_len = nav_bar_len / n
+function d_ui.draw_nav()
+  y = 5  -- default text hight
+  glyph_buffer = 2
 
-  for i = 1,#d_ui.pages do
-    x = nav_buffer + (i - 1) * (nav_bar_len + nav_buffer)
-    screen.move(x, nav_y)
-    screen.level(d_ui.pages[i] == page and 15 or 5)
-    screen.line(x + nav_bar_len, nav_y)
-    screen.move(x + nav_bar_len / 2, nav_y - 2)
-    screen.text_center(d_ui.glyphs[d_ui.pages[i]])
-    screen.stroke()
+  for i = 1,#display_names do
+    x = (i - 1) * glyph_buffer
+    screen.move(x, y)
+    screen.level(i == DISPLAY_ID and 15 or 2)
+    screen.text("|")
   end
+
+  -- current display header
+  screen.move_rel(glyph_buffer * 2, 0)
+  screen.text(nav_headers[display_names[DISPLAY_ID]])
+  screen.stroke()
+end
+
+-----------------------------------------------------------------
+-- SAMPLE
+-----------------------------------------------------------------
+
+-- 1: MAIN ------------------------------------------------------
+sample_toggle = 0
+
+function d_ui.sample_1_redraw()
+  screen.move(64, 32)
+  screen.text_center('sample!')
+
+  if sample_toggle == 1 then
+    screen.move(64, 50)
+    screen.text_center('ooooh buddy!')
+  end
+
+  screen.stroke()
+end
+
+function d_ui.sample_1_key(n,z)
+  if n == 3 and z == 1 then
+    sample_toggle = sample_toggle ~ 1
+  end
+  screen_dirty = true
+end
+
+-- 2: EMPTY ------------------------------------------------------
+sample_toggle = 0
+
+function d_ui.sample_2_redraw()
+  screen.move(64, 32)
+  screen.text_center('sample TWO!!')
+
+  if sample_toggle == 1 then
+    screen.move(64, 50)
+    screen.text_center('ooooh, it is 2!')
+  end
+
+  screen.stroke()
+end
+
+function d_ui.sample_2_key(n,z)
+  if n == 3 and z == 1 then
+    sample_toggle = sample_toggle ~ 1
+  end
+  screen_dirty = true
 end
 
 
--- parameters to adjust with K2 and K3
-function d_ui.draw_params(page)
-  screen.move(10, 62)
-  screen.text(d_ui.params[page][1])
-  screen.move(118, 62)
-  screen.text_right(d_ui.params[page][2])
+-----------------------------------------------------------------
+-- REC
+-----------------------------------------------------------------
+
+-- 1: MAIN ------------------------------------------------------
+rec_toggle = 0
+
+function d_ui.rec_1_redraw()
+  screen.move(64, 32)
+  screen.text_center('rec!')
+
+  if rec_toggle == 1 then
+    screen.move(64, 50)
+    screen.text_center('ooooh!')
+  end
+
+  screen.stroke()
+end
+
+function d_ui.rec_1_key(n,z)
+  if n == 3 and z == 1 then
+    rec_toggle = rec_toggle ~ 1
+  end
+  screen_dirty = true
 end
 
 
@@ -68,19 +134,22 @@ end
 -- DOTS
 -----------------------------------------------------------------
 
-function d_ui.dots_redraw()
+-- 1: MAIN ------------------------------------------------------
+
+function d_ui.dots_1_redraw()
   local p = nil
+  local baseline_y = 30
 
   -- baseline
-  screen.move(14, 20)
-  screen.line(114, 20)
+  screen.move(14, baseline_y)
+  screen.line(114, baseline_y)
 
   -- voice position (above or below line)
   for i=1,4 do
     p = d_dots.positions[i]
     p = util.linlin(0, params:get('dots_loop_length'), 14, 114, p)
 
-    screen.move(p, 20)
+    screen.move(p, baseline_y)
     lr = i % 2 == 0 and 1 or -1
 
     if i < 3 then
@@ -96,7 +165,7 @@ function d_ui.dots_redraw()
   screen.stroke()
 end
 
-function d_ui.dots_key(n,z)
+function d_ui.dots_1_key(n,z)
   if n == 3 and z == 1 then
     if d_dots.moving then
       d_dots:stop()
@@ -105,38 +174,5 @@ function d_ui.dots_key(n,z)
     end
   end
 end
-
------------------------------------------------------------------
--- SAMPLE: LOAD
------------------------------------------------------------------
-
-
-
-
-
------------------------------------------------------------------
--- REC: MAIN
------------------------------------------------------------------
-rec_toggle = 0
-
-function d_ui.rec_redraw()
-  screen.move(64, 32)
-  screen.text_center('rec!')
-
-  if rec_toggle == 1 then
-    screen.move(64, 50)
-    screen.text_center('ooooh!')
-  end
-
-  screen.stroke()
-end
-
-function d_ui.rec_key(n,z)
-  if n == 3 and z == 1 then
-    rec_toggle = rec_toggle ~ 1
-  end
-  screen_dirty = true
-end
-
 
 return d_ui

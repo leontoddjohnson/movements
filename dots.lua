@@ -4,10 +4,6 @@
 
 -- norns `require` statements
 -- x = require('module')
-local MusicUtil = require "musicutil"
-local UI = require "ui"
-local Formatters = require "formatters"
-local BeatClock = require "beatclock"
 
 engine.name = "d_Timber"
 
@@ -18,11 +14,12 @@ d_dots = include 'lib/d_dots'
 d_grid = include 'lib/d_grid'
 d_sample = include 'lib/d_sample'
 
--- general constants
-REDRAW_FRAMERATE = 30
+HOLD_K1 = false
+REDRAW_FRAMERATE = 30  -- same for grid and screen
+DISPLAY_ID = 1
+PAGE_ID = 1
 
-page_i = 1
-page = d_ui.pages[page_i]
+
 
 -----------------------------------------------------------------
 -- TIMBER
@@ -40,6 +37,7 @@ function init()
 
   -- inits
   d_dots.init()
+  d_ui.init()
   
   -- redraw clock
   screen_dirty = true
@@ -54,23 +52,38 @@ end
 function redraw()
   screen.clear()
 
-  d_ui.draw_nav(page)
-  d_ui[page .. '_redraw']()
-  d_ui.draw_params(page)
+  d_ui.draw_nav()
+
+  display[DISPLAY_ID]:redraw()
+  d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_redraw"]()
 
   screen.update()
 end
 
 function key(n, z)
-  d_ui[page .. '_key'](n,z)
+  if n == 1 then
+    if z == 1 then
+      HOLD_K1 = true
+    else
+      HOLD_K1 = false
+    end
+  end
+
+  d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_key"](n,z)
+  
 end
 
 function enc(n, d)
   if n == 1 then
-    page_i = util.wrap(page_i + d, 1, #d_ui.pages)
-    page = d_ui.pages[page_i]
-    screen_dirty = true
+    if HOLD_K1 then
+      DISPLAY_ID = util.clamp(DISPLAY_ID + d, 1, #display_names)
+      PAGE_ID = 1
+    else
+      display[DISPLAY_ID]:set_index_delta(d, false)
+      PAGE_ID = display[DISPLAY_ID].index
+    end
   end
+  screen_dirty = true
 end
 
 function redraw_clock()
