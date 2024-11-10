@@ -8,11 +8,13 @@
 engine.name = "d_Timber"
 
 -- script components
-d_timber = include 'lib/d_timber'
-d_ui = include 'lib/d_ui'
 d_dots = include 'lib/d_dots'
 d_grid = include 'lib/d_grid'
+-- d_rec = include 'lib/d_rec'
 d_sample = include 'lib/d_sample'
+d_seq = include 'lib/d_seq'
+d_timber = include 'lib/d_timber'
+d_ui = include 'lib/d_ui'
 
 HOLD_K1 = false
 REDRAW_FRAMERATE = 30  -- same for grid and screen
@@ -36,6 +38,7 @@ function init()
   d_dots.build_params()
 
   -- inits
+  d_seq.init()
   d_dots.init()
   d_ui.init()
   
@@ -70,7 +73,7 @@ function key(n, z)
   end
 
   d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_key"](n,z)
-  
+
 end
 
 function enc(n, d)
