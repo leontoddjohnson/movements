@@ -25,10 +25,23 @@ g_brightness = {
   bank_sample_selected = 15,
   bank_empty = 2,
   bank_loaded = 4,
-  bank_selected = 8
+  bank_selected = 8,
+  nav_page_inactive = 2,
+  nav_page_active = 5,
+  mode_focus = 0,
+  mode_play = 10,
+  alt_off = 0,
+  alt_on = 15
+}
+
+g_pages = {
+  'sample_seq', 'sample_time', 'sample_config', 'sample_levels',
+  'rec_config', 'rec_levels'
 }
 
 G_PAGE = 'sample_config'
+PLAY_MODE = false
+ALT = false
 
 -----------------------------------------------------------------
 -- INIT
@@ -42,8 +55,119 @@ function d_grid.init()
 end
 
 
+-----------------------------------------------------------------
+-- NAVIGATION
+-----------------------------------------------------------------
 
+function d_grid.draw_nav()
+  local origin = {9, 8}
+  
+  -- pages
+  for i = 1, #g_pages do
+    x, y = global_xy(origin, i, 1)
 
+    if G_PAGE == g_pages[i] then
+      g:led(x, y, g_brightness.nav_page_active)
+    else
+      g:led(x, y, g_brightness.nav_page_inactive)
+    end
+  end
+
+  -- mode
+  if PLAY_MODE then
+    g:led(15, 8, g_brightness.mode_play)
+  else
+    g:led(15, 8, g_brightness.mode_focus)
+  end
+
+  -- alt
+  if ALT then
+    g:led(16, 8, g_brightness.alt_on)
+  else
+    g:led(16, 8, g_brightness.alt_off)
+  end
+
+end
+
+function d_grid.nav_key(x, y, z)
+
+  -- page selection
+  if 9 <= x and x < 15 and y == 8 then
+    if z == 1 then
+      G_PAGE = g_pages[x - 8]
+    end
+  
+  -- mode
+  elseif x == 15 and y == 8 then
+    if z == 1 then
+      PLAY_MODE = not PLAY_MODE
+    end
+  
+  -- alt
+  elseif x == 16 and y == 8 then
+    if z == 1 then
+      ALT = true
+    else
+      ALT = false
+    end
+  end
+
+  grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- SAMPLE SEQ 
+-----------------------------------------------------------------
+temp_on = {}
+
+-- temporary redraw
+function d_grid.sample_seq_redraw()
+
+  for x = 1,16 do
+    g:led(x, 1, 3)
+  end
+
+  if temp_on[1] then
+    g:led(temp_on[1], temp_on[2], 10)
+  end
+
+end
+
+function d_grid.sample_seq_key(x, y, z)
+  if z == 1 then
+    temp_on = {x, y}
+  else
+    temp_on = {}
+  end
+  grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- SAMPLE TIME
+-----------------------------------------------------------------
+temp_on = {}
+
+-- temporary redraw
+function d_grid.sample_time_redraw()
+
+  for x = 1,16 do
+    g:led(x, 2, 3)
+  end
+
+  if temp_on[1] then
+    g:led(temp_on[1], temp_on[2], 10)
+  end
+
+end
+
+function d_grid.sample_time_key(x, y, z)
+  if z == 1 then
+    temp_on = {x, y}
+  else
+    temp_on = {}
+  end
+  grid_dirty = true
+end
 
 -----------------------------------------------------------------
 -- SAMPLE CONFIG 
@@ -79,7 +203,7 @@ function d_grid.draw_bank(bank)
 
 end
 
-function d_grid.redraw_sample_config()
+function d_grid.sample_config_redraw()
   d_grid.draw_bank(BANK)
 end
 
@@ -90,10 +214,90 @@ function d_grid.sample_config_key(x, y, z)
     if z == 1 then
       origin = {13, 5}
       BANK, _ = rel_xy(origin, x, y)
-      g:led(x, y, g_brightness.bank_selected)
     end
   end
 
+  grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- SAMPLE LEVELS
+-----------------------------------------------------------------
+temp_on = {}
+
+-- temporary redraw
+function d_grid.sample_levels_redraw()
+
+  for x = 1,16 do
+    g:led(x, 4, 3)
+  end
+
+  if temp_on[1] then
+    g:led(temp_on[1], temp_on[2], 10)
+  end
+
+end
+
+function d_grid.sample_levels_key(x, y, z)
+  if z == 1 then
+    temp_on = {x, y}
+  else
+    temp_on = {}
+  end
+  grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- REC CONFIG
+-----------------------------------------------------------------
+temp_on = {}
+
+-- temporary redraw
+function d_grid.rec_config_redraw()
+
+  for x = 1,16 do
+    g:led(x, 5, 3)
+  end
+
+  if temp_on[1] then
+    g:led(temp_on[1], temp_on[2], 10)
+  end
+
+end
+
+function d_grid.rec_config_key(x, y, z)
+  if z == 1 then
+    temp_on = {x, y}
+  else
+    temp_on = {}
+  end
+  grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- REC LEVELS
+-----------------------------------------------------------------
+temp_on = {}
+
+-- temporary redraw
+function d_grid.rec_levels_redraw()
+
+  for x = 1,16 do
+    g:led(x, 6, 3)
+  end
+
+  if temp_on[1] then
+    g:led(temp_on[1], temp_on[2], 10)
+  end
+
+end
+
+function d_grid.rec_levels_key(x, y, z)
+  if z == 1 then
+    temp_on = {x, y}
+  else
+    temp_on = {}
+  end
   grid_dirty = true
 end
 
@@ -103,17 +307,20 @@ end
 
 function d_grid:grid_redraw()
   g:all(0)
-
-  if G_PAGE == 'sample_config' then
-    self.redraw_sample_config()
-  end
-
+  d_grid[G_PAGE .. '_redraw']()
+  d_grid.draw_nav()
   g:refresh()
 end
 
 
 function g.key(x, y, z)
-  d_grid[G_PAGE .. '_key'](x, y, z)
+
+  if x > 8 and y == 8 then
+    d_grid.nav_key(x, y, z)
+  else
+    d_grid[G_PAGE .. '_key'](x, y, z)
+  end
+
 end
 
 -----------------------------------------------------------------
