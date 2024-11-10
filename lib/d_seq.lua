@@ -10,7 +10,7 @@ function d_seq.init()
   -- clock routines for each track
   transport = {}
 
-  -- current step/bar for each track
+  -- current *active* step/bar for each track
   step = {1, 1, 1, 1, 1, 1, 1, 1, 1}
 
   -- options for num beats/secs per step for each track
@@ -67,6 +67,12 @@ function d_seq.play_transport(i)
   local wait = nil
 
   while true do
+    -- TODO: make new function to play sample/slice/etc.
+    -- step starts at 0, then waits before next step
+    if pattern[i][bank[i]][step[i]] then
+      print("play track " .. i .. " step " .. step[i])
+    end
+
     -- choose clock_fraction index from selected option range
     wait = math.random(clock_range[i][1], clock_range[i][2])
     wait = clock_fraction[wait]
@@ -77,7 +83,10 @@ function d_seq.play_transport(i)
       clock.sleep(wait, wait * offset[i])
     end
 
+    -- increase step until the 16th step of the last bar
     step[i] = util.wrap(step[i] + 1, 1, n_bars(i) * 16)
+
+    grid_dirty = true
   end
 
 end

@@ -31,7 +31,10 @@ g_brightness = {
   mode_focus = 0,
   mode_play = 10,
   alt_off = 0,
-  alt_on = 15
+  alt_on = 15,
+  step_active = 12,
+  step_inactive = 3,
+  step_nil = 0
 }
 
 g_pages = {
@@ -42,6 +45,8 @@ g_pages = {
 G_PAGE = 'sample_config'
 PLAY_MODE = false
 ALT = false
+
+SEQ_BAR = 1
 
 -----------------------------------------------------------------
 -- INIT
@@ -118,27 +123,36 @@ end
 -----------------------------------------------------------------
 -- SAMPLE SEQ 
 -----------------------------------------------------------------
-temp_on = {}
 
--- temporary redraw
 function d_grid.sample_seq_redraw()
 
-  for x = 1,16 do
-    g:led(x, 1, 3)
-  end
-
-  if temp_on[1] then
-    g:led(temp_on[1], temp_on[2], 10)
+  for track = 1,7 do
+    for s = 1,16 do
+      step_ = (SEQ_BAR - 1) * 16 + s
+      
+      if step_ == step[track] then
+        g:led(s, track, g_brightness.step_active)
+      elseif pattern[track][bank[track]][step_] then
+        g:led(s, track, g_brightness.step_inactive)
+      else
+        g:led(s, track, g_brightness.step_nil)
+      end
+    end
+    
   end
 
 end
 
 function d_grid.sample_seq_key(x, y, z)
-  if z == 1 then
-    temp_on = {x, y}
-  else
-    temp_on = {}
+  step_ = (SEQ_BAR - 1) * 16 + x
+
+  -- switch between a step that exists (1) or not (nil)
+  if y < 8 and z == 1 then
+    -- TODO: something weird is happening here ...
+    empty_step_ = pattern[y][bank[y]][step_] == nil
+    pattern[y][bank[y]][step_] = empty_step_ and 1 or nil 
   end
+
   grid_dirty = true
 end
 
