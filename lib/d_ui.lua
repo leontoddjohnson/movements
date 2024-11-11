@@ -15,7 +15,7 @@ local d_ui = {}
 local UI = require "ui"
 
 d_dots = include 'lib/d_dots'
-
+d_sample = include 'lib/d_sample'
 
 -----------------------------------------------------------------
 -- NAVIGATION
@@ -58,27 +58,33 @@ end
 -----------------------------------------------------------------
 
 -- 0: OVERVIEW --------------------------------------------------
-sample_toggle = 0
+-- TODO: build this, connect with K1
+
+-- 1: CONFIG --------------------------------------------------
 
 function d_ui.sample_1_redraw()
-  d_ui.draw_nav("sample 1")
+  local folder = bank_folders[BANK]
+
+  bank_text = "send midi or K2"
+  bank_text = folder ~= nil and folder or bank_text
+
+  d_ui.draw_nav(
+      TRACK .. " • " .. 
+      BANK .. " • " .. 
+      bank_text)
 
   screen.move(64, 32)
   screen.text_center('sample!')
-
-  if sample_toggle == 1 then
-    screen.move(64, 50)
-    screen.text_center('ooooh buddy!')
-  end
 
   screen.stroke()
 end
 
 function d_ui.sample_1_key(n,z)
-  if n == 3 and z == 1 then
-    sample_toggle = sample_toggle ~ 1
+
+  if n == 2 and z == 1 then
+    d_sample:load_bank(BANK)
   end
-  screen_dirty = true
+
 end
 
 -- 1: EMPTY ------------------------------------------------------

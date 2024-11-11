@@ -231,6 +231,7 @@ function d_grid.sample_config_key(x, y, z)
   end
 
   grid_dirty = true
+  screen_dirty = true
 end
 
 -----------------------------------------------------------------

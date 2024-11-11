@@ -33,6 +33,9 @@ bank_folders = {}
 -- currently selected sample bank
 BANK = 1
 
+-- currently selected track
+TRACK = 1
+
 -----------------------------------------------------------------
 -- PARAMETERS
 -----------------------------------------------------------------
@@ -92,7 +95,6 @@ end
 function d_sample:load_bank(bank)
   Timber.FileSelect.enter(_path.audio, function(file)
     file_select_active = false
-    screen_dirty = true
     if file ~= "cancel" then
       self.load_folder(file, bank)
     end
@@ -154,6 +156,7 @@ function d_sample.load_folder(file, bank)
     end
   end
   bank_folders[bank] = folder_name
+  screen_dirty = true
   grid_dirty = true
 end
 
