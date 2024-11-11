@@ -16,20 +16,19 @@ local UI = require "ui"
 
 d_dots = include 'lib/d_dots'
 
-display = {}
-display[1] = UI.Pages.new(1, 2)  -- sample
-display[2] = UI.Pages.new(2, 1)  -- rec
-display[3] = UI.Pages.new(3, 1)  -- dots
 
--- display info in order
-display_names = {'sample', 'rec', 'dots'}
+-----------------------------------------------------------------
+-- NAVIGATION
+-----------------------------------------------------------------
 
 function d_ui.init()
-  nav_headers = {
-    sample = "no loaded sample",
-    rec = "empty recording",
-    dots = "dots stuff"
-  }
+  display = {}
+  display[1] = UI.Pages.new(1, 2)  -- sample
+  display[2] = UI.Pages.new(2, 1)  -- rec
+  display[3] = UI.Pages.new(3, 1)  -- dots
+
+  -- display info in order
+  display_names = {'sample', 'rec', 'dots'}
 end
 
 -----------------------------------------------------------------
@@ -37,7 +36,7 @@ end
 -----------------------------------------------------------------
 
 -- main navigation bar
-function d_ui.draw_nav()
+function d_ui.draw_nav(header)
   y = 5  -- default text hight
   glyph_buffer = 2
 
@@ -50,7 +49,7 @@ function d_ui.draw_nav()
 
   -- current display header
   screen.move_rel(glyph_buffer * 2, 0)
-  screen.text(nav_headers[display_names[DISPLAY_ID]])
+  screen.text(header)
   screen.stroke()
 end
 
@@ -58,10 +57,12 @@ end
 -- SAMPLE
 -----------------------------------------------------------------
 
--- 1: MAIN ------------------------------------------------------
+-- 0: OVERVIEW --------------------------------------------------
 sample_toggle = 0
 
 function d_ui.sample_1_redraw()
+  d_ui.draw_nav("sample 1")
+
   screen.move(64, 32)
   screen.text_center('sample!')
 
@@ -80,10 +81,12 @@ function d_ui.sample_1_key(n,z)
   screen_dirty = true
 end
 
--- 2: EMPTY ------------------------------------------------------
+-- 1: EMPTY ------------------------------------------------------
 sample_toggle = 0
 
 function d_ui.sample_2_redraw()
+  d_ui.draw_nav("sample 2")
+
   screen.move(64, 32)
   screen.text_center('sample TWO!!')
 
@@ -111,6 +114,7 @@ end
 rec_toggle = 0
 
 function d_ui.rec_1_redraw()
+  d_ui.draw_nav("rec 1")
   screen.move(64, 32)
   screen.text_center('rec!')
 
@@ -137,6 +141,8 @@ end
 -- 1: MAIN ------------------------------------------------------
 
 function d_ui.dots_1_redraw()
+  d_ui.draw_nav("dots baby")
+
   local p = nil
   local baseline_y = 30
 

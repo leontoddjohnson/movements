@@ -55,8 +55,6 @@ end
 function redraw()
   screen.clear()
 
-  d_ui.draw_nav()
-
   display[DISPLAY_ID]:redraw()
   d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_redraw"]()
 
