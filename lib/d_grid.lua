@@ -34,7 +34,7 @@ g_brightness = {
   alt_on = 15,
   step_active = 12,
   step_inactive = 3,
-  step_nil = 0
+  step_empty = 0
 }
 
 g_pages = {
@@ -132,10 +132,10 @@ function d_grid.sample_seq_redraw()
       
       if step_ == step[track] then
         g:led(s, track, g_brightness.step_active)
-      elseif pattern[track][bank[track]][step_] then
+      elseif pattern[track][bank[track]][step_] > 0 then
         g:led(s, track, g_brightness.step_inactive)
       else
-        g:led(s, track, g_brightness.step_nil)
+        g:led(s, track, g_brightness.step_empty)
       end
     end
     
@@ -146,11 +146,10 @@ end
 function d_grid.sample_seq_key(x, y, z)
   step_ = (SEQ_BAR - 1) * 16 + x
 
-  -- switch between a step that exists (1) or not (nil)
+  -- switch between a step that exists (1) or not (0)
   if y < 8 and z == 1 then
-    -- TODO: something weird is happening here ...
-    empty_step_ = pattern[y][bank[y]][step_] == nil
-    pattern[y][bank[y]][step_] = empty_step_ and 1 or nil 
+    empty_step_ = pattern[y][bank[y]][step_] == 0
+    pattern[y][bank[y]][step_] = empty_step_ and 1 or 0
   end
 
   grid_dirty = true

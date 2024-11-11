@@ -23,24 +23,19 @@ function d_seq.init()
   }
 
   -- offset fraction for each transport 0 <= offset < 1 (strict)
+  -- does not apply to a step at t == 0 (when clock is run)
   offset = {0, 0, 0, 0, 0, 0, 0, 0, 0}
   time_type = {
     'beat', 'beat', 'beat', 'beat', 'beat', 'beat', 'beat',
     'beat', 'beat'
   }
 
-  -- pat[track][bank][step] = 1 or nil (mult by param value). 
+  -- pat[track][bank][step] = 1 or 0 (mult by param value). 
   -- rec tracks only have one bank
-  pattern = {
-    {{1, nil, 1, 1, nil, nil}, {}, {}, {}},
-    {{}, {}, {}, {}},
-    {{}, {}, {}, {}},
-    {{}, {}, {}, {}},
-    {{}, {}, {}, {}},
-    {{}, {}, {}, {}},
-    {{}, {}, {}, {}},
-    {{}},
-    {{}}
+  pattern = d_seq.pattern_init()
+
+  pattern_mult = {
+    amp = {}
   }
 
   -- current pattern bank loaded (rec tracks always "bank 1")
@@ -56,7 +51,7 @@ end
 -- transport 1-7 = sample
 -- transport 8-9 = rec
 function d_seq.start_transport(i)
-  if #pattern[i][bank[i]] > 0 then
+  if span(pattern[i][bank[i]]) > 0 then
     transport[i] = clock.run(d_seq.play_transport, i)
   else
     print("Pattern ".. i .. " is empty.")
@@ -69,7 +64,7 @@ function d_seq.play_transport(i)
   while true do
     -- TODO: make new function to play sample/slice/etc.
     -- step starts at 0, then waits before next step
-    if pattern[i][bank[i]][step[i]] then
+    if pattern[i][bank[i]][step[i]] > 0 then
       print("play track " .. i .. " step " .. step[i])
     end
 
@@ -104,11 +99,50 @@ end
 function random_offset(wait)
 end
 
--- counts last non-nil value in pattern
+-- index of last non-zero value in table (pattern)
+function span(p)
+  local span_ = 0
+  for i=1,#p do
+    span_ = p[i] ~= 0 and i or span_
+  end
+  return span_
+end
+
+-- one empty pattern: 8 bars * 16 steps of 0 values
+function empty_pattern()
+  local pattern_ = {}
+  for i = 1,16*8 do
+    pattern_[i] = 0
+  end
+  return pattern_
+end
+
+function d_seq.pattern_init()
+  local pattern = {}
+
+  -- transports 1-7 for samples, 8-9 for recordings
+  for t = 1,9 do
+    pattern[t] = {}
+    if t < 8 then
+      -- single pattern for each sample bank
+      for b = 1,4 do
+        pattern[t][b] = empty_pattern()
+      end
+    else
+      -- only "bank 1" for recordings
+      pattern[t][1] = empty_pattern()
+    end
+  end
+
+  return pattern
+end
+
+-- last non-empty pattern bar for track i. 
+-- 1-7 for sample, 8-9 for rec
 function n_bars(i)
-  -- recall that pattern values are 1 or nil
-  local last_step = #pattern[i][bank[i]]
-  return (last_step - 1) // 16 + 1
+  local span_ = span(pattern[i][bank[i]])
+  -- fix for when span_ == 0
+  return math.abs(span_ - 1) // 16 + 1
 end
 
 return d_seq
