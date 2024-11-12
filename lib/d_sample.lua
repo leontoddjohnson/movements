@@ -13,15 +13,14 @@ local NUM_SAMPLES = 128  -- max 256
 local beat_clock
 local note_queue = {}
 
-local sample_status = {}
-local STATUS = {
+-- sample_status[sample_id] playing == 1, stopped == 0
+sample_status = {}
+STATUS = {
   STOPPED = 0,
-  STARTING = 1,
-  PLAYING = 2,
-  STOPPING = 3
+  PLAYING = 1
 }
 
--- [row][col] indexed to match filenames
+-- sample IDs for each bank. use [bank][row][col].
 banks = {
   {{}, {}, {}, {}},
   {{}, {}, {}, {}},
@@ -30,11 +29,10 @@ banks = {
 }
 bank_folders = {}
 
--- currently selected sample bank
-BANK = 1
 
--- currently selected track
-TRACK = 1
+BANK = 1  -- currently selected sample bank
+TRACK = 1  -- currently selected track
+SAMPLE = nil  -- currently selected sample
 
 -----------------------------------------------------------------
 -- PARAMETERS
@@ -61,9 +59,35 @@ end
 -- INIT
 -----------------------------------------------------------------
 
-for i = 0, NUM_SAMPLES - 1 do sample_status[i] = STATUS.STOPPED end
-
 function d_sample.init()
+
+  for i = 0, NUM_SAMPLES - 1 do sample_status[i] = STATUS.STOPPED end
+
+  -- Timber callbacks
+  Timber.sample_changed_callback = function(id)
+    
+    -- Set loop default based on sample length or name
+    if Timber.samples_meta[id].manual_load and Timber.samples_meta[id].streaming == 0 and Timber.samples_meta[id].num_frames / Timber.samples_meta[id].sample_rate < 1 and string.find(string.lower(params:get("sample_" .. id)), "loop") == nil then
+      params:set("play_mode_" .. id, 3) -- One shot
+    end
+    
+    -- grid_dirty = true
+    -- callback_set_screen_dirty(id)
+  end
+
+  Timber.meta_changed_callback = function(id)
+    if Timber.samples_meta[id].playing then
+      sample_status[id] = STATUS.PLAYING
+    else
+      sample_status[id] = STATUS.STOPPED
+    end
+    -- grid_dirty = true
+    -- callback_set_screen_dirty(id)
+  end
+
+  Timber.waveform_changed_callback = callback_set_waveform_dirty
+  Timber.play_positions_changed_callback = callback_set_waveform_dirty
+  Timber.views_changed_callback = callback_set_screen_dirty
   
 end
 
@@ -159,6 +183,106 @@ function d_sample.load_folder(file, bank)
   screen_dirty = true
   grid_dirty = true
 end
+
+-----------------------------------------------------------------
+-- UTILITY
+-----------------------------------------------------------------
+
+function d_sample.note_on(sample_id, vel)
+  if (params:get('sample_' .. sample_id) ~= "-") 
+      and (sum(sample_status) < 7) then
+
+    print("note_on", sample_id)
+    vel = vel or 1
+    engine.noteOn(sample_id, MusicUtil.note_num_to_freq(60), vel, sample_id)
+    sample_status[sample_id] = 1
+
+    -- sample_status[sample_id] = STATUS.PLAYING
+    -- global_view:add_play_visual()
+    -- screen_dirty = true
+    -- grid_dirty = true
+  else
+    print("too many samples, or no sample " .. sample_id)
+  end
+end
+
+function d_sample.note_off(sample_id)
+  print("note_off", sample_id)
+  engine.noteOff(sample_id)
+  sample_status[sample_id] = 0
+  -- screen_dirty = true
+  -- grid_dirty = true
+end
+
+function d_sample.note_kill_all()
+  engine.noteKillAll()
+  -- screen_dirty = true
+  -- grid_dirty = true
+end
+
+-- calculate sum of numeric or boolean (true == 1) values
+function sum(t)
+  s = 0
+  for i=1,#t do
+    if t[i] == true then v = 1 else v = t[i] end
+    s = s + v
+  end
+  return s
+end
+
+function callback_set_screen_dirty(id)
+  -- if id == nil or id == SAMPLE then
+  --   screen_dirty = true
+  -- end
+end
+
+function callback_set_waveform_dirty(id)
+  -- if (id == nil or id == SAMPLE) then
+  --   screen_dirty = true
+  -- end
+end
+
+-----------------------------------------------------------------
+-- TIMBER (copy/paste what you need)
+-----------------------------------------------------------------
+
+-- function callback_set_screen_dirty(id)
+--   if id == nil or id == current_sample_id or pages.index == 1 then
+--     screen_dirty = true
+--   end
+-- end
+
+-- function callback_set_waveform_dirty(id)
+--   if (id == nil or id == current_sample_id) and pages.index == 3 then
+--     screen_dirty = true
+--   end
+-- end
+
+
+-- -- Timber callbacks
+-- Timber.sample_changed_callback = function(id)
+  
+--   -- Set loop default based on sample length or name
+--   if Timber.samples_meta[id].manual_load and Timber.samples_meta[id].streaming == 0 and Timber.samples_meta[id].num_frames / Timber.samples_meta[id].sample_rate < 1 and string.find(string.lower(params:get("sample_" .. id)), "loop") == nil then
+--     params:set("play_mode_" .. id, 3) -- One shot
+--   end
+  
+--   grid_dirty = true
+--   callback_set_screen_dirty(id)
+-- end
+-- Timber.meta_changed_callback = function(id)
+--   if Timber.samples_meta[id].playing and sample_status[id] ~= STATUS.STOPPING then
+--     sample_status[id] = STATUS.PLAYING
+--   elseif not Timber.samples_meta[id].playing and sample_status[id] ~= STATUS.STARTING then
+--     sample_status[id] = STATUS.STOPPED
+--   end
+--   grid_dirty = true
+--   callback_set_screen_dirty(id)
+-- end
+-- Timber.waveform_changed_callback = callback_set_waveform_dirty
+-- Timber.play_positions_changed_callback = callback_set_waveform_dirty
+-- Timber.views_changed_callback = callback_set_screen_dirty
+  
 
 local function set_sample_id(id)
   current_sample_id = id

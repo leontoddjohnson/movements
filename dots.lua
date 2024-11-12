@@ -33,13 +33,14 @@ PAGE_ID = 1
 -----------------------------------------------------------------
 
 function init()
-  -- parameters
-  d_sample.build_params()
   d_dots.build_params()
-
-  -- inits
-  d_seq.init()
   d_dots.init()
+
+  d_seq.init()
+
+  d_sample.init()
+  d_sample.build_params()
+
   d_ui.init()
   
   -- redraw clock

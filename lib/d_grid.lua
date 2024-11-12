@@ -21,8 +21,9 @@ g = grid.connect()  -- requires 8x16 grid
 
 g_brightness = {
   bank_sample_empty = 0,
-  bank_sample_loaded = 7,
-  bank_sample_selected = 15,
+  bank_sample_loaded = 3,
+  bank_sample_selected = 8,
+  bank_sample_playing = 15,
   bank_empty = 2,
   bank_loaded = 4,
   bank_selected = 8,
@@ -193,8 +194,15 @@ function d_grid.draw_bank(bank)
   for row = 1,4 do
     for col = 1,8 do
       x, y = global_xy(origin, col, row)
-      if banks[bank][row][col] then
-        g:led(x, y, g_brightness.bank_sample_loaded)
+      sample_id_ = banks[bank][row][col]
+      if sample_id_ then
+        if sample_id_ == SAMPLE then
+          g:led(x, y, g_brightness.bank_sample_selected)
+        elseif sample_status[sample_id_] == 1 then
+          g:led(x, y, g_brightness.bank_sample_playing)
+        else
+          g:led(x, y, g_brightness.bank_sample_loaded)
+        end
       else
         g:led(x, y, g_brightness.bank_sample_empty)
       end
@@ -227,6 +235,22 @@ function d_grid.sample_config_key(x, y, z)
     if z == 1 then
       origin = {13, 5}
       BANK, _ = rel_xy(origin, x, y)
+    end
+  end
+
+  -- sample selection
+  if 8 < x and y < 5 then
+    if z == 1 then
+      row_ = y
+      col_ = x - 8
+      sample_id = rowcol_id(row_ .. col_, BANK)
+
+      if sample_status[sample_id] == 1 then
+        d_sample.note_off(sample_id)
+      else
+        d_sample.note_on(sample_id, 1)
+      end
+      
     end
   end
 
