@@ -175,7 +175,7 @@ function d_sample.load_folder(file, bank)
         sample_id = sample_id + 1
 
       else
-        print("Skipped", v)
+        print("Skipped ", v)
       end
     end
   end

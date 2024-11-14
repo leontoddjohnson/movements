@@ -13,7 +13,7 @@ local Graph = require "graph"
 local FilterGraph = require "filtergraph"
 local EnvGraph = require "envgraph"
 
-local Timber = {}
+Timber = {}
 
 Timber.FileSelect = require "fileselect"
 
@@ -36,9 +36,9 @@ Timber.display = "id" -- Can be "id", "note" or "none"
 Timber.shift_mode = false
 Timber.file_select_active = false
 
-local samples_meta = {}
-local specs = {}
-local options = {}
+samples_meta = {}
+specs = {}
+options = {}
 
 local STREAMING_BUFFER_SIZE = 65536
 local MAX_FRAMES = 2000000000
