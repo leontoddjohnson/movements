@@ -236,15 +236,15 @@ function sum(t)
 end
 
 function callback_set_screen_dirty(id)
-  -- if id == nil or id == SAMPLE then
-  --   screen_dirty = true
-  -- end
+  if id == nil or id == SAMPLE then
+    screen_dirty = true
+  end
 end
 
 function callback_set_waveform_dirty(id)
-  -- if (id == nil or id == SAMPLE) then
-  --   screen_dirty = true
-  -- end
+  if (id == nil or id == SAMPLE) then
+    screen_dirty = true
+  end
 end
 
 function d_sample.set_sample_id(id)

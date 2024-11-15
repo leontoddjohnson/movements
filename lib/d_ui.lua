@@ -16,6 +16,7 @@ local UI = require "ui"
 
 d_dots = include 'lib/d_dots'
 d_sample = include 'lib/d_sample'
+d_timber = include 'lib/d_timber'
 
 -----------------------------------------------------------------
 -- NAVIGATION
@@ -104,6 +105,16 @@ function d_ui.sample_2_redraw()
 end
 
 function d_ui.sample_2_key(n,z)
+
+  -- shift mode for non-streaming loops
+  if n == 1 then
+    if z == 1 then
+      d_timber.shift_mode = true
+    else
+      d_timber.shift_mode = false
+    end
+  end
+
   waveform_view:key(n, z)
 end
 

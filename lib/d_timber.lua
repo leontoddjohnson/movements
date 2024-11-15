@@ -1658,7 +1658,7 @@ function Timber.UI.Waveform:redraw()
       end
       
     end
-    -- screen.text(info)
+    screen.text(info)
     screen.fill()
     
     -- Request waveform prompt
