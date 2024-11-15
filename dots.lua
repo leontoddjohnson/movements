@@ -33,14 +33,12 @@ PAGE_ID = 1
 -----------------------------------------------------------------
 
 function init()
-  d_dots.build_params()
-  d_dots.init()
-
-  d_seq.init()
-
-  d_sample.init()
   d_sample.build_params()
+  d_dots.build_params()
 
+  d_dots.init()
+  d_seq.init()
+  d_sample.init()
   d_ui.init()
   
   -- redraw clock
@@ -73,6 +71,7 @@ function key(n, z)
 
   d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_key"](n,z)
 
+  -- !! "screen_dirty" decided in primary function !!
 end
 
 function enc(n, d)
@@ -84,8 +83,12 @@ function enc(n, d)
       display[DISPLAY_ID]:set_index_delta(d, false)
       PAGE_ID = display[DISPLAY_ID].index
     end
+    screen_dirty = true
   end
-  screen_dirty = true
+
+  d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_enc"](n,d)
+
+  -- !! "screen_dirty" decided in primary function !!
 end
 
 function redraw_clock()

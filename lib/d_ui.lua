@@ -60,7 +60,7 @@ end
 -- 0: OVERVIEW --------------------------------------------------
 -- TODO: build this, connect with K1
 
--- 1: CONFIG --------------------------------------------------
+-- 1: TRACK -----------------------------------------------
 
 function d_ui.sample_1_redraw()
   local folder = bank_folders[BANK]
@@ -87,28 +87,28 @@ function d_ui.sample_1_key(n,z)
 
 end
 
--- 1: EMPTY ------------------------------------------------------
+function d_ui.sample_1_enc(n,d)
+  print('sample 1 enc')
+end
+
+-- 1: SAMPLE  ------------------------------------------------------
 sample_toggle = 0
 
 function d_ui.sample_2_redraw()
   d_ui.draw_nav("sample 2")
 
-  screen.move(64, 32)
-  screen.text_center('sample TWO!!')
-
-  if sample_toggle == 1 then
-    screen.move(64, 50)
-    screen.text_center('ooooh, it is 2!')
-  end
+  waveform_view:update()
+  waveform_view:redraw()
 
   screen.stroke()
 end
 
 function d_ui.sample_2_key(n,z)
-  if n == 3 and z == 1 then
-    sample_toggle = sample_toggle ~ 1
-  end
-  screen_dirty = true
+  waveform_view:key(n, z)
+end
+
+function d_ui.sample_2_enc(n,d)
+  waveform_view:enc(n, d)
 end
 
 
@@ -136,7 +136,10 @@ function d_ui.rec_1_key(n,z)
   if n == 3 and z == 1 then
     rec_toggle = rec_toggle ~ 1
   end
-  screen_dirty = true
+end
+
+function d_ui.rec_1_enc(n,d)
+  print('recording encoder')
 end
 
 
@@ -185,6 +188,10 @@ function d_ui.dots_1_key(n,z)
       d_dots:start()
     end
   end
+end
+
+function d_ui.dots_1_enc(n,d)
+  print('dots encoder')
 end
 
 return d_ui

@@ -1608,7 +1608,7 @@ function Timber.UI.Waveform:redraw()
   local play_bottom = Y + play_y_margin + PLAY_H
   local y_center = Y + H * 0.5
   
-  Timber.draw_title(self.sample_id)
+  -- Timber.draw_title(self.sample_id)
   
   -- Waveform
   screen.level(2)
@@ -1658,7 +1658,7 @@ function Timber.UI.Waveform:redraw()
       end
       
     end
-    screen.text(info)
+    -- screen.text(info)
     screen.fill()
     
     -- Request waveform prompt

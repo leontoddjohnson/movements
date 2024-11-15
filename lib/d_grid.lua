@@ -245,6 +245,8 @@ function d_grid.sample_config_key(x, y, z)
       col_ = x - 8
       sample_id = rowcol_id(row_ .. col_, BANK)
 
+      d_sample.set_sample_id(sample_id)
+
       if sample_status[sample_id] == 1 then
         d_sample.note_off(sample_id)
       else
