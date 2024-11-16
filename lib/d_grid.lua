@@ -35,7 +35,10 @@ g_brightness = {
   alt_on = 15,
   step_active = 12,
   step_inactive = 3,
-  step_empty = 0
+  step_empty = 0,
+  bar_active = 12,
+  bar_empty = 0,
+  bar_populated = 5
 }
 
 g_pages = {
@@ -127,6 +130,7 @@ end
 
 function d_grid.sample_seq_redraw()
 
+  -- draw steps
   for track = 1,7 do
     for s = 1,16 do
       step_ = (SEQ_BAR - 1) * 16 + s
@@ -139,7 +143,28 @@ function d_grid.sample_seq_redraw()
         g:led(s, track, g_brightness.step_empty)
       end
     end
-    
+  end
+
+  -- draw sequence bars
+  local last_bar = 1
+  local track_last_bar = 1
+
+  for t = 1,7 do
+    track_last_bar = n_bars(t)
+    last_bar = track_last_bar > last_bar and track_last_bar or last_bar
+  end
+
+  for bar = 1,8 do
+    -- if pattern
+    if bar <= last_bar then
+      g:led(bar, 8, g_brightness.bar_populated)
+    else
+      g:led(bar, 8, g_brightness.bar_empty)
+    end
+
+    if SEQ_BAR == bar then
+      g:led(bar, 8, g_brightness.bar_active)
+    end
   end
 
 end
@@ -151,6 +176,10 @@ function d_grid.sample_seq_key(x, y, z)
   if y < 8 and z == 1 then
     empty_step_ = pattern[y][bank[y]][step_] == 0
     pattern[y][bank[y]][step_] = empty_step_ and 1 or 0
+  end
+  
+  if y == 8 and x < 9 then
+    SEQ_BAR = x
   end
 
   grid_dirty = true
