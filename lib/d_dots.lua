@@ -8,11 +8,12 @@ local d_dots = {}
 d_dots.positions = {0, 0, 10, 10}
 d_dots.moving = false
 
+-- max loop length for dots
+local MAX_LENGTH = 10
+
 -----------------------------------------------------------------
 -- PARAMETERS
 -----------------------------------------------------------------
-
-
 
 amp_l = 0
 amp_r = 0
@@ -20,7 +21,7 @@ amp_r = 0
 function d_dots.build_params()
 
   params:add_separator('dots', 'dots')
-  params:add_number('dots_loop_length', 'loop length', 0, 10, 5,
+  params:add_number('dots_loop_length', 'loop length', 0, MAX_LENGTH, 5,
     function(p) return p:get() .. ' s' end)
   params:add_control('dots_move_time', 'dots move time', 
     controlspec.new(0.1, 1, 'lin', 0.1, 0.2, 's', 0.1))

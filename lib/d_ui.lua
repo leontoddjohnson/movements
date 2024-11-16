@@ -17,7 +17,7 @@ local UI = require "ui"
 d_dots = include 'lib/d_dots'
 d_sample = include 'lib/d_sample'
 
--- using instance loaded in dots.lua or d_sample
+-- not to overwrite instance loaded in dots.lua or d_sample
 -- d_timber = include 'lib/d_timber'
 
 -----------------------------------------------------------------
@@ -26,7 +26,7 @@ d_sample = include 'lib/d_sample'
 
 function d_ui.init()
   display = {}
-  display[1] = UI.Pages.new(1, 2)  -- sample
+  display[1] = UI.Pages.new(1, 3)  -- sample
   display[2] = UI.Pages.new(2, 1)  -- rec
   display[3] = UI.Pages.new(3, 1)  -- dots
 
@@ -95,8 +95,6 @@ function d_ui.sample_1_enc(n,d)
 end
 
 -- 1: SAMPLE  ------------------------------------------------------
-sample_toggle = 0
-
 function d_ui.sample_2_redraw()
   d_ui.draw_nav("sample 2")
 
@@ -114,15 +112,32 @@ function d_ui.sample_2_enc(n,d)
   waveform_view:enc(n, d)
 end
 
--- 2-...: ENV/LFO/ETC --------------------------------------------------
--- use d_timber.shift_mode for these ...
--- if n == 1 then
---   if z == 1 then
---     d_timber.shift_mode = true
---   else
---     d_timber.shift_mode = false
---   end
--- end
+-- 3: FILTER AMP --------------------------------------------------
+function d_ui.sample_3_redraw()
+  d_ui.draw_nav("sample 3")
+
+  screen.aa(1)
+  filter_amp_view:redraw()
+
+  screen.stroke()
+end
+
+function d_ui.sample_3_key(n,z)
+  -- for fine tuning
+  if n == 1 then
+    if z == 1 then
+      d_timber.shift_mode = true
+    else
+      d_timber.shift_mode = false
+    end
+  end
+
+  filter_amp_view:key(n, z)
+end
+
+function d_ui.sample_3_enc(n,d)
+  filter_amp_view:enc(n, d)
+end
 
 
 -----------------------------------------------------------------

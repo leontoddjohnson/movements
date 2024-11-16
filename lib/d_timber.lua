@@ -1793,7 +1793,7 @@ end
 
 function Timber.UI.FilterAmp:redraw()
   
-  Timber.draw_title(self.sample_id)
+  -- Timber.draw_title(self.sample_id)
   
   if Timber.filter_dirty then
     self.filter_graph:edit(filter_type_num_to_string(params:get("filter_type_" .. self.sample_id)), nil, params:get("filter_freq_" .. self.sample_id), params:get("filter_resonance_" .. self.sample_id))
