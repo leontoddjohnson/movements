@@ -33,8 +33,8 @@ PAGE_ID = 1
 -----------------------------------------------------------------
 
 function init()
-  d_sample.build_params()
   d_dots.build_params()
+  d_sample.build_params()
 
   d_dots.init()
   d_seq.init()

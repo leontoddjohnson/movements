@@ -178,6 +178,7 @@ end
 -- 1: MAIN ------------------------------------------------------
 
 function d_ui.dots_1_redraw()
+  screen.aa(0)
   d_ui.draw_nav("dots baby")
 
   local p = nil

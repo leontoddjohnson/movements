@@ -30,7 +30,7 @@ function d_dots.build_params()
   params:set_action('dots_check_time', update_amp_poll_times)
   params:add_control('dots_amp_threshold', 'amp threshold',
     controlspec.new(0.001, 0.2, 'lin', 0, 0.05, '', 0.05, false))
-  params:add_option('dots_input_on', 'send input to dots', {'on', 'off'}, 2)
+  params:add_option('dots_input_on', 'send input to dots', {'off', 'on'}, 1)
 
   -- TODO: see norns docs for .action_write/_read to save tables
 
