@@ -146,26 +146,7 @@ function d_grid.sample_seq_redraw()
   end
 
   -- draw sequence bars
-  local last_bar = 1
-  local track_last_bar = 1
-
-  for t = 1,7 do
-    track_last_bar = n_bars(t)
-    last_bar = track_last_bar > last_bar and track_last_bar or last_bar
-  end
-
-  for bar = 1,8 do
-    -- if pattern
-    if bar <= last_bar then
-      g:led(bar, 8, g_brightness.bar_populated)
-    else
-      g:led(bar, 8, g_brightness.bar_empty)
-    end
-
-    if SEQ_BAR == bar then
-      g:led(bar, 8, g_brightness.bar_active)
-    end
-  end
+  draw_sequence_bars(1, 8, {1, 7})
 
 end
 
@@ -410,6 +391,30 @@ function rel_xy(origin, x_global, y_global)
   x = x_global - origin[1] + 1
   y = y_global - origin[2] + 1
   return x, y
+end
+
+-- draw 8 sequence bars starting at y starting at x_start on grid
+-- only consider the tracks from track_range[1] to track_range[2]
+function draw_sequence_bars(x_start, y, track_range)
+  local last_bar = 1
+  local track_last_bar = 1
+
+  for t = track_range[1],track_range[2] do
+    track_last_bar = n_bars(t)
+    last_bar = track_last_bar > last_bar and track_last_bar or last_bar
+  end
+
+  for bar = 1,8 do
+    if bar <= last_bar then
+      g:led(x_start - 1 + bar, y, g_brightness.bar_populated)
+    else
+      g:led(x_start - 1 + bar, y, g_brightness.bar_empty)
+    end
+
+    if SEQ_BAR == bar then
+      g:led(x_start - 1 + bar, y, g_brightness.bar_active)
+    end
+  end
 end
 
 return d_grid
