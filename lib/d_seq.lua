@@ -17,17 +17,20 @@ function d_seq.init()
   clock_fraction = {1/8, 1/7, 1/6, 1/5, 1/4, 1/3, 1/2, 1, 2, 3, 4, 5, 6}
 
   -- range of options for random beats/seconds
+  -- defaults to just {1} (from `clock_fraction`)
   clock_range = {
     {8, 8}, {8, 8}, {8, 8}, {8, 8}, {8, 8}, {8, 8}, {8, 8},
     {8, 8}, {8, 8}
   }
 
-  -- offset fraction for each transport 0 <= offset < 1 (strict)
+  -- offset fraction for each transport -0.5 < offset < 0.5 (strict)
   -- does not apply to a step at t == 0 (when clock is run)
   offset = {0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+  -- time type for transport: either 'beats' or 'seconds'
   time_type = {
-    'beat', 'beat', 'beat', 'beat', 'beat', 'beat', 'beat',
-    'beat', 'beat'
+    'beats', 'beats', 'beats', 'beats', 'beats', 'beats', 'beats',
+    'beats', 'beats'
   }
 
   -- pat[track][bank][step] = 1 or 0 (mult by param value). 
@@ -72,7 +75,7 @@ function d_seq.play_transport(i)
     wait = math.random(clock_range[i][1], clock_range[i][2])
     wait = clock_fraction[wait]
 
-    if time_type[i] == 'beat' then
+    if time_type[i] == 'beats' then
       clock.sync(wait, wait * offset[i])
     else
       clock.sleep(wait, wait * offset[i])
@@ -88,6 +91,7 @@ end
 
 function d_seq.stop_transport(i)
   clock.cancel(transport[i])
+  transport[i] = nil
 end
 
 

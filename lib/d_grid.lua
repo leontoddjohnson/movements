@@ -38,7 +38,14 @@ g_brightness = {
   step_empty = 0,
   bar_active = 12,
   bar_empty = 0,
-  bar_populated = 5
+  bar_populated = 5,
+  track_playing = 10,
+  track_stopped = 0,
+  time_beats = 10,
+  time_seconds = 2,
+  clock_frac_selected = 7,
+  clock_frac_deselected = 0,
+  clock_frac_fours = 3
 }
 
 g_pages = {
@@ -49,6 +56,7 @@ g_pages = {
 G_PAGE = 'sample_config'
 PLAY_MODE = false
 ALT = false
+KEY_HOLD = {}
 
 SEQ_BAR = 1
 
@@ -169,27 +177,79 @@ end
 -----------------------------------------------------------------
 -- SAMPLE TIME
 -----------------------------------------------------------------
-temp_on = {}
-
--- temporary redraw
 function d_grid.sample_time_redraw()
 
-  for x = 1,16 do
-    g:led(x, 2, 3)
-  end
+  for t = 1,7 do
+    -- play/stop column
+    if transport[t] then
+      g:led(1, t, g_brightness.track_playing)
+    else
+      g:led(1, t, g_brightness.track_stopped)
+    end
 
-  if temp_on[1] then
-    g:led(temp_on[1], temp_on[2], 10)
+    -- beat/sec column
+    if time_type[t] == 'beats' then
+      g:led(2, t, g_brightness.time_beats)
+    else
+      g:led(2, t, g_brightness.time_seconds)
+    end
+
+    -- time rows
+    local frac = 1
+    for c = 4,16 do
+      frac = c - 3
+      -- in selected range
+      if clock_range[t][1] <= frac and frac <= clock_range[t][2] then
+        g:led(c, t, g_brightness.clock_frac_selected)
+      -- indicate 1/8, 1/4, 1, and 4
+      elseif frac == 1 or frac == 5 or frac == 8 or frac == 11 then
+        g:led(c, t, g_brightness.clock_frac_fours)
+      else
+        g:led(c, t, g_brightness.clock_frac_deselected)
+      end
+    end
   end
 
 end
 
 function d_grid.sample_time_key(x, y, z)
-  if z == 1 then
-    temp_on = {x, y}
-  else
-    temp_on = {}
+  
+  if y < 8 then
+    -- play/stop
+    if x == 1 and z == 1 then
+      if transport[y] then
+        d_seq.stop_transport(y)
+      else
+        d_seq.start_transport(y)
+      end
+    end
+
+    -- beats or seconds
+    if x == 2 and z == 1 then
+      if time_type[y] == 'beats' then
+        time_type[y] = 'seconds'
+      else
+        time_type[y] = 'beats'
+      end
+    end
+
+    -- clock fraction range
+    if x > 3 then
+      if z == 1 then
+        if KEY_HOLD[2] == y then
+          clock_range[y][1] = math.min(KEY_HOLD[1] - 3, x - 3)
+          clock_range[y][2] = math.max(KEY_HOLD[1] - 3, x - 3)
+        else          
+          clock_range[y][1] = x - 3
+          clock_range[y][2] = x - 3
+          KEY_HOLD = {x, y}
+        end
+      else
+        KEY_HOLD = {}
+      end
+    end
   end
+
   grid_dirty = true
 end
 
