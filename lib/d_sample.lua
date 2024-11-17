@@ -116,6 +116,25 @@ end
 -- UTILITY
 -----------------------------------------------------------------
 
+-- determine whether a sample is in Gated or Inf. Loop mode
+-- if it's either of these, then the sample must be "held",
+-- and it's killed when "let go".
+function play_mode_is_hold(id)
+  local play_mode
+
+  if samples_meta[id].streaming > 0 then
+    play_mode = options.PLAY_MODE_STREAMING[params:get('play_mode_' .. id)]
+  else
+    play_mode = options.PLAY_MODE_BUFFER[params:get('play_mode_' .. id)]
+  end
+
+  if play_mode == 'Gated' or play_mode == 'Inf. Loop' then
+    return true
+  else
+    return false
+  end
+end
+
 -- convert bank <rowcol> syntax to 0-indexed id for timber
 -- going L->R, Top->Bottom down 4 4x8 matrices, 0-indexed
 function rowcol_id(rowcol, bank)

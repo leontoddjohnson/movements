@@ -35,10 +35,11 @@ function init()
   d_dots.build_params()
   d_sample.build_params()
 
+  d_sample.init()
   d_dots.init()
   d_seq.init()
-  d_sample.init()
   d_ui.init()
+  d_grid.init()
   
   -- redraw clock
   screen_dirty = true

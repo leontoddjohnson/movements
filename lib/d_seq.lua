@@ -54,7 +54,7 @@ end
 -- transport 1-7 = sample
 -- transport 8-9 = rec
 function d_seq.start_transport(i)
-  if span(pattern[i][bank[i]]) > 0 then
+  if span(pattern[i][bank[i]])[2] > 0 then
     transport[i] = clock.run(d_seq.play_transport, i)
   else
     print("Pattern ".. i .. " is empty.")
@@ -103,13 +103,22 @@ end
 function random_offset(wait)
 end
 
--- index of last non-zero value in table (pattern)
-function span(p)
-  local span_ = 0
-  for i=1,#p do
-    span_ = p[i] ~= 0 and i or span_
+-- span of non-zero values in table
+-- span[0] indexes the first non-zero value (or 0 for none)
+-- span[1] indexes the last non-zero value (or 0 for none)
+function span(t)
+  local span_l = 0
+  local span_r = 0
+
+  for i=1,#t do
+    if t[i] ~= 0 and span_l == 0 then
+      span_l = i
+    end
+
+    span_r = t[i] ~= 0 and i or span_r
   end
-  return span_
+
+  return {span_l, span_r}
 end
 
 -- one empty pattern: 8 bars * 16 steps of 0 values
@@ -144,7 +153,7 @@ end
 -- last non-empty pattern bar for track i. 
 -- 1-7 for sample, 8-9 for rec
 function n_bars(i)
-  local span_ = span(pattern[i][bank[i]])
+  local span_ = span(pattern[i][bank[i]])[2]
   -- fix for when span_ == 0
   return math.abs(span_ - 1) // 16 + 1
 end

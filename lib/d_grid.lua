@@ -57,6 +57,9 @@ g_pages = {
 G_PAGE = 'sample_config'
 PLAY_MODE = false
 ALT = false
+
+-- keys held [y][x] or [row][col]
+-- 1 == held and 0 == not held
 KEY_HOLD = {}
 
 SEQ_BAR = 1  -- current sequence bar
@@ -68,10 +71,13 @@ BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
 -----------------------------------------------------------------
 
 function d_grid.init()
-  -- -- sample.config sections
-  -- g_map.sample.config = {
-  --   origin = 
-  -- }
+  -- key_hold map
+  for r = 1,8 do
+    KEY_HOLD[r] = {}
+    for c = 1,16 do
+      KEY_HOLD[r][c] = 0
+    end
+  end
 end
 
 
@@ -239,16 +245,12 @@ function d_grid.sample_time_key(x, y, z)
     -- clock fraction range
     if x > 3 then
       if z == 1 then
-        if KEY_HOLD[2] == y then
-          clock_range[y][1] = math.min(KEY_HOLD[1] - 3, x - 3)
-          clock_range[y][2] = math.max(KEY_HOLD[1] - 3, x - 3)
-        else          
-          clock_range[y][1] = x - 3
-          clock_range[y][2] = x - 3
-          KEY_HOLD = {x, y}
-        end
+        KEY_HOLD[y][x] = 1
+        hold_span = span(KEY_HOLD[y])
+        clock_range[y][1] = hold_span[1] - 3
+        clock_range[y][2] = hold_span[2] - 3
       else
-        KEY_HOLD = {}
+        KEY_HOLD[y][x] = 0
       end
     end
   end
@@ -279,12 +281,12 @@ function d_grid.draw_bank(bank)
       else
         g:led(x, y, g_brightness.bank_sample_empty)
       end
-    end
-  end
 
-  -- temporarily brighten selected sample
-  if KEY_HOLD[1] and 8 < KEY_HOLD[1] and KEY_HOLD[2] < 5 then
-    g:led(KEY_HOLD[1], KEY_HOLD[2], g_brightness.bank_sample_selected)
+      -- temporarily brighten selected sample
+      if KEY_HOLD[y][x] == 1 and 8 < x and y < 5 then
+        g:led(x, y, g_brightness.bank_sample_selected)
+      end
+    end
   end
 
   -- draw bank indicators
@@ -318,12 +320,12 @@ function d_grid.sample_config_key(x, y, z)
 
   -- sample selection
   if 8 < x and y < 5 then
+    row_ = y
+    col_ = x - 8
+    sample_id = rowcol_id(row_ .. col_, BANK)
+    
     if z == 1 then
-      KEY_HOLD = {x, y}
-
-      row_ = y
-      col_ = x - 8
-      sample_id = rowcol_id(row_ .. col_, BANK)
+      KEY_HOLD[y][x] = 1
 
       d_sample.set_sample_id(sample_id)
       
@@ -336,7 +338,12 @@ function d_grid.sample_config_key(x, y, z)
       end
 
     else
-      KEY_HOLD = {}
+      
+      if PLAY_MODE and sample_status[sample_id] > 0 and play_mode_is_hold(sample_id) then
+        d_sample.note_off(sample_id)
+      end
+      
+      KEY_HOLD[y][x] = 0
     end
   end
 
@@ -489,6 +496,16 @@ function draw_sequence_bars(x_start, y, track_range)
       g:led(x_start - 1 + bar, y, g_brightness.bar_active)
     end
   end
+end
+
+-- for a "2-dimensional" table (array), get the "column" values
+-- `t` is the table, and `col` is the column index.
+function array_column(t, col)
+  local c = {}
+  for i=1,#t do
+    table.insert(c, t[i][col])
+  end
+  return c
 end
 
 return d_grid
