@@ -21,9 +21,10 @@ g = grid.connect()  -- requires 8x16 grid
 
 g_brightness = {
   bank_sample_empty = 0,
-  bank_sample_loaded = 3,
-  bank_sample_selected = 8,
-  bank_sample_playing = 15,
+  bank_sample_loaded = 2,
+  bank_sample_selected = 15,
+  bank_sample_tracked = 5,
+  bank_sample_playing = 10,
   bank_empty = 2,
   bank_loaded = 4,
   bank_selected = 8,
@@ -58,7 +59,9 @@ PLAY_MODE = false
 ALT = false
 KEY_HOLD = {}
 
-SEQ_BAR = 1
+SEQ_BAR = 1  -- current sequence bar
+TRACK = 1    -- selected (sample) track
+BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
 
 -----------------------------------------------------------------
 -- INIT
@@ -266,10 +269,10 @@ function d_grid.draw_bank(bank)
       x, y = global_xy(origin, col, row)
       sample_id_ = banks[bank][row][col]
       if sample_id_ then
-        if sample_id_ == SAMPLE then
-          g:led(x, y, g_brightness.bank_sample_selected)
-        elseif sample_status[sample_id_] == 1 then
+        if sample_status[sample_id_] == 1 then
           g:led(x, y, g_brightness.bank_sample_playing)
+        elseif sample_track[bank][row][col] == TRACK then
+          g:led(x, y, g_brightness.bank_sample_tracked)
         else
           g:led(x, y, g_brightness.bank_sample_loaded)
         end
@@ -277,6 +280,11 @@ function d_grid.draw_bank(bank)
         g:led(x, y, g_brightness.bank_sample_empty)
       end
     end
+  end
+
+  -- temporarily brighten selected sample
+  if KEY_HOLD[1] and 8 < KEY_HOLD[1] and KEY_HOLD[2] < 5 then
+    g:led(KEY_HOLD[1], KEY_HOLD[2], g_brightness.bank_sample_selected)
   end
 
   -- draw bank indicators
@@ -311,18 +319,24 @@ function d_grid.sample_config_key(x, y, z)
   -- sample selection
   if 8 < x and y < 5 then
     if z == 1 then
+      KEY_HOLD = {x, y}
+
       row_ = y
       col_ = x - 8
       sample_id = rowcol_id(row_ .. col_, BANK)
 
       d_sample.set_sample_id(sample_id)
-
-      if sample_status[sample_id] == 1 then
-        d_sample.note_off(sample_id)
-      else
-        d_sample.note_on(sample_id, 1)
-      end
       
+      if PLAY_MODE then
+        if sample_status[sample_id] == 1 then
+          d_sample.note_off(sample_id)
+        else
+          d_sample.note_on(sample_id, 1)
+        end
+      end
+
+    else
+      KEY_HOLD = {}
     end
   end
 

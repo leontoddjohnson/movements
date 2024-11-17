@@ -29,6 +29,17 @@ banks = {
 }
 bank_folders = {}
 
+-- track assigned for sample [bank][row][col] = track # (1-7)
+-- a track can only have one bank of samples loaded at once
+sample_track = {
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}}
+}
+
+-- samples to cycle through for each track
+track_samples = {{}, {}, {}, {}, {}, {}, {}}
 
 BANK = 1  -- currently selected sample bank
 TRACK = 1  -- currently selected track
