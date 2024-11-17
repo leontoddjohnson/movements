@@ -10,7 +10,6 @@ engine.name = "d_Timber"
 -- script components
 d_dots = include 'lib/d_dots'
 -- d_rec = include 'lib/d_rec'
-d_timber = include 'lib/d_timber'
 d_sample = include 'lib/d_sample'
 d_seq = include 'lib/d_seq'
 d_grid = include 'lib/d_grid'

@@ -14,12 +14,6 @@ local d_ui = {}
 
 local UI = require "ui"
 
-d_dots = include 'lib/d_dots'
-d_sample = include 'lib/d_sample'
-
--- not to overwrite instance loaded in dots.lua or d_sample
--- d_timber = include 'lib/d_timber'
-
 -----------------------------------------------------------------
 -- NAVIGATION
 -----------------------------------------------------------------

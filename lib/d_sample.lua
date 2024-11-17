@@ -96,9 +96,9 @@ function d_sample.init()
     -- callback_set_screen_dirty(id)
   end
 
-  Timber.waveform_changed_callback = callback_set_waveform_dirty
-  Timber.play_positions_changed_callback = callback_set_waveform_dirty
-  Timber.views_changed_callback = callback_set_screen_dirty
+  Timber.waveform_changed_callback = d_sample.callback_set_waveform_dirty
+  Timber.play_positions_changed_callback = d_sample.callback_set_waveform_dirty
+  Timber.views_changed_callback = d_sample.callback_set_screen_dirty
 
   -- Timber views  ----------------------------------------------
   -- sample_setup_view = Timber.UI.SampleSetup.new(0, nil)
@@ -246,13 +246,13 @@ function sum(t)
   return s
 end
 
-function callback_set_screen_dirty(id)
+function d_sample.callback_set_screen_dirty(id)
   if id == nil or id == SAMPLE then
     screen_dirty = true
   end
 end
 
-function callback_set_waveform_dirty(id)
+function d_sample.callback_set_waveform_dirty(id)
   if (id == nil or id == SAMPLE) then
     screen_dirty = true
   end
