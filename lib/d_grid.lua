@@ -24,7 +24,7 @@ g_brightness = {
   bank_sample_loaded = 2,
   bank_sample_selected = 15,
   bank_sample_tracked = 5,
-  bank_sample_playing = 10,
+  bank_sample_cued = 9,
   bank_empty = 2,
   bank_loaded = 4,
   bank_selected = 8,
@@ -40,6 +40,7 @@ g_brightness = {
   bar_active = 12,
   bar_empty = 0,
   bar_populated = 5,
+  track_selected = 8,
   track_playing = 10,
   track_stopped = 0,
   time_beats = 10,
@@ -271,10 +272,16 @@ function d_grid.draw_bank(bank)
       x, y = global_xy(origin, col, row)
       sample_id_ = banks[bank][row][col]
       if sample_id_ then
-        if sample_status[sample_id_] == 1 then
-          g:led(x, y, g_brightness.bank_sample_playing)
-        elseif sample_track[bank][row][col] == TRACK then
+        if tab.contains(track_samples_cue[TRACK], sample_id_) then
+          g:led(x, y, g_brightness.bank_sample_cued)
+        elseif sample_track[bank][row][col] then
           g:led(x, y, g_brightness.bank_sample_tracked)
+
+          -- find track
+          if KEY_HOLD[y][x] == 1 then
+            g:led(8, sample_track[bank][row][col], 
+                  g_brightness.bank_sample_tracked)
+          end
         else
           g:led(x, y, g_brightness.bank_sample_loaded)
         end
@@ -302,6 +309,14 @@ function d_grid.draw_bank(bank)
     end
   end
 
+  -- track selected for bank
+  for y = 1,7 do
+    if y == TRACK then
+      g:led(8, y, g_brightness.track_selected)
+    end
+  end
+  
+
 end
 
 function d_grid.sample_config_redraw()
@@ -318,6 +333,17 @@ function d_grid.sample_config_key(x, y, z)
     end
   end
 
+  -- track selection
+  if x == 8 and y < 8 then
+    if z == 1 then
+      -- load onto track (only if track already selected)
+      if TRACK == y and ALT then
+        d_sample.load_track_samples(TRACK)
+      end
+      TRACK = y
+    end
+  end
+
   -- sample selection
   if 8 < x and y < 5 then
     row_ = y
@@ -326,15 +352,29 @@ function d_grid.sample_config_key(x, y, z)
     
     if z == 1 then
       KEY_HOLD[y][x] = 1
-
       d_sample.set_sample_id(sample_id)
       
+      -- play sample
       if PLAY_MODE then
         if sample_status[sample_id] == 1 then
           d_sample.note_off(sample_id)
         else
           d_sample.note_on(sample_id, 1)
         end
+
+      -- cue sample for track if it exists and is not already cued
+      -- it also can't already be assigned
+      elseif ALT and not tab.contains(track_samples_cue[TRACK], sample_id) and banks[BANK][row_][col_] and not sample_track[BANK][row_][col_] then
+        table.insert(track_samples_cue[TRACK], sample_id)
+      
+      -- remove from cue if re-selected
+      elseif ALT and tab.contains(track_samples_cue[TRACK], sample_id) then
+        table.remove(track_samples_cue[TRACK], 
+                     index_of(track_samples_cue[TRACK], sample_id))
+      
+      -- unassign track to sample
+      elseif ALT and sample_track[BANK][row_][col_] == TRACK then
+        sample_track[BANK][row_][col_] = nil
       end
 
     else
@@ -506,6 +546,16 @@ function array_column(t, col)
     table.insert(c, t[i][col])
   end
   return c
+end
+
+-- return index of value in table
+function index_of(array, value)
+  for i, v in ipairs(array) do
+      if v == value then
+          return i
+      end
+  end
+  return nil
 end
 
 return d_grid

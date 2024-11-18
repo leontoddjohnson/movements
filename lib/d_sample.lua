@@ -40,6 +40,7 @@ sample_track = {
 
 -- samples to cycle through for each track
 track_samples = {{}, {}, {}, {}, {}, {}, {}}
+track_samples_cue = {{}, {}, {}, {}, {}, {}, {}}
 
 BANK = 1  -- currently selected sample bank
 TRACK = 1  -- currently selected track
@@ -135,7 +136,7 @@ function play_mode_is_hold(id)
   end
 end
 
--- convert bank <rowcol> syntax to 0-indexed id for timber
+-- convert *string* "<rowcol>" syntax to 0-indexed id for timber
 -- going L->R, Top->Bottom down 4 4x8 matrices, 0-indexed
 function rowcol_id(rowcol, bank)
   rowcol = tonumber(rowcol)
@@ -145,8 +146,7 @@ function rowcol_id(rowcol, bank)
   return 32 * (bank - 1) + bank_id
 end
 
--- TODO: double triple verify these ...
--- return a string <bankrowcol> from the id number
+-- return triple: bank, row, col from the id number
 function id_bankrowcol(id)
   local bank = (id // 32) + 1
   local row = (id - (bank - 1) * 32) // 8 + 1
@@ -221,6 +221,17 @@ function d_sample.load_folder(file, bank)
   bank_folders[bank] = folder_name
   screen_dirty = true
   grid_dirty = true
+end
+
+-- load `track_samples` from `track_samples_cue`, and clear out cue
+-- loads from *current bank*
+function d_sample.load_track_samples(track)
+  track_samples[track] = track_samples_cue[track]
+  track_samples_cue[track] = {}
+  for i=1,#track_samples[track] do
+    b_, row_, col_ = id_bankrowcol(track_samples[track][i])
+    sample_track[BANK][row_][col_] = track
+  end
 end
 
 function d_sample.note_on(sample_id, vel)
