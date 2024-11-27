@@ -299,7 +299,7 @@ function d_grid.draw_bank(bank)
       x, y = global_xy(origin, col, row)
       sample_id_ = banks[bank][row][col]
       if sample_id_ then
-        if tab.contains(track_samples_cue[TRACK], sample_id_) then
+        if tab.contains(track_pool_cue[TRACK], sample_id_) then
           g:led(x, y, g_brightness.bank_sample_cued)
         elseif sample_track[bank][row][col] then
           if TRACK == sample_track[bank][row][col] then
@@ -308,7 +308,7 @@ function d_grid.draw_bank(bank)
             g:led(x, y, g_brightness.bank_sample_tracked)
           end
 
-          -- find track
+          -- show track that sample is loaded into
           if KEY_HOLD[y][x] == 1 then
             g:led(8, sample_track[bank][row][col], 
                   g_brightness.bank_sample_tracked)
@@ -317,17 +317,16 @@ function d_grid.draw_bank(bank)
           g:led(x, y, g_brightness.bank_sample_loaded)
         end
         
-        if sample_status[sample_id_] == 1 then
+        if sample_status[sample_id_] == 1 and PLAY_MODE then
           g:led(x, y, g_brightness.bank_sample_playing)
+        end
+
+        if sample_id_ == SAMPLE and not PLAY_MODE then
+          g:led(x, y, g_brightness.bank_sample_selected)
         end
 
       else
         g:led(x, y, g_brightness.bank_sample_empty)
-      end
-
-      -- temporarily brighten selected sample
-      if KEY_HOLD[y][x] == 1 and 8 < x and y < 5 then
-        g:led(x, y, g_brightness.bank_sample_selected)
       end
     end
   end
@@ -336,10 +335,11 @@ function d_grid.draw_bank(bank)
   origin = {13, 5}
   for bank_ = 1,4 do
     x, y = global_xy(origin, bank_, 1)
-    if bank_folders[bank_] then
-      g:led(x, y, g_brightness.bank_loaded)
-    elseif BANK == bank_ then
+
+    if BANK == bank_ then
       g:led(x, y, g_brightness.bank_selected)
+    elseif bank_folders[bank_] then
+      g:led(x, y, g_brightness.bank_loaded)
     else
       g:led(x, y, g_brightness.bank_empty)
     end
@@ -374,7 +374,7 @@ function d_grid.sample_config_key(x, y, z)
     if z == 1 then
       -- load onto track (only if track already selected)
       if TRACK == y and ALT then
-        d_sample.load_track_samples(TRACK)
+        d_seq.load_track_pool(TRACK)
       end
       TRACK = y
     end
@@ -400,13 +400,13 @@ function d_grid.sample_config_key(x, y, z)
 
       -- cue sample for track if it exists and is not already cued
       -- it also can't already be assigned
-      elseif ALT and not tab.contains(track_samples_cue[TRACK], sample_id) and banks[BANK][row_][col_] and not sample_track[BANK][row_][col_] then
-        table.insert(track_samples_cue[TRACK], sample_id)
+      elseif ALT and not tab.contains(track_pool_cue[TRACK], sample_id) and banks[BANK][row_][col_] and not sample_track[BANK][row_][col_] then
+        table.insert(track_pool_cue[TRACK], sample_id)
       
       -- remove from cue if re-selected
-      elseif ALT and tab.contains(track_samples_cue[TRACK], sample_id) then
-        table.remove(track_samples_cue[TRACK], 
-                     index_of(track_samples_cue[TRACK], sample_id))
+      elseif ALT and tab.contains(track_pool_cue[TRACK], sample_id) then
+        table.remove(track_pool_cue[TRACK], 
+                     index_of(track_pool_cue[TRACK], sample_id))
       
       -- unassign track to sample
       elseif ALT and sample_track[BANK][row_][col_] == TRACK then

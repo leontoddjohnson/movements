@@ -2,16 +2,11 @@
 
 d_sample = {}
 
+local Timber = include "lib/d_timber"
 local MusicUtil = require "musicutil"
 local Formatters = require "formatters"
-local BeatClock = require "beatclock"
-
-local Timber = include "lib/d_timber"
 
 local NUM_SAMPLES = 128  -- max 256
-
-local beat_clock
-local note_queue = {}
 
 -- sample_status[sample_id] playing == 1, stopped == 0
 sample_status = {}
@@ -29,19 +24,6 @@ banks = {
 }
 bank_folders = {}
 
--- track assigned for sample [bank][row][col] = track # (1-7)
--- a track can only have one bank of samples loaded at once
-sample_track = {
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}}
-}
-
--- samples to cycle through for each track
-track_samples = {{}, {}, {}, {}, {}, {}, {}}
-track_samples_cue = {{}, {}, {}, {}, {}, {}, {}}
-
 BANK = 1  -- currently selected sample bank
 TRACK = 1  -- currently selected track
 SAMPLE = nil  -- currently selected sample
@@ -54,7 +36,7 @@ function d_sample.build_params()
 
   Timber.add_params()
 
-  params:add_separator("Samples")
+  params:add_separator("Timber Samples")
   
   -- Index zero to align with MIDI note numbers
   for i = 0, NUM_SAMPLES - 1 do
@@ -224,22 +206,11 @@ function d_sample.load_folder(file, bank)
   grid_dirty = true
 end
 
--- load `track_samples` from `track_samples_cue`, and clear out cue
--- loads from *current bank*
-function d_sample.load_track_samples(track)
-  track_samples[track] = track_samples_cue[track]
-  track_samples_cue[track] = {}
-  for i=1,#track_samples[track] do
-    b_, row_, col_ = id_bankrowcol(track_samples[track][i])
-    sample_track[BANK][row_][col_] = track
-  end
-end
-
 function d_sample.note_on(sample_id, vel)
-  if (params:get('sample_' .. sample_id) ~= "-") 
+  if sample_id ~= nil and (params:get('sample_' .. sample_id) ~= "-") 
       and (sum(sample_status) < 7) then
 
-    print("note_on", sample_id)
+    print("note_on: " .. sample_id)
     vel = vel or 1
     engine.noteOn(sample_id, MusicUtil.note_num_to_freq(60), vel, sample_id)
     sample_status[sample_id] = 1
@@ -248,15 +219,19 @@ function d_sample.note_on(sample_id, vel)
     -- global_view:add_play_visual()
     -- screen_dirty = true
     -- grid_dirty = true
+  elseif sample_id == nil then
+    print("sample_id is nil, likely nothing loaded in the sample pool.")
   else
-    print("no sample " .. sample_id .. " OR too many already playing")
+    print("no sample " .. sample_id .. " OR too many already playing.")
   end
 end
 
 function d_sample.note_off(sample_id)
-  print("note_off", sample_id)
+  print("note_off: " .. sample_id)
   engine.noteOff(sample_id)
-  sample_status[sample_id] = 0
+  if sample_id ~= nil then
+    sample_status[sample_id] = 0
+  end
   -- screen_dirty = true
   -- grid_dirty = true
 end
@@ -298,11 +273,6 @@ function d_sample.set_sample_id(id)
   -- mod_env_view:set_sample_id(id)
   -- lfos_view:set_sample_id(id)
   -- mod_matrix_view:set_sample_id(id)
-end
-
--- play the cued sample for track `track`
-function d_sample.play_track_sample(track)
-  print("playing sample for track ".. track)
 end
 
 

@@ -2,9 +2,34 @@
 
 d_seq = {}
 
+-- track assigned for sample [bank][row][col] = track # (1-7)
+-- a track can only have one bank of samples loaded at once
+sample_track = {
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}}
+}
+
+-- track assigned for slice [bank][row][col] = track # (8-11)
+-- a track can only have one bank of slices loaded at once
+slice_track = {
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}}
+}
+
+-----------------------------------------------------------------
+-- BUILD PARAMETERS
+-----------------------------------------------------------------
+
 function d_seq.build_params()
-  -- TODO: add bank_sample play options
+  p_options.PLAY_ORDER = {'forward', 'reverse', 'random'}
+
   -- Forward/reverse (in order of selection), random
+  params:add_option('sample_play_order', 'sample play order',
+                    p_options.PLAY_ORDER, 1)
 end
 
 -----------------------------------------------------------------
@@ -12,6 +37,11 @@ end
 -----------------------------------------------------------------
 
 function d_seq.init()
+  -- options (samples or slices) to cycle through for each track
+  track_pool = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
+  track_pool_cue = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
+  track_pool_i = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  -- init'd with 0s
+
   -- clock routines for each track
   transport = {}
 
@@ -72,12 +102,7 @@ function d_seq.play_transport(i)
   while true do
     -- step starts at 0, then waits before next step
     if pattern[i][bank[i]][step[i]] > 0 then
-      if i < 8 then
-        d_sample.play_track_sample(i)
-      else
-        d_rec.play_track_slice(i)
-      end
-      
+      d_seq.play_track_pool(i)
     end
 
     -- choose clock_fraction index from selected option range
@@ -101,12 +126,65 @@ end
 function d_seq.stop_transport(i)
   clock.cancel(transport[i])
   transport[i] = nil
+
+  -- stop anything still playing
+  pool_ = track_pool[i]
+  pool_i = track_pool_i[i]
+
+  if i < 8 then
+    d_sample.note_off(pool_[pool_i])
+  end
+  
 end
 
 
 -----------------------------------------------------------------
 -- UTILITY
 -----------------------------------------------------------------
+
+-- load `track_pool` from `track_pool_cue`, and clear out cue.
+-- this loads for *current bank*
+function d_seq.load_track_pool(track)
+  track_pool[track] = track_pool_cue[track]
+  track_pool_cue[track] = {}
+  for i=1,#track_pool[track] do
+    b_, row_, col_ = id_bankrowcol(track_pool[track][i])
+    if track < 8 then
+      sample_track[BANK][row_][col_] = track
+    else
+      slice_track[BANK][row_][col_] = track
+    end
+  end
+end
+
+-- play the cue from the track pool, and cycle through
+function d_seq.play_track_pool(track)
+  pool_ = track_pool[track]
+  pool_i = track_pool_i[track]
+  order_ = params:get('sample_play_order')
+  order_ = p_options.PLAY_ORDER[order_]
+
+  if order_ == 'forward' then
+    next_pool_i = util.wrap(pool_i + 1, 1, #pool_)
+  elseif order_ == 'backward' then
+    next_pool_i = util.wrap(pool_i - 1, 1, #pool_)
+  elseif order_ == 'random' then
+    next_pool_i = math.random(#pool_)
+  end
+
+  -- SAMPLES
+  if track < 8 then
+    -- tracks only play one thing at a time
+    if pool_i > 0 then d_sample.note_off(pool_[pool_i]) end
+    d_sample.note_on(pool_[next_pool_i])
+    track_pool_i[track] = next_pool_i
+
+  -- SLICES
+  else
+    print('play recorded slice')
+  end
+  
+end
 
 -- TODO: figure this one out ...
 function random_offset(wait)

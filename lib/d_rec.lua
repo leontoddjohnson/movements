@@ -6,8 +6,11 @@
 
 local d_rec = {}
 
+PARTITION = 1  -- currently selected record partition
+SLICE = nil  -- currently selected slice
+
 -----------------------------------------------------------------
--- INIT
+-- BUILD PARAMETERS
 -----------------------------------------------------------------
 
 
@@ -15,10 +18,7 @@ local d_rec = {}
 -- INIT
 -----------------------------------------------------------------
 
--- play the next cued slice for track `track`
-function d_rec.play_track_slice(track)
-  print("playing slice for track ".. track)
-end
+-- TODO : instead of sample_ids, use {start_time, stop_time}
 
 
 return d_rec

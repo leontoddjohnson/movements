@@ -19,6 +19,8 @@ REDRAW_FRAMERATE = 30  -- same for grid and screen
 DISPLAY_ID = 1
 PAGE_ID = 1
 
+-- parameter options for all non-timber parameters
+p_options = {}
 
 -----------------------------------------------------------------
 -- INIT
@@ -26,6 +28,7 @@ PAGE_ID = 1
 
 function init()
   d_sample.build_params()
+  d_seq.build_params()
 
   d_sample.init()
   d_seq.init()
