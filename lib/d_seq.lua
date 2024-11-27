@@ -175,6 +175,7 @@ function d_seq.play_track_pool(track)
   -- SAMPLES
   if track < 8 then
     -- tracks only play one thing at a time
+    -- TODO: figure out gated situation ...
     if pool_i > 0 then d_sample.note_off(pool_[pool_i]) end
     d_sample.note_on(pool_[next_pool_i])
     track_pool_i[track] = next_pool_i
