@@ -8,15 +8,6 @@
 
 local d_grid = {}
 
-local g_map = {
-  sample_seq = {},
-  sample_time = {},
-  sample_config = {},
-  sample_levels = {},
-  rec_config = {},
-  rec_levels = {}
-}
-
 g = grid.connect()  -- requires 8x16 grid
 
 g_brightness = {
@@ -24,7 +15,8 @@ g_brightness = {
   bank_sample_loaded = 2,
   bank_sample_selected = 15,
   bank_sample_playing = 12,
-  bank_sample_tracked = 5,
+  bank_sample_tracked = 4,
+  bank_sample_current_track = 6,
   bank_sample_cued = 9,
   bank_empty = 2,
   bank_loaded = 4,
@@ -310,7 +302,11 @@ function d_grid.draw_bank(bank)
         if tab.contains(track_samples_cue[TRACK], sample_id_) then
           g:led(x, y, g_brightness.bank_sample_cued)
         elseif sample_track[bank][row][col] then
-          g:led(x, y, g_brightness.bank_sample_tracked)
+          if TRACK == sample_track[bank][row][col] then
+            g:led(x, y, g_brightness.bank_sample_current_track)
+          else
+            g:led(x, y, g_brightness.bank_sample_tracked)
+          end
 
           -- find track
           if KEY_HOLD[y][x] == 1 then
@@ -349,7 +345,7 @@ function d_grid.draw_bank(bank)
     end
   end
 
-  -- track selected for bank
+  -- track selected for bank (overwrites the "find track")
   for y = 1,7 do
     if y == TRACK then
       g:led(8, y, g_brightness.track_selected)

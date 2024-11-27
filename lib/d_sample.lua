@@ -93,7 +93,7 @@ function d_sample.init()
     else
       sample_status[id] = STATUS.STOPPED
     end
-    
+
     grid_dirty = true
     d_sample.callback_set_screen_dirty(id)
   end

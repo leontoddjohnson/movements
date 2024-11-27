@@ -2,6 +2,11 @@
 
 d_seq = {}
 
+function d_seq.build_params()
+  -- TODO: add bank_sample play options
+  -- Forward/reverse (in order of selection), random
+end
+
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
