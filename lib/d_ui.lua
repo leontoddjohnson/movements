@@ -100,10 +100,12 @@ end
 
 function d_ui.sample_2_key(n,z)
   waveform_view:key(n, z)
+  screen_dirty = true
 end
 
 function d_ui.sample_2_enc(n,d)
   waveform_view:enc(n, d)
+  screen_dirty = true
 end
 
 -- 3: FILTER AMP --------------------------------------------------
@@ -127,10 +129,12 @@ function d_ui.sample_3_key(n,z)
   end
 
   filter_amp_view:key(n, z)
+  screen_dirty = true
 end
 
 function d_ui.sample_3_enc(n,d)
   filter_amp_view:enc(n, d)
+  screen_dirty = true
 end
 
 
@@ -157,6 +161,7 @@ end
 function d_ui.rec_1_key(n,z)
   if n == 3 and z == 1 then
     rec_toggle = rec_toggle ~ 1
+    screen_dirty = true
   end
 end
 
@@ -183,13 +188,14 @@ function d_ui.delay_1_redraw()
   screen.stroke()
 end
 
-function d_ui.delay_key(n,z)
+function d_ui.delay_1_key(n,z)
   if n == 3 and z == 1 then
     rec_toggle = rec_toggle ~ 1
+    screen_dirty = true
   end
 end
 
-function d_ui.delay_enc(n,d)
+function d_ui.delay_1_enc(n,d)
   print('recording encoder')
 end
 
