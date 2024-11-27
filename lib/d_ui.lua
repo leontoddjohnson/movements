@@ -22,10 +22,10 @@ function d_ui.init()
   display = {}
   display[1] = UI.Pages.new(1, 3)  -- sample
   display[2] = UI.Pages.new(2, 1)  -- rec
-  display[3] = UI.Pages.new(3, 1)  -- dots
+  display[3] = UI.Pages.new(3, 1)  -- delay
 
   -- display info in order
-  display_names = {'sample', 'rec', 'dots'}
+  display_names = {'sample', 'rec', 'delay'}
 end
 
 -----------------------------------------------------------------
@@ -120,9 +120,9 @@ function d_ui.sample_3_key(n,z)
   -- for fine tuning
   if n == 1 then
     if z == 1 then
-      d_timber.shift_mode = true
+      Timber.shift_mode = true
     else
-      d_timber.shift_mode = false
+      Timber.shift_mode = false
     end
   end
 
@@ -166,55 +166,31 @@ end
 
 
 -----------------------------------------------------------------
--- DOTS
+-- DELAY
 -----------------------------------------------------------------
 
 -- 1: MAIN ------------------------------------------------------
+function d_ui.delay_1_redraw()
+  d_ui.draw_nav("delay 1")
+  screen.move(64, 32)
+  screen.text_center('delay!')
 
-function d_ui.dots_1_redraw()
-  screen.aa(0)
-  d_ui.draw_nav("dots baby")
-
-  local p = nil
-  local baseline_y = 30
-
-  -- baseline
-  screen.move(14, baseline_y)
-  screen.line(114, baseline_y)
-
-  -- voice position (above or below line)
-  for i=1,4 do
-    p = d_dots.positions[i]
-    p = util.linlin(0, params:get('dots_loop_length'), 14, 114, p)
-
-    screen.move(p, baseline_y)
-    lr = i % 2 == 0 and 1 or -1
-
-    if i < 3 then
-      screen.line_rel(0, 12 * lr)
-    else
-      screen.move_rel(0, 6 * lr)
-      screen.text('.')
-    end
+  if rec_toggle == 1 then
+    screen.move(64, 50)
+    screen.text_center('oh yeaaah!')
   end
-
-  -- TODO: contrived waveform using amp poll?
 
   screen.stroke()
 end
 
-function d_ui.dots_1_key(n,z)
+function d_ui.delay_key(n,z)
   if n == 3 and z == 1 then
-    if d_dots.moving then
-      d_dots:stop()
-    else
-      d_dots:start()
-    end
+    rec_toggle = rec_toggle ~ 1
   end
 end
 
-function d_ui.dots_1_enc(n,d)
-  print('dots encoder')
+function d_ui.delay_enc(n,d)
+  print('recording encoder')
 end
 
 return d_ui

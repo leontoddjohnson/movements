@@ -8,7 +8,6 @@
 engine.name = "d_Timber"
 
 -- script components
-d_dots = include 'lib/d_dots'
 -- d_rec = include 'lib/d_rec'
 d_sample = include 'lib/d_sample'
 d_seq = include 'lib/d_seq'
@@ -21,22 +20,14 @@ DISPLAY_ID = 1
 PAGE_ID = 1
 
 
-
------------------------------------------------------------------
--- TIMBER
------------------------------------------------------------------
-
-
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
 
 function init()
-  d_dots.build_params()
   d_sample.build_params()
 
   d_sample.init()
-  d_dots.init()
   d_seq.init()
   d_ui.init()
   d_grid.init()
