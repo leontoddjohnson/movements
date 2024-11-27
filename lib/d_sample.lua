@@ -300,5 +300,10 @@ function d_sample.set_sample_id(id)
   -- mod_matrix_view:set_sample_id(id)
 end
 
+-- play the cued sample for track `track`
+function d_sample.play_track_sample(track)
+  print("playing sample for track ".. track)
+end
+
 
 return d_sample

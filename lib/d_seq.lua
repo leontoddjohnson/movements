@@ -16,7 +16,7 @@ function d_seq.init()
   transport = {}
 
   -- current *active* step/bar for each track
-  step = {1, 1, 1, 1, 1, 1, 1, 1, 1}
+  step = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
   -- options for num beats/secs per step for each track
   clock_fraction = {1/8, 1/7, 1/6, 1/5, 1/4, 1/3, 1/2, 1, 2, 3, 4, 5, 6}
@@ -25,17 +25,17 @@ function d_seq.init()
   -- defaults to just {1} (from `clock_fraction`)
   clock_range = {
     {8, 8}, {8, 8}, {8, 8}, {8, 8}, {8, 8}, {8, 8}, {8, 8},
-    {8, 8}, {8, 8}
+    {8, 8}, {8, 8}, {8, 8}, {8, 8}
   }
 
   -- offset fraction for each transport -0.5 < offset < 0.5 (strict)
   -- does not apply to a step at t == 0 (when clock is run)
-  offset = {0, 0, 0, 0, 0, 0, 0, 0, 0}
+  offset = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
   -- time type for transport: either 'beats' or 'seconds'
   time_type = {
     'beats', 'beats', 'beats', 'beats', 'beats', 'beats', 'beats',
-    'beats', 'beats'
+    'beats', 'beats', 'beats', 'beats'
   }
 
   -- pat[track][bank][step] = 1 or 0 (mult by param value). 
@@ -46,8 +46,8 @@ function d_seq.init()
     amp = {}
   }
 
-  -- current pattern bank loaded (rec tracks always "bank 1")
-  bank = {1, 1, 1, 1, 1, 1, 1, 1, 1}
+  -- current pattern bank loaded
+  bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
 end
 
@@ -57,7 +57,7 @@ end
 -----------------------------------------------------------------
 
 -- transport 1-7 = sample
--- transport 8-9 = rec
+-- transport 8-11 = rec
 function d_seq.start_transport(i)
   if span(pattern[i][bank[i]])[2] > 0 then
     transport[i] = clock.run(d_seq.play_transport, i)
@@ -70,10 +70,14 @@ function d_seq.play_transport(i)
   local wait = nil
 
   while true do
-    -- TODO: make new function to play sample/slice/etc.
     -- step starts at 0, then waits before next step
     if pattern[i][bank[i]][step[i]] > 0 then
-      print("play track " .. i .. " step " .. step[i])
+      if i < 8 then
+        d_sample.play_track_sample(i)
+      else
+        d_rec.play_track_slice(i)
+      end
+      
     end
 
     -- choose clock_fraction index from selected option range
@@ -138,17 +142,13 @@ end
 function d_seq.pattern_init()
   local pattern = {}
 
-  -- transports 1-7 for samples, 8-9 for recordings
-  for t = 1,9 do
+  -- transports 1-7 for samples, 8-11 for recordings
+  for t = 1,11 do
     pattern[t] = {}
-    if t < 8 then
-      -- single pattern for each sample bank
-      for b = 1,4 do
-        pattern[t][b] = empty_pattern()
-      end
-    else
-      -- only "bank 1" for recordings
-      pattern[t][1] = empty_pattern()
+
+    -- single pattern for each sample bank
+    for b = 1,4 do
+      pattern[t][b] = empty_pattern()
     end
   end
 

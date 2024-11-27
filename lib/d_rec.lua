@@ -11,6 +11,14 @@ local d_rec = {}
 -----------------------------------------------------------------
 
 
+-----------------------------------------------------------------
+-- INIT
+-----------------------------------------------------------------
+
+-- play the next cued slice for track `track`
+function d_rec.play_track_slice(track)
+  print("playing slice for track ".. track)
+end
 
 
 return d_rec

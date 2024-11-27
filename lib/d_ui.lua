@@ -15,7 +15,7 @@ local d_ui = {}
 local UI = require "ui"
 
 -----------------------------------------------------------------
--- NAVIGATION
+-- INIT
 -----------------------------------------------------------------
 
 function d_ui.init()
@@ -88,9 +88,12 @@ function d_ui.sample_1_enc(n,d)
   print('sample 1 enc')
 end
 
--- 1: SAMPLE  ------------------------------------------------------
+-- 2: SAMPLE  ------------------------------------------------------
 function d_ui.sample_2_redraw()
-  d_ui.draw_nav("sample 2")
+  d_ui.draw_nav(
+      TRACK .. " • " .. 
+      BANK .. " • " .. 
+      (SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"))
 
   waveform_view:update()
   waveform_view:redraw()
@@ -110,7 +113,10 @@ end
 
 -- 3: FILTER AMP --------------------------------------------------
 function d_ui.sample_3_redraw()
-  d_ui.draw_nav("sample 3")
+  d_ui.draw_nav(
+      TRACK .. " • " .. 
+      BANK .. " • " .. 
+      (SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"))
 
   screen.aa(1)
   filter_amp_view:redraw()
@@ -198,5 +204,9 @@ end
 function d_ui.delay_1_enc(n,d)
   print('recording encoder')
 end
+
+-----------------------------------------------------------------
+-- UTILITY
+-----------------------------------------------------------------
 
 return d_ui
