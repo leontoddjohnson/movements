@@ -23,6 +23,7 @@ g_brightness = {
   bank_sample_empty = 0,
   bank_sample_loaded = 2,
   bank_sample_selected = 15,
+  bank_sample_playing = 12,
   bank_sample_tracked = 5,
   bank_sample_cued = 9,
   bank_empty = 2,
@@ -50,6 +51,7 @@ g_brightness = {
   clock_frac_fours = 3
 }
 
+-- tables with 1 or 2 page options for each nav key
 g_pages = {
   {'sample_seq', 'sample_levels'}, {'sample_time'}, {'sample_config'},
   {'rec_seq', 'rec_levels'}, {'rec_time'}, {'rec_config'},
@@ -318,6 +320,11 @@ function d_grid.draw_bank(bank)
         else
           g:led(x, y, g_brightness.bank_sample_loaded)
         end
+        
+        if sample_status[sample_id_] == 1 then
+          g:led(x, y, g_brightness.bank_sample_playing)
+        end
+
       else
         g:led(x, y, g_brightness.bank_sample_empty)
       end

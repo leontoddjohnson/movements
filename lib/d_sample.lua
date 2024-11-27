@@ -83,8 +83,8 @@ function d_sample.init()
       params:set("play_mode_" .. id, 3) -- One shot
     end
     
-    -- grid_dirty = true
-    -- callback_set_screen_dirty(id)
+    grid_dirty = true
+    d_sample.callback_set_screen_dirty(id)
   end
 
   Timber.meta_changed_callback = function(id)
@@ -93,8 +93,9 @@ function d_sample.init()
     else
       sample_status[id] = STATUS.STOPPED
     end
-    -- grid_dirty = true
-    -- callback_set_screen_dirty(id)
+    
+    grid_dirty = true
+    d_sample.callback_set_screen_dirty(id)
   end
 
   Timber.waveform_changed_callback = d_sample.callback_set_waveform_dirty
@@ -248,7 +249,7 @@ function d_sample.note_on(sample_id, vel)
     -- screen_dirty = true
     -- grid_dirty = true
   else
-    print("too many samples, or no sample " .. sample_id)
+    print("no sample " .. sample_id .. " OR too many already playing")
   end
 end
 
