@@ -62,7 +62,7 @@ local extra_param_ids = {}
 local beat_params = false
 
 options.PLAY_MODE_BUFFER = {"Loop", "Inf. Loop", "Gated", "1-Shot"}
-options.PLAY_MODE_BUFFER_DEFAULT = 3
+options.PLAY_MODE_BUFFER_DEFAULT = 4
 options.PLAY_MODE_STREAMING = {"Loop", "Gated", "1-Shot"}
 options.PLAY_MODE_STREAMING_DEFAULT = 3
 options.PLAY_MODE_IDS = {{0, 1, 2, 3}, {1, 2, 3}}
@@ -857,7 +857,7 @@ function Timber.add_sample_params(id, include_beat_params, extra_params)
   
   params:add_separator("Playback - " .. id)
   
-  params:add{type = "option", id = "play_mode_" .. id, name = "Play Mode", options = options.PLAY_MODE_BUFFER, default = options.PLAY_MODE_BUFFER_DEFAULT, action = function(value)
+  params:add{type = "option", id = "play_mode_" .. id, name = "Play Mode", options = options.PLAY_MODE_BUFFER, default = 1, action = function(value)
     set_play_mode(id, lookup_play_mode(id))
     waveform_last_edited = {id = id}
     Timber.views_changed_callback(id)
