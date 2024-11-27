@@ -51,8 +51,8 @@ g_brightness = {
 }
 
 g_pages = {
-  'sample_seq', 'sample_time', 'sample_config', 'sample_levels',
-  'rec_config', 'rec_levels'
+  {'sample_seq', 'sample_levels'}, {'sample_time'}, {'sample_config'},
+  {'rec_seq', 'rec_levels'}, {'rec_time'}, {'rec_config'},
 }
 
 G_PAGE = 'sample_config'
@@ -93,7 +93,7 @@ function d_grid.draw_nav()
   for i = 1, #g_pages do
     x, y = global_xy(origin, i, 1)
 
-    if G_PAGE == g_pages[i] then
+    if tab.contains(g_pages[i], G_PAGE) then
       g:led(x, y, g_brightness.nav_page_active)
     else
       g:led(x, y, g_brightness.nav_page_inactive)
@@ -121,7 +121,13 @@ function d_grid.nav_key(x, y, z)
   -- page selection
   if 9 <= x and x < 15 and y == 8 then
     if z == 1 then
-      G_PAGE = g_pages[x - 8]
+      if #g_pages[x - 8] > 1 and tab.contains(g_pages[x - 8], G_PAGE) then
+        i = index_of(g_pages[x - 8], G_PAGE)
+        i = util.wrap(i + 1, 1, #g_pages[x - 8])
+      else
+        i = 1
+      end
+      G_PAGE = g_pages[x - 8][i]
     end
   
   -- mode
@@ -181,6 +187,33 @@ function d_grid.sample_seq_key(x, y, z)
     SEQ_BAR = x
   end
 
+  grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- SAMPLE LEVELS
+-----------------------------------------------------------------
+temp_on = {}
+
+-- temporary redraw
+function d_grid.sample_levels_redraw()
+
+  for x = 1,16 do
+    g:led(x, 4, 3)
+  end
+
+  if temp_on[1] then
+    g:led(temp_on[1], temp_on[2], 10)
+  end
+
+end
+
+function d_grid.sample_levels_key(x, y, z)
+  if z == 1 then
+    temp_on = {x, y}
+  else
+    temp_on = {}
+  end
   grid_dirty = true
 end
 
@@ -392,15 +425,15 @@ function d_grid.sample_config_key(x, y, z)
 end
 
 -----------------------------------------------------------------
--- SAMPLE LEVELS
+-- REC SEQ
 -----------------------------------------------------------------
 temp_on = {}
 
 -- temporary redraw
-function d_grid.sample_levels_redraw()
+function d_grid.rec_seq_redraw()
 
-  for x = 1,16 do
-    g:led(x, 4, 3)
+  for i = 1,8 do
+    g:led(i, i, 3)
   end
 
   if temp_on[1] then
@@ -409,34 +442,7 @@ function d_grid.sample_levels_redraw()
 
 end
 
-function d_grid.sample_levels_key(x, y, z)
-  if z == 1 then
-    temp_on = {x, y}
-  else
-    temp_on = {}
-  end
-  grid_dirty = true
-end
-
------------------------------------------------------------------
--- REC CONFIG
------------------------------------------------------------------
-temp_on = {}
-
--- temporary redraw
-function d_grid.rec_config_redraw()
-
-  for x = 1,16 do
-    g:led(x, 5, 3)
-  end
-
-  if temp_on[1] then
-    g:led(temp_on[1], temp_on[2], 10)
-  end
-
-end
-
-function d_grid.rec_config_key(x, y, z)
+function d_grid.rec_seq_key(x, y, z)
   if z == 1 then
     temp_on = {x, y}
   else
@@ -453,8 +459,8 @@ temp_on = {}
 -- temporary redraw
 function d_grid.rec_levels_redraw()
 
-  for x = 1,16 do
-    g:led(x, 6, 3)
+  for i = 1,8 do
+    g:led(i + 2, i, 3)
   end
 
   if temp_on[1] then
@@ -464,6 +470,60 @@ function d_grid.rec_levels_redraw()
 end
 
 function d_grid.rec_levels_key(x, y, z)
+  if z == 1 then
+    temp_on = {x, y}
+  else
+    temp_on = {}
+  end
+  grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- REC TIME
+-----------------------------------------------------------------
+temp_on = {}
+
+-- temporary redraw
+function d_grid.rec_time_redraw()
+
+  for i = 1,8 do
+    g:led(i + 4, i, 3)
+  end
+
+  if temp_on[1] then
+    g:led(temp_on[1], temp_on[2], 10)
+  end
+
+end
+
+function d_grid.rec_time_key(x, y, z)
+  if z == 1 then
+    temp_on = {x, y}
+  else
+    temp_on = {}
+  end
+  grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- REC CONFIG
+-----------------------------------------------------------------
+temp_on = {}
+
+-- temporary redraw
+function d_grid.rec_config_redraw()
+
+  for i = 1,8 do
+    g:led(i + 6, i, 3)
+  end
+
+  if temp_on[1] then
+    g:led(temp_on[1], temp_on[2], 10)
+  end
+
+end
+
+function d_grid.rec_config_key(x, y, z)
   if z == 1 then
     temp_on = {x, y}
   else
