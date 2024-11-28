@@ -227,7 +227,7 @@ function d_sample.note_on(sample_id, vel)
 end
 
 function d_sample.note_off(sample_id)
-  print("note_off: " .. sample_id)
+  if sample_id then print("note_off: " .. sample_id) end
   engine.noteOff(sample_id)
   if sample_id ~= nil then
     sample_status[sample_id] = 0

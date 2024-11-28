@@ -172,9 +172,10 @@ function d_grid.sample_seq_redraw()
 end
 
 function d_grid.sample_seq_key(x, y, z)
-  step_ = (SEQ_BAR - 1) * 16 + x
 
   if y < 8 and z == 1 then
+    step_ = (SEQ_BAR - 1) * 16 + x
+    
     if not PLAY_MODE then
       -- select track
       if ALT then
@@ -207,27 +208,50 @@ end
 -----------------------------------------------------------------
 -- SAMPLE LEVELS
 -----------------------------------------------------------------
-temp_on = {}
 
--- temporary redraw
 function d_grid.sample_levels_redraw()
 
-  for x = 1,16 do
-    g:led(x, 4, 3)
+  for s = 1,16 do
+    step_ = (SEQ_BAR - 1) * 16 + s
+    
+    -- draw steps for selected track
+    if step_ == step[TRACK] then
+      g:led(s, 1, g_brightness.step_active)
+    elseif pattern[TRACK][bank[TRACK]][step_] > 0 then
+      g:led(s, 1, g_brightness.step_inactive)
+    else
+      g:led(s, 1, g_brightness.seq_track_selected)
+    end
+
+    -- start with amp
+    -- ...
+
   end
 
-  if temp_on[1] then
-    g:led(temp_on[1], temp_on[2], 10)
-  end
+  -- draw sequence bars
+  draw_sequence_bars(1, 8, {1, 7})
 
 end
 
 function d_grid.sample_levels_key(x, y, z)
-  if z == 1 then
-    temp_on = {x, y}
-  else
-    temp_on = {}
+  if y < 8 then
+    step_ = (SEQ_BAR - 1) * 16 + x
   end
+
+  if y == 1 and z == 1 then
+    if not PLAY_MODE then
+      empty_step_ = pattern[TRACK][bank[TRACK]][step_] == 0
+      pattern[TRACK][bank[TRACK]][step_] = empty_step_ and 1 or 0
+    else
+      -- move track to that step
+      step[TRACK] = step_
+    end
+  end
+  
+  if y == 8 and x < 9 then
+    SEQ_BAR = x
+  end
+
   grid_dirty = true
 end
 

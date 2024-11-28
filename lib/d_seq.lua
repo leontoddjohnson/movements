@@ -38,6 +38,7 @@ end
 
 function d_seq.init()
   -- options (samples or slices) to cycle through for each track
+  -- TODO: refactor these to allow "stored" pools for each bank
   track_pool = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
   track_pool_cue = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
   track_pool_i = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  -- init'd with 0s
@@ -72,9 +73,8 @@ function d_seq.init()
   -- rec tracks only have one bank
   pattern = d_seq.pattern_init()
 
-  pattern_mult = {
-    amp = {}
-  }
+  -- amp param multiplier ([track][bank][step]) defaults to 1
+  amp_pattern = d_seq.pattern_init(1)
 
   -- current pattern bank loaded
   bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
@@ -147,6 +147,7 @@ end
 function d_seq.load_track_pool(track)
   track_pool[track] = track_pool_cue[track]
   track_pool_cue[track] = {}
+  -- assign track to samples in track pool
   for i=1,#track_pool[track] do
     b_, row_, col_ = id_bankrowcol(track_pool[track][i])
     if track < 8 then
@@ -155,6 +156,9 @@ function d_seq.load_track_pool(track)
       slice_track[BANK][row_][col_] = track
     end
   end
+
+  -- assign current bank for track
+  bank[track] = BANK
 end
 
 -- play the cue from the track pool, and cycle through
@@ -209,16 +213,17 @@ function span(t)
   return {span_l, span_r}
 end
 
--- one empty pattern: 8 bars * 16 steps of 0 values
-function empty_pattern()
+-- one "empty" pattern: 8 bars * 16 steps containing value `v` (or 0)
+function empty_pattern(v)
   local pattern_ = {}
   for i = 1,16*8 do
-    pattern_[i] = 0
+    pattern_[i] = v or 0
   end
   return pattern_
 end
 
-function d_seq.pattern_init()
+-- empty pattern for each track-bank combination, with value `v` as default
+function d_seq.pattern_init(v)
   local pattern = {}
 
   -- transports 1-7 for samples, 8-11 for recordings
@@ -227,7 +232,7 @@ function d_seq.pattern_init()
 
     -- single pattern for each sample bank
     for b = 1,4 do
-      pattern[t][b] = empty_pattern()
+      pattern[t][b] = empty_pattern(v)
     end
   end
 
@@ -235,7 +240,7 @@ function d_seq.pattern_init()
 end
 
 -- last non-empty pattern bar for track i. 
--- 1-7 for sample, 8-9 for rec
+-- 1-7 for sample, 8-11 for rec
 function n_bars(i)
   local span_ = span(pattern[i][bank[i]])[2]
   -- fix for when span_ == 0
