@@ -175,7 +175,7 @@ function d_grid.sample_seq_key(x, y, z)
 
   if y < 8 and z == 1 then
     step_ = (SEQ_BAR - 1) * 16 + x
-    
+
     if not PLAY_MODE then
       -- select track
       if ALT then
@@ -434,6 +434,11 @@ function d_grid.sample_config_key(x, y, z)
         d_seq.load_track_pool(TRACK)
       end
       TRACK = y
+
+      -- show bank linked to track
+      if #track_pool[TRACK] > 0 then
+        BANK = bank[TRACK]
+      end
     end
   end
 
