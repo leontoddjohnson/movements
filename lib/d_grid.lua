@@ -321,10 +321,6 @@ function d_grid.draw_bank(bank)
           g:led(x, y, g_brightness.bank_sample_playing)
         end
 
-        if sample_id_ == SAMPLE and not PLAY_MODE then
-          g:led(x, y, g_brightness.bank_sample_selected)
-        end
-
       else
         g:led(x, y, g_brightness.bank_sample_empty)
       end
@@ -342,6 +338,23 @@ function d_grid.draw_bank(bank)
       g:led(x, y, g_brightness.bank_loaded)
     else
       g:led(x, y, g_brightness.bank_empty)
+    end
+
+  end
+
+  -- show selected sample (or bank it's in) if current bank is held
+  for bank_ = 1,4 do
+    x, y = global_xy(origin, bank_, 1)
+
+    if KEY_HOLD[y][x] == 1 and SAMPLE and not PLAY_MODE then
+      b_, r_, c_ = id_bankrowcol(SAMPLE)
+      if b_ == BANK then
+        -- highlight selected sample in bank
+        g:led(c_ + 8, r_, g_brightness.bank_sample_selected)
+      else
+        -- highlight bank location
+        g:led(b_ + 12, 5, g_brightness.bank_selected)
+      end
     end
   end
 
@@ -387,7 +400,6 @@ function d_grid.sample_config_key(x, y, z)
     sample_id = rowcol_id(row_ .. col_, BANK)
     
     if z == 1 then
-      KEY_HOLD[y][x] = 1
       d_sample.set_sample_id(sample_id)
       
       -- play sample
@@ -418,8 +430,6 @@ function d_grid.sample_config_key(x, y, z)
       if PLAY_MODE and sample_status[sample_id] > 0 and play_mode_is_hold(sample_id) then
         d_sample.note_off(sample_id)
       end
-      
-      KEY_HOLD[y][x] = 0
     end
   end
 
@@ -548,6 +558,12 @@ end
 
 
 function g.key(x, y, z)
+
+  if z == 1 then
+    KEY_HOLD[y][x] = 1
+  else
+    KEY_HOLD[y][x] = 0
+  end
 
   if x > 8 and y == 8 then
     d_grid.nav_key(x, y, z)
