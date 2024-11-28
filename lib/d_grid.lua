@@ -28,8 +28,9 @@ g_brightness = {
   alt_off = 0,
   alt_on = 15,
   step_active = 12,
-  step_inactive = 3,
+  step_inactive = 5,
   step_empty = 0,
+  seq_track_selected = 2,
   bar_active = 12,
   bar_empty = 0,
   bar_populated = 5,
@@ -148,7 +149,7 @@ end
 
 function d_grid.sample_seq_redraw()
 
-  -- draw steps
+  -- draw steps and selected track
   for track = 1,7 do
     for s = 1,16 do
       step_ = (SEQ_BAR - 1) * 16 + s
@@ -157,8 +158,10 @@ function d_grid.sample_seq_redraw()
         g:led(s, track, g_brightness.step_active)
       elseif pattern[track][bank[track]][step_] > 0 then
         g:led(s, track, g_brightness.step_inactive)
-      else
+      elseif track ~= TRACK then
         g:led(s, track, g_brightness.step_empty)
+      else
+        g:led(s, track, g_brightness.seq_track_selected)
       end
     end
   end
@@ -171,10 +174,27 @@ end
 function d_grid.sample_seq_key(x, y, z)
   step_ = (SEQ_BAR - 1) * 16 + x
 
-  -- switch between a step that exists (1) or not (0)
   if y < 8 and z == 1 then
-    empty_step_ = pattern[y][bank[y]][step_] == 0
-    pattern[y][bank[y]][step_] = empty_step_ and 1 or 0
+    if not PLAY_MODE then
+      -- select track
+      if ALT then
+        TRACK = y
+      -- activate step
+      else
+        empty_step_ = pattern[y][bank[y]][step_] == 0
+        pattern[y][bank[y]][step_] = empty_step_ and 1 or 0
+      end
+    else
+      -- move all tracks to that step
+      if ALT then
+        for track_ = 1,7 do
+          step[track_] = step_
+        end
+      -- move just the associated track to that step
+      else
+        step[y] = step_
+      end
+    end
   end
   
   if y == 8 and x < 9 then
