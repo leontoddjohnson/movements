@@ -277,15 +277,27 @@ function d_sample.set_sample_id(id)
   -- mod_matrix_view:set_sample_id(id)
 end
 
+function d_sample.set_sample_params(id, track_, step_)
+  timber_params = {'amp'}
+
+  for i = 1,#timber_params do
+    d_sample.set_sample_param(id, timber_params[i], track_, 
+                              bank[track_], step_)
+  end
+
+  -- .. etc. ..
+
+end
+
 -- update parameter value for sample loaded in a step.
 -- `param` is in {amp, length, pan, filter, scale, rate, prob}
 function d_sample.set_sample_param(id, param, track_, bank_, step_)
   local amp
 
-  -- amplitude (decibels)
+  -- fill
   if param == 'amp' then
     amp_max = param_defaults[track_][param]  -- defined for track
-    amp_step = amp_pattern[track_][bank_][step_]  -- defined at step
+    amp_step = param_pattern.amp[track_][bank_][step_]  -- defined at step
 
     -- squelch using track param default
     amp = util.linlin(0, 1, 0, amp_max, amp_step)

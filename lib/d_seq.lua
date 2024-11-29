@@ -74,7 +74,7 @@ function d_seq.init()
   pattern = d_seq.pattern_init()
 
   -- four preset patterns across all tracks (sample and rec)
-  pattern_pre = {
+  pattern_pool = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -187,6 +187,7 @@ function d_seq.play_track_pool(track)
     -- TODO: figure out gated situation ...
     -- TODO: it's probably okay, but 1-shots will keep playing ...
     if pool_i > 0 then d_sample.note_off(pool_[pool_i]) end
+    d_sample.set_sample_params(pool_[next_pool_i], track, step[track])
     d_sample.note_on(pool_[next_pool_i])
     track_pool_i[track] = next_pool_i
 

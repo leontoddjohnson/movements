@@ -31,6 +31,7 @@ g_brightness = {
   step_inactive = 5,
   step_empty = 0,
   seq_track_selected = 2,
+  level_met = 5,
   bar_active = 12,
   bar_empty = 0,
   bar_populated = 5,
@@ -61,14 +62,29 @@ KEY_HOLD = {}
 SEQ_BAR = 1  -- current sequence bar
 TRACK = 1    -- selected (sample) track
 BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
+PARAM = 'amp'
 
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
 
 function d_grid.init()
-  -- smallest vale (-48) is not in table
-  p_options.AMP_DB = {-24, -18, -12, -6, -3, 0}
+  -- param options at the bottom of config page.
+  -- the last one is only assumed if all are deselected
+  p_options.PARAMS = {'length', 'pan', 'filter', 
+                      'scale', 'rate', 'prob', 'amp'}
+  
+  p_options.PARAMS_MIDI = {'length', 'midi_1', 'midi_2', 
+                           'scale', 'rate', 'prob', 'vel'}
+
+  -- parameter level values on the grid (see p_options.PARAMS).
+  -- *the "zero" value is the 7th item in the list!*
+  param_levels = {}
+
+  -- grid options for amp (ignore peek ... #s are converted to [0, 1])
+  param_levels.amp = {-24, -18, -12, -6, -3, 0}
+  for i=1,6 do param_levels.amp[i] = util.dbamp(param_levels.amp[i]) end
+  table.insert(param_levels.amp, 0)  -- last value
 
   set_param_defaults()
 
@@ -228,8 +244,24 @@ function d_grid.sample_levels_redraw()
       g:led(s, 1, g_brightness.seq_track_selected)
     end
 
-    -- start with amp
-    -- ...
+    -- draw levels for selected parameter
+    if pattern[TRACK][bank[TRACK]][step_] > 0 then
+      value_ = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
+
+      -- fill
+      if tab.contains({'amp', 'length', 'prob'}, PARAM) then
+
+        for i=1,6 do
+          if value_ >= param_levels[PARAM][i] then
+            g:led(s, 8 - i, g_brightness.level_met)
+          end
+        end
+
+      end
+
+      -- etc ...
+
+    end
 
   end
 
@@ -247,6 +279,12 @@ function d_grid.sample_levels_key(x, y, z)
     if not PLAY_MODE then
       empty_step_ = pattern[TRACK][bank[TRACK]][step_] == 0
       pattern[TRACK][bank[TRACK]][step_] = empty_step_ and 1 or 0
+
+      -- reset "new" step parameters to default
+      if empty_step_ then
+        default = param_defaults[TRACK][PARAM]
+        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = default
+      end
     else
       -- move track to that step
       step[TRACK] = step_
@@ -255,6 +293,32 @@ function d_grid.sample_levels_key(x, y, z)
   
   if y == 8 and x < 9 then
     SEQ_BAR = x
+  end
+
+  if 1 < y and y < 8 and z == 1 and pattern[TRACK][bank[TRACK]][step_] > 0 then
+
+    -- currrent parameter value at that step
+    param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
+
+    -- fill
+    if tab.contains({'amp', 'length', 'prob'}, PARAM) then
+      -- parameter value range of selected cell
+      range_ = {param_levels[PARAM][8 - y], param_levels[PARAM][8 - y + 1]}
+
+      if (range_[1] <= param_value and param_value < range_[2]) or
+         (param_value == param_levels[PARAM][6] and y == 2) then
+        
+        -- if selecting already set value, make the "minimum"/"default"
+        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = param_levels[PARAM][7]
+      
+      else
+
+        -- otherwise, assign value
+        v = param_levels[PARAM][8-y]
+        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = v
+      end
+    end
+    
   end
 
   grid_dirty = true
@@ -713,30 +777,32 @@ function set_param_defaults()
     }
   end
 
+  param_pattern = {}
+
   -- [track][bank][step]: in [0, 1], (default 1)
   -- *needs to be converted to decibels between -48 and 0*
-  amp_pattern = d_seq.pattern_init(1)
+  param_pattern.amp = d_seq.pattern_init(1)
 
   -- [track][bank][step]: in [0, 1], (default 1)
   -- 1 is the full length of the sample/slice
-  length_pattern = d_seq.pattern_init(1)
+  param_pattern.length = d_seq.pattern_init(1)
 
   -- [track][bank][step]: in [-1, 1] defaults to 0
-  pan_pattern = d_seq.pattern_init(0)
+  param_pattern.pan = d_seq.pattern_init(0)
 
   -- [track][bank][step]: in [-20k, 20k] defaults to 20000
   -- filter > 0 = LP freq and filter < 0 = HP freq
-  filter_pattern = d_seq.pattern_init(20000)
+  param_pattern.filter = d_seq.pattern_init(20000)
 
   -- [track][bank][step]: in -3, -2, -1, 0, 1, 2, 3 defaults to 0
   -- steps (or halfsteps) from an unchanged pitch
-  scale_pattern = d_seq.pattern_init(0)
+  param_pattern.scale = d_seq.pattern_init(0)
 
   -- [track][bank][step]: in -2, -1, -1/2, 0, 1/2, 1, 2 default to 1
-  rate_pattern = d_seq.pattern_init(1)
+  param_pattern.rate = d_seq.pattern_init(1)
 
   -- [track][bank][step]: in [0, 1] default to 1
-  prob_pattern = d_seq.pattern_init(1)
+  param_pattern.prob = d_seq.pattern_init(1)
 
 end
 
