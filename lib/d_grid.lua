@@ -67,6 +67,11 @@ BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
 -----------------------------------------------------------------
 
 function d_grid.init()
+  -- smallest vale (-48) is not in table
+  p_options.AMP_DB = {-24, -18, -12, -6, -3, 0}
+
+  set_param_defaults()
+
   -- key_hold map
   for r = 1,8 do
     KEY_HOLD[r] = {}
@@ -684,6 +689,55 @@ function index_of(array, value)
       end
   end
   return nil
+end
+
+-- set parameter defaults used on config pages
+function set_param_defaults()
+  -- track defaults (amp, length, pan, filter, scale, rate, prob)
+  -- set in config pages. use param_defaults[track][param].
+  -- all as expected, filter > 0 = LP freq and filter < 0 = HP freq.
+  param_defaults = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
+
+  for track = 1,11 do
+    param_defaults[track] = {
+      amp = 1,
+      length = 1,
+      pan = 0,
+      filter = 20000,
+      scale = 1,
+      rate = 1,
+      prob = 1,
+      midi_transpose = 1,
+      midi_2 = 0,
+      midi_3 = 0
+    }
+  end
+
+  -- [track][bank][step]: in [0, 1], (default 1)
+  -- *needs to be converted to decibels between -48 and 0*
+  amp_pattern = d_seq.pattern_init(1)
+
+  -- [track][bank][step]: in [0, 1], (default 1)
+  -- 1 is the full length of the sample/slice
+  length_pattern = d_seq.pattern_init(1)
+
+  -- [track][bank][step]: in [-1, 1] defaults to 0
+  pan_pattern = d_seq.pattern_init(0)
+
+  -- [track][bank][step]: in [-20k, 20k] defaults to 20000
+  -- filter > 0 = LP freq and filter < 0 = HP freq
+  filter_pattern = d_seq.pattern_init(20000)
+
+  -- [track][bank][step]: in -3, -2, -1, 0, 1, 2, 3 defaults to 0
+  -- steps (or halfsteps) from an unchanged pitch
+  scale_pattern = d_seq.pattern_init(0)
+
+  -- [track][bank][step]: in -2, -1, -1/2, 0, 1/2, 1, 2 default to 1
+  rate_pattern = d_seq.pattern_init(1)
+
+  -- [track][bank][step]: in [0, 1] default to 1
+  prob_pattern = d_seq.pattern_init(1)
+
 end
 
 return d_grid

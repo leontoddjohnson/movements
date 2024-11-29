@@ -73,8 +73,13 @@ function d_seq.init()
   -- rec tracks only have one bank
   pattern = d_seq.pattern_init()
 
-  -- amp param multiplier ([track][bank][step]) defaults to 1
-  amp_pattern = d_seq.pattern_init(1)
+  -- four preset patterns across all tracks (sample and rec)
+  pattern_pre = {
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+  }
 
   -- current pattern bank loaded
   bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
@@ -180,6 +185,7 @@ function d_seq.play_track_pool(track)
   if track < 8 then
     -- tracks only play one thing at a time
     -- TODO: figure out gated situation ...
+    -- TODO: it's probably okay, but 1-shots will keep playing ...
     if pool_i > 0 then d_sample.note_off(pool_[pool_i]) end
     d_sample.note_on(pool_[next_pool_i])
     track_pool_i[track] = next_pool_i

@@ -16,6 +16,7 @@ STATUS = {
 }
 
 -- sample IDs for each bank. use [bank][row][col].
+-- (recordings use `partitions`)
 banks = {
   {{}, {}, {}, {}},
   {{}, {}, {}, {}},
@@ -153,6 +154,7 @@ function d_sample.load_folder(file, bank)
   local sample_id = (bank - 1) * 32
   
   Timber.clear_samples(sample_id, bank * 32 - 1)
+  banks[bank] = {{}, {}, {}, {}}
   
   -- filename
   local split_at = string.match(file, "^.*()/")
@@ -275,5 +277,36 @@ function d_sample.set_sample_id(id)
   -- mod_matrix_view:set_sample_id(id)
 end
 
+-- update parameter value for sample loaded in a step.
+-- `param` is in {amp, length, pan, filter, scale, rate, prob}
+function d_sample.set_sample_param(id, param, track_, bank_, step_)
+  local amp
+
+  -- amplitude (decibels)
+  if param == 'amp' then
+    amp_max = param_defaults[track_][param]  -- defined for track
+    amp_step = amp_pattern[track_][bank_][step_]  -- defined at step
+
+    -- squelch using track param default
+    amp = util.linlin(0, 1, 0, amp_max, amp_step)
+    
+    -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
+    amp = util.clamp(ampdb(amp), -48, 0)
+    params:set('amp_' .. id, amp)
+
+  end
+  
+end
+
+function d_sample.sample_length(id)
+  local duration = math.abs(params:get("end_frame_" .. id) - 
+                            params:get("start_frame_" .. id)) / 
+                            samples_meta[id].sample_rate
+  return duration
+end
+
+function ampdb(amp)
+  return math.log(amp, 10) * 20.0
+end
 
 return d_sample

@@ -6,6 +6,15 @@
 
 local d_rec = {}
 
+-- {start, stop} for each partion. use [partition][row][col].
+-- (samples use `banks`)
+partitions = {
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}},
+  {{}, {}, {}, {}}
+}
+
 PARTITION = 1  -- currently selected record partition
 SLICE = nil  -- currently selected slice
 
