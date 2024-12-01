@@ -432,10 +432,9 @@ function d_grid.draw_bank(bank)
       x, y = global_xy(origin, col, row)
       sample_id_ = banks[bank][row][col]
       if sample_id_ then
-        if tab.contains(track_pool_cue[TRACK], sample_id_) then
-          g:led(x, y, g_brightness.bank_sample_cued)
-        elseif sample_track[bank][row][col] then
-          if TRACK == sample_track[bank][row][col] then
+        -- sample is assigned to a track
+        if tab.contains(flatten(track_pool), sample_id_) then
+          if tab.contains(track_pool[TRACK], sample_id_) then
             g:led(x, y, g_brightness.bank_sample_current_track)
           else
             g:led(x, y, g_brightness.bank_sample_tracked)
@@ -443,11 +442,18 @@ function d_grid.draw_bank(bank)
 
           -- show track that sample is loaded into
           if KEY_HOLD[y][x] == 1 then
-            g:led(8, sample_track[bank][row][col], 
+            g:led(8, find(track_pool, sample_id_), 
                   g_brightness.bank_sample_tracked)
           end
+
         else
           g:led(x, y, g_brightness.bank_sample_loaded)
+        end
+
+        -- show cue if not already loaded into the selected track
+        if tab.contains(track_pool_cue[TRACK][bank], sample_id_) and 
+          not tab.contains(track_pool[TRACK], sample_id_) then
+          g:led(x, y, g_brightness.bank_sample_cued)
         end
         
         if sample_status[sample_id_] == 1 and PLAY_MODE then
@@ -575,27 +581,40 @@ function d_grid.sample_config_key(x, y, z)
         else
           d_sample.note_on(sample_id, 1)
         end
+      
+      -- assign samples
+      elseif ALT then
 
-      -- cue sample for track if it exists and is not already cued
-      -- it also can't already be assigned
-      elseif ALT and not tab.contains(track_pool_cue[TRACK], sample_id) and banks[BANK][row_][col_] and not sample_track[BANK][row_][col_] then
-        table.insert(track_pool_cue[TRACK], sample_id)
-      
-      -- remove from cue if re-selected
-      elseif ALT and tab.contains(track_pool_cue[TRACK], sample_id) then
-        table.remove(track_pool_cue[TRACK], 
-                     index_of(track_pool_cue[TRACK], sample_id))
-      
-      -- unassign track to sample
-      elseif ALT and sample_track[BANK][row_][col_] == TRACK then
-        sample_track[BANK][row_][col_] = nil
+        -- check sample exists
+        if banks[BANK][row_][col_] then
+
+          -- if not already set in a track pool, then add to cue
+          if not tab.contains(flatten(track_pool), sample_id) then
+
+            for track = 1,7 do
+              track_cue = track_pool_cue[track][BANK]
+              -- if not in TRACK cue, then add it
+              if track == TRACK and not tab.contains(track_cue, sample_id) then
+                table.insert(track_cue, sample_id)
+              -- otherwise, in any case, remove it from the cue
+              elseif tab.contains(track_cue, sample_id) then
+                table.remove(track_cue, index_of(track_cue, sample_id))
+              end
+            end
+          
+          -- otherwise, if sample in the current track pool, remove it
+          elseif tab.contains(track_pool[TRACK], sample_id) then
+            table.remove(track_pool[TRACK], 
+            index_of(track_pool[TRACK], sample_id))
+          end
+        end
       end
-
     else
       
       if PLAY_MODE and sample_status[sample_id] > 0 and play_mode_is_hold(sample_id) then
         d_sample.note_off(sample_id)
       end
+
     end
   end
 
@@ -822,6 +841,30 @@ function index_of(array, value)
       end
   end
   return nil
+end
+
+-- given a table of tables, find the index of the *first* sub-table containing
+-- a value. Otherwise, return nil.
+function find(array, value)
+  i = nil
+  for j=1,#array do
+    if tab.contains(array[j], value) then
+      i = j
+      break
+    end
+  end
+  return i
+end
+
+-- take a table of tables, and convert to a single "flattened" table
+function flatten(t)
+  t_flat = {}
+  for i=1,#t do
+    for j=1,#t[i] do
+      table.insert(t_flat, t[i][j])
+    end
+  end
+  return t_flat
 end
 
 return d_grid

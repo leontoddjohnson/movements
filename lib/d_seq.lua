@@ -2,24 +2,6 @@
 
 d_seq = {}
 
--- track assigned for sample [bank][row][col] = track # (1-7)
--- a track can only have one bank of samples loaded at once
-sample_track = {
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}}
-}
-
--- track assigned for slice [bank][row][col] = track # (8-11)
--- a track can only have one bank of slices loaded at once
-slice_track = {
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}}
-}
-
 -----------------------------------------------------------------
 -- BUILD PARAMETERS
 -----------------------------------------------------------------
@@ -73,11 +55,12 @@ end
 
 function d_seq.init()
   -- options (samples or slices) to cycle through for each track
-  -- TODO: refactor these to allow "stored" pools for each bank
-  -- TODO: "unloaded" bank pools put in "cue" for that track-bank
   track_pool = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
-  track_pool_cue = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
   track_pool_i = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  -- init'd with 0s
+
+  -- "saved" or "cued" track pools for each [track][bank]
+  track_pool_cue = {}
+  for t = 1,11 do track_pool_cue[t] = {{}, {}, {}, {}} end
 
   -- clock routines for each track
   transport = {}
@@ -183,20 +166,17 @@ end
 -- UTILITY
 -----------------------------------------------------------------
 
--- load `track_pool` from `track_pool_cue`, and clear out cue.
--- this loads for *current bank*
+-- load `track_pool` from `track_pool_cue` into current BANK
 function d_seq.load_track_pool(track)
-  track_pool[track] = track_pool_cue[track]
-  track_pool_cue[track] = {}
-  -- assign track to samples in track pool
-  for i=1,#track_pool[track] do
-    b_, row_, col_ = id_bankrowcol(track_pool[track][i])
-    if track < 8 then
-      sample_track[BANK][row_][col_] = track
-    else
-      slice_track[BANK][row_][col_] = track
+
+  -- kill samples from "current" pool
+  if track < 8 then
+    for i = 1,#track_pool[track] do
+      d_sample.note_off(track_pool[track][i])
     end
   end
+
+  track_pool[track] = track_pool_cue[track][BANK]
 
   -- assign current bank for track
   bank[track] = BANK
