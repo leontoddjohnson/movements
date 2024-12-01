@@ -42,7 +42,9 @@ g_brightness = {
   time_seconds = 2,
   clock_frac_selected = 7,
   clock_frac_deselected = 0,
-  clock_frac_fours = 3
+  clock_frac_fours = 3,
+  param_selected = 5,
+  param_deselected = 1
 }
 
 -- tables with 1 or 2 page options for each nav key
@@ -282,7 +284,7 @@ function d_grid.sample_levels_key(x, y, z)
 
       -- reset "new" step parameters to default
       if empty_step_ then
-        default = param_defaults[TRACK][PARAM]
+        default = track_param_default[PARAM]
         param_pattern[PARAM][TRACK][bank[TRACK]][step_] = default
       end
     else
@@ -481,8 +483,36 @@ function d_grid.draw_bank(bank)
 
 end
 
+function d_grid.draw_tracks()
+
+  for y = 1,7 do
+    for i=1,6 do
+
+      -- fill
+      if tab.contains({'amp'}, PARAM) then
+        if params:get('track_' .. y .. '_amp') >= param_levels[PARAM][i] then
+          g:led(i, y, g_brightness.level_met)
+        end
+      end
+
+    end
+  end
+
+end
+
 function d_grid.sample_config_redraw()
   d_grid.draw_bank(BANK)
+  d_grid.draw_tracks()
+
+  -- draw param selection
+  for p = 1,6 do
+    if PARAM == p_options.PARAMS[p] then
+      g:led(p, 8, g_brightness.param_selected)
+    else
+      g:led(p, 8, g_brightness.param_deselected)
+    end
+  end
+
 end
 
 function d_grid.sample_config_key(x, y, z)
@@ -548,6 +578,27 @@ function d_grid.sample_config_key(x, y, z)
       if PLAY_MODE and sample_status[sample_id] > 0 and play_mode_is_hold(sample_id) then
         d_sample.note_off(sample_id)
       end
+    end
+  end
+
+  -- track param levels
+  if x < 7 and y < 8 and z == 1 then
+    -- temp ... while building the rest of the params
+    if PARAM == 'amp' then
+      if params:get('track_' .. y .. '_amp') == param_levels[PARAM][x] then
+        params:set('track_' .. y .. '_amp', param_levels[PARAM][7])
+      else
+        params:set('track_' .. y .. '_amp', param_levels[PARAM][x])
+      end
+    end
+  end
+
+  -- param selection
+  if x < 7 and y == 8 and z == 1 then
+    if p_options.PARAMS[x] == PARAM then
+      PARAM = 'amp'
+    else
+      PARAM = p_options.PARAMS[x]
     end
   end
 
@@ -753,57 +804,6 @@ function index_of(array, value)
       end
   end
   return nil
-end
-
--- set parameter defaults used on config pages
-function set_param_defaults()
-  -- track defaults (amp, length, pan, filter, scale, rate, prob)
-  -- set in config pages. use param_defaults[track][param].
-  -- all as expected, filter > 0 = LP freq and filter < 0 = HP freq.
-  param_defaults = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
-
-  for track = 1,11 do
-    param_defaults[track] = {
-      amp = 1,
-      length = 1,
-      pan = 0,
-      filter = 20000,
-      scale = 1,
-      rate = 1,
-      prob = 1,
-      midi_transpose = 1,
-      midi_2 = 0,
-      midi_3 = 0
-    }
-  end
-
-  param_pattern = {}
-
-  -- [track][bank][step]: in [0, 1], (default 1)
-  -- *needs to be converted to decibels between -48 and 0*
-  param_pattern.amp = d_seq.pattern_init(1)
-
-  -- [track][bank][step]: in [0, 1], (default 1)
-  -- 1 is the full length of the sample/slice
-  param_pattern.length = d_seq.pattern_init(1)
-
-  -- [track][bank][step]: in [-1, 1] defaults to 0
-  param_pattern.pan = d_seq.pattern_init(0)
-
-  -- [track][bank][step]: in [-20k, 20k] defaults to 20000
-  -- filter > 0 = LP freq and filter < 0 = HP freq
-  param_pattern.filter = d_seq.pattern_init(20000)
-
-  -- [track][bank][step]: in -3, -2, -1, 0, 1, 2, 3 defaults to 0
-  -- steps (or halfsteps) from an unchanged pitch
-  param_pattern.scale = d_seq.pattern_init(0)
-
-  -- [track][bank][step]: in -2, -1, -1/2, 0, 1/2, 1, 2 default to 1
-  param_pattern.rate = d_seq.pattern_init(1)
-
-  -- [track][bank][step]: in [0, 1] default to 1
-  param_pattern.prob = d_seq.pattern_init(1)
-
 end
 
 return d_grid

@@ -35,8 +35,20 @@ SAMPLE = nil  -- currently selected sample
 
 function d_sample.build_params()
 
-  Timber.add_params()
+  params:add_separator("Track Levels")
 
+  -- tracking track param levels to be able to squelch/adjust given new 
+  -- values. filter > 0 = LP freq and filter < 0 = HP freq.
+  track_param_level = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
+
+  for track = 1,11 do
+    track_param_level[track] = track_param_default
+  end
+
+  params:add_group("Sample Tracks", 7)  -- update 7 as you add more params
+  d_sample.build_sample_track_params()
+
+  Timber.add_params()
   params:add_separator("Timber Samples")
   
   -- Index zero to align with MIDI note numbers
@@ -47,6 +59,26 @@ function d_sample.build_params()
       end}
     }
     Timber.add_sample_params(i, true, extra_params)
+  end
+end
+
+function d_sample.build_sample_track_params()
+  for t = 1,7 do
+    params:add_number('track_' .. t .. '_amp', 'track_' .. t .. '_amp', 0, 1, 1)
+    params:set_action('track_' .. t .. '_amp', 
+      function(value)
+        last_value = track_param_level[t]['amp']
+
+        -- TODO: do this across all banks when we expand track_pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          d_sample.squelch_sample_amp(last_value, value, id)
+        end
+
+        track_param_level[t]['amp'] = value
+
+      end
+  )
   end
 end
 
@@ -277,11 +309,13 @@ function d_sample.set_sample_id(id)
   -- mod_matrix_view:set_sample_id(id)
 end
 
-function d_sample.set_sample_params(id, track_, step_)
+-- update all sample parameters for a sample `id` loaded in a `track_`
+-- at some `step_`.
+function d_sample.set_sample_step_params(id, track_, step_)
   timber_params = {'amp'}
 
   for i = 1,#timber_params do
-    d_sample.set_sample_param(id, timber_params[i], track_, 
+    d_sample.set_sample_step_param(id, timber_params[i], track_, 
                               bank[track_], step_)
   end
 
@@ -291,23 +325,31 @@ end
 
 -- update parameter value for sample loaded in a step.
 -- `param` is in {amp, length, pan, filter, scale, rate, prob}
-function d_sample.set_sample_param(id, param, track_, bank_, step_)
-  local amp
+function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
 
   -- fill
   if param == 'amp' then
-    amp_max = param_defaults[track_][param]  -- defined for track
+    amp_max = params:get('track_' .. track_ .. '_amp')  -- defined for track
     amp_step = param_pattern.amp[track_][bank_][step_]  -- defined at step
 
     -- squelch using track param default
-    amp = util.linlin(0, 1, 0, amp_max, amp_step)
-    
-    -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
-    amp = util.clamp(ampdb(amp), -48, 0)
-    params:set('amp_' .. id, amp)
+    d_sample.squelch_sample_amp(1, amp_max, id, amp_step)
 
   end
   
+end
+
+-- squelch the amp of sample `id`. `value` is optional (e.g., step value)
+-- linear mapping: [0, `input_max`] --> [0, `output_max`]
+function d_sample.squelch_sample_amp(input_max, output_max, id, value)
+  v_sample = value or util.dbamp(params:get("amp_" .. id))  -- current value
+
+  -- squelch using new maximum
+  amp = util.linlin(0, input_max, 0, output_max, v_sample)
+  
+  -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
+  amp = util.clamp(ampdb(amp), -48, 0)
+  params:set('amp_' .. id, amp)
 end
 
 function d_sample.sample_length(id)
@@ -317,6 +359,7 @@ function d_sample.sample_length(id)
   return duration
 end
 
+-- convert amp [0, 1] to decibels [-inf, 0]
 function ampdb(amp)
   return math.log(amp, 10) * 20.0
 end

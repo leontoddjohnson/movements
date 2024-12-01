@@ -32,6 +32,51 @@ function d_seq.build_params()
                     p_options.PLAY_ORDER, 1)
 end
 
+-- set parameter defaults used on config pages
+function set_param_defaults()
+  -- track defaults (amp, length, pan, filter, scale, rate, prob)
+  track_param_default = {
+    amp = 1,
+    length = 1,
+    pan = 0,
+    filter = 20000,
+    scale = 1,
+    rate = 1,
+    prob = 1,
+    midi_transpose = 1,
+    midi_2 = 0,
+    midi_3 = 0
+  }
+
+  param_pattern = {}
+
+  -- [track][bank][step]: in [0, 1], (default 1)
+  -- *needs to be converted to decibels between -48 and 0*
+  param_pattern.amp = d_seq.pattern_init(1)
+
+  -- [track][bank][step]: in [0, 1], (default 1)
+  -- 1 is the full length of the sample/slice
+  param_pattern.length = d_seq.pattern_init(1)
+
+  -- [track][bank][step]: in [-1, 1] defaults to 0
+  param_pattern.pan = d_seq.pattern_init(0)
+
+  -- [track][bank][step]: in [-20k, 20k] defaults to 20000
+  -- filter > 0 = LP freq and filter < 0 = HP freq
+  param_pattern.filter = d_seq.pattern_init(20000)
+
+  -- [track][bank][step]: in -3, -2, -1, 0, 1, 2, 3 defaults to 0
+  -- steps (or halfsteps) from an unchanged pitch
+  param_pattern.scale = d_seq.pattern_init(0)
+
+  -- [track][bank][step]: in -2, -1, -1/2, 0, 1/2, 1, 2 default to 1
+  param_pattern.rate = d_seq.pattern_init(1)
+
+  -- [track][bank][step]: in [0, 1] default to 1
+  param_pattern.prob = d_seq.pattern_init(1)
+
+end
+
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
@@ -39,6 +84,7 @@ end
 function d_seq.init()
   -- options (samples or slices) to cycle through for each track
   -- TODO: refactor these to allow "stored" pools for each bank
+  -- TODO: "unloaded" bank pools put in "cue" for that track-bank
   track_pool = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
   track_pool_cue = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
   track_pool_i = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  -- init'd with 0s
@@ -186,8 +232,11 @@ function d_seq.play_track_pool(track)
     -- tracks only play one thing at a time
     -- TODO: figure out gated situation ...
     -- TODO: it's probably okay, but 1-shots will keep playing ...
-    if pool_i > 0 then d_sample.note_off(pool_[pool_i]) end
-    d_sample.set_sample_params(pool_[next_pool_i], track, step[track])
+    if pool_i > 0 and sample_status[pool_[pool_i]] == 1 then 
+      d_sample.note_off(pool_[pool_i])
+    end
+
+    d_sample.set_sample_step_params(pool_[next_pool_i], track, step[track])
     d_sample.note_on(pool_[next_pool_i])
     track_pool_i[track] = next_pool_i
 

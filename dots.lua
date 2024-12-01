@@ -27,6 +27,8 @@ p_options = {}
 -----------------------------------------------------------------
 
 function init()
+  set_param_defaults()
+  
   d_sample.build_params()
   d_seq.build_params()
 

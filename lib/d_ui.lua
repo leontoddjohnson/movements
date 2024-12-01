@@ -73,6 +73,8 @@ function d_ui.sample_1_redraw()
   screen.move(64, 32)
   screen.text_center('sample!')
 
+  -- add params like noise (that are not on the config pages) per track
+
   screen.stroke()
 end
 
