@@ -73,22 +73,15 @@ PARAM = 'amp'
 function d_grid.init()
   -- param options at the bottom of config page.
   -- the last one is only assumed if all are deselected
-  p_options.PARAMS = {'length', 'pan', 'filter', 
-                      'scale', 'rate', 'prob', 'amp'}
+  p_options.PARAMS = {
+    'length', 'pan', 'filter', 'scale', 'rate', 'prob', 'amp'
+  }
   
-  p_options.PARAMS_MIDI = {'length', 'midi_1', 'midi_2', 
-                           'scale', 'rate', 'prob', 'vel'}
+  p_options.PARAMS_MIDI = {
+    'length', 'midi_1', 'midi_2', 'scale', 'rate', 'prob', 'vel'
+  }
 
-  -- parameter level values on the grid (see p_options.PARAMS).
-  -- *the "zero" value is the 7th item in the list!*
-  param_levels = {}
-
-  -- grid options for amp (ignore peek ... #s are converted to [0, 1])
-  param_levels.amp = {-24, -18, -12, -6, -3, 0}
-  for i=1,6 do param_levels.amp[i] = util.dbamp(param_levels.amp[i]) end
-  table.insert(param_levels.amp, 0)  -- last value
-
-  set_param_defaults()
+  d_grid.build_param_levels()
 
   -- key_hold map
   for r = 1,8 do
@@ -97,6 +90,31 @@ function d_grid.init()
       KEY_HOLD[r][c] = 0
     end
   end
+end
+
+function d_grid.build_param_levels()
+  -- parameter level values on the grid (see p_options.PARAMS).
+  -- *the "zero" value is the 7th item in the list!*
+  param_levels = {}
+
+  -- For amp, ignore peek ... #s are converted to [0, 1].
+  -- *Timber Engine needs these converted to db*
+  param_levels.amp = {-24, -18, -12, -6, -3, 0}
+  for i=1,6 do param_levels.amp[i] = util.dbamp(param_levels.amp[i]) end
+  table.insert(param_levels.amp, 0)
+
+  param_levels.length = {1/6, 2/6, 3/6, 4/6, 5/6, 1, 0}
+  param_levels.prob = {1/6, 2/6, 3/6, 4/6, 5/6, 1, 0}
+  param_levels.pan = {-1, -2/3, -1/3, 1/3, 2/3, 1, 0}
+
+  -- for filter, the "zero" value translates to swapping from HP <--> LP
+  -- for LP, highlight up to the value, for HP, highlight above the value
+  -- final value: filter > 0 = LP freq and filter < 0 = HP freq
+  param_levels.filter = {20, 500, 1000, 2000, 10000, 20000, -1}
+
+  param_levels.scale = {-3, -2, -1, 1, 2, 3, 0}
+  param_levels.rate = {-2, -1, -1/2, 1/2, 1, 2, 0}
+
 end
 
 

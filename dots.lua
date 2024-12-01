@@ -22,13 +22,26 @@ PAGE_ID = 1
 -- parameter options for all non-timber parameters
 p_options = {}
 
+-- track defaults. 
+track_param_default = {
+  amp = 1,
+  length = 1,
+  pan = 0,
+  filter = 20000,
+  scale = 1,
+  rate = 1,
+  prob = 1,
+  midi_transpose = 1,
+  midi_2 = 0,
+  midi_3 = 0
+}
+
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
 
 function init()
-  set_param_defaults()
-  
+
   d_sample.build_params()
   d_seq.build_params()
 

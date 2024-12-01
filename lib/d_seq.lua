@@ -30,50 +30,40 @@ function d_seq.build_params()
   -- Forward/reverse (in order of selection), random
   params:add_option('sample_play_order', 'sample play order',
                     p_options.PLAY_ORDER, 1)
+
+  build_param_patterns()
+
 end
 
--- set parameter defaults used on config pages
-function set_param_defaults()
-  -- track defaults (amp, length, pan, filter, scale, rate, prob)
-  track_param_default = {
-    amp = 1,
-    length = 1,
-    pan = 0,
-    filter = 20000,
-    scale = 1,
-    rate = 1,
-    prob = 1,
-    midi_transpose = 1,
-    midi_2 = 0,
-    midi_3 = 0
-  }
+-- make "empty" patterns with default parameters for reach step
+function build_param_patterns()
 
   param_pattern = {}
 
   -- [track][bank][step]: in [0, 1], (default 1)
   -- *needs to be converted to decibels between -48 and 0*
-  param_pattern.amp = d_seq.pattern_init(1)
+  param_pattern.amp = d_seq.pattern_init(track_param_default.amp)
 
   -- [track][bank][step]: in [0, 1], (default 1)
   -- 1 is the full length of the sample/slice
-  param_pattern.length = d_seq.pattern_init(1)
+  param_pattern.length = d_seq.pattern_init(track_param_default.length)
 
   -- [track][bank][step]: in [-1, 1] defaults to 0
-  param_pattern.pan = d_seq.pattern_init(0)
+  param_pattern.pan = d_seq.pattern_init(track_param_default.pan)
 
   -- [track][bank][step]: in [-20k, 20k] defaults to 20000
   -- filter > 0 = LP freq and filter < 0 = HP freq
-  param_pattern.filter = d_seq.pattern_init(20000)
+  param_pattern.filter = d_seq.pattern_init(track_param_default.filter)
 
   -- [track][bank][step]: in -3, -2, -1, 0, 1, 2, 3 defaults to 0
   -- steps (or halfsteps) from an unchanged pitch
-  param_pattern.scale = d_seq.pattern_init(0)
+  param_pattern.scale = d_seq.pattern_init(track_param_default.scale)
 
   -- [track][bank][step]: in -2, -1, -1/2, 0, 1/2, 1, 2 default to 1
-  param_pattern.rate = d_seq.pattern_init(1)
+  param_pattern.rate = d_seq.pattern_init(track_param_default.rate)
 
   -- [track][bank][step]: in [0, 1] default to 1
-  param_pattern.prob = d_seq.pattern_init(1)
+  param_pattern.prob = d_seq.pattern_init(track_param_default.prob)
 
 end
 
