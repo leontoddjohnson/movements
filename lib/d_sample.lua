@@ -69,13 +69,11 @@ function d_sample.build_sample_track_params()
       function(value)
         last_value = track_param_level[t]['amp']
 
-        -- TODO: do this across all banks when we expand track_pool
+        -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
           d_sample.squelch_sample_amp(last_value, value, id)
         end
-
-        track_param_level[t]['amp'] = value
 
       end
   )
@@ -321,6 +319,39 @@ function d_sample.set_sample_step_params(id, track_, step_)
 
   -- .. etc. ..
 
+end
+
+-- set a collection of sample ids back to default
+function d_sample.sample_params_to_default(sample_ids)
+  -- TODO: fill this out ... use params:set etc. for sample params
+  -- do this when a sample is removed from a track_pool
+  local id
+  for i = 1,#sample_ids do
+    id = sample_ids[i]
+
+    -- TODO: add the rest of the params
+
+    -- AMP
+    amp = util.clamp(ampdb(track_param_default.amp), -48, 0)
+    params:set('amp_' .. id, amp)
+  end
+
+end
+
+-- set a collection of sample ids to the track levels
+function d_sample.sample_params_to_track(sample_ids, track)
+  -- TODO: fill this out ... use params:set etc. for sample params
+  -- do this before a sample is added to a track_pool
+  local id
+  for i = 1,#sample_ids do
+    id = sample_ids[i]
+
+    -- TODO: add the rest of the params
+
+    -- AMP
+    amp = util.clamp(params:get('track_' .. track .. '_amp'), -48, 0)
+    params:set('amp_' .. id, amp)
+  end
 end
 
 -- update parameter value for sample loaded in a step.

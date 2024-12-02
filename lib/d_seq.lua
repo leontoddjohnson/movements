@@ -54,7 +54,8 @@ end
 -----------------------------------------------------------------
 
 function d_seq.init()
-  -- options (samples or slices) to cycle through for each track
+  -- options (samples or slices) to cycle through for each track.
+  -- track_pool[track] gives list of sample ids.
   track_pool = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
   track_pool_i = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  -- init'd with 0s
 
@@ -124,8 +125,8 @@ function d_seq.play_transport(i)
   local wait = nil
 
   while true do
-    -- step starts at 0, then waits before next step
-    if pattern[i][bank[i]][step[i]] > 0 then
+    -- step starts at 0, then waits before playing next step
+    if pattern[i][bank[i]][step[i]] > 0 and #track_pool[i] > 0 then
       d_seq.play_track_pool(i)
     end
 
@@ -140,7 +141,11 @@ function d_seq.play_transport(i)
     end
 
     -- increase step until the 16th step of the last bar
+    -- TODO: create a `pattern_range`, and update this for custom ranges
     step[i] = util.wrap(step[i] + 1, 1, n_bars(i) * 16)
+  
+    -- TODO: create a `length_counter` for samples in the track_pool
+    -- in this function, add a note_off when it reaches the length
 
     grid_dirty = true
   end
@@ -174,6 +179,12 @@ function d_seq.load_track_pool(track)
     for i = 1,#track_pool[track] do
       d_sample.note_off(track_pool[track][i])
     end
+
+    -- reset samples in last track_pool
+    d_sample.sample_params_to_default(track_pool[track])
+
+    -- squelch samples in track_cue
+    d_sample.sample_params_to_track(track_pool_cue[track][BANK], track)
   end
 
   track_pool[track] = track_pool_cue[track][BANK]

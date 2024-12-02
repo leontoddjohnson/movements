@@ -31,6 +31,7 @@ track_param_default = {
   scale = 1,
   rate = 1,
   prob = 1,
+  noise = 0,
   midi_transpose = 1,
   midi_2 = 0,
   midi_3 = 0

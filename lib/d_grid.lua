@@ -606,6 +606,9 @@ function d_grid.sample_config_key(x, y, z)
           elseif tab.contains(track_pool[TRACK], sample_id) then
             table.remove(track_pool[TRACK], 
             index_of(track_pool[TRACK], sample_id))
+
+            -- set parameters back to default
+            d_sample.sample_params_to_default({sample_id})
           end
         end
       end
