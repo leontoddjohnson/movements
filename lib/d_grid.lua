@@ -65,6 +65,7 @@ SEQ_BAR = 1  -- current sequence bar
 TRACK = 1    -- selected (sample) track
 BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
 PARAM = 'amp'
+PATTERN_PRESET = 1  -- currently selected pattern preset
 
 -----------------------------------------------------------------
 -- INIT
@@ -113,6 +114,8 @@ function d_grid.build_param_levels()
   param_levels.filter = {20, 500, 1000, 2000, 10000, 20000, -1}
 
   param_levels.scale = {-3, -2, -1, 1, 2, 3, 0}
+
+  -- TODO: for buffer samples, rate < 0 translates to start/end frame reversal
   param_levels.rate = {-2, -1, -1/2, 1/2, 1, 2, 0}
 
 end
@@ -641,6 +644,9 @@ function d_grid.sample_config_key(x, y, z)
       PARAM = p_options.PARAMS[x]
     end
   end
+
+  -- pattern pool selection
+
 
   grid_dirty = true
   screen_dirty = true

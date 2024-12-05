@@ -258,6 +258,23 @@ function d_sample.note_on(sample_id, vel)
   end
 end
 
+-- reverse buffer samples less than 5 seconds long. 
+-- streaming samples (> 5 sec) cannot be reversed ... sad day.
+function d_sample.reverse_buffer(id)
+
+  if samples_meta[id]['streaming'] == 0 then
+    local start_frame = params:get("start_frame_" .. id)
+    local loop_start_frame = params:get("loop_start_frame_" .. id)
+    local loop_end_frame = params:get("loop_end_frame_" .. id)
+
+    params:set("start_frame_" .. id, params:get("end_frame_" .. id))
+    params:set("end_frame_" .. id, start_frame)
+    params:set("loop_start_frame_" .. id, loop_start_frame)
+    params:set("loop_end_frame_" .. id, loop_end_frame)
+  end
+  
+end
+
 function d_sample.note_off(sample_id)
   if sample_id then print("note_off: " .. sample_id) end
   engine.noteOff(sample_id)
