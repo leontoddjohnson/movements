@@ -27,10 +27,11 @@ g_brightness = {
   mode_play = 10,
   alt_off = 0,
   alt_on = 15,
-  step_active = 12,
-  step_inactive = 5,
+  step_active = 14,
+  step_inactive = 8,
   step_empty = 0,
   seq_track_selected = 2,
+  seq_step_range = 4,
   level_met = 5,
   bar_active = 12,
   bar_empty = 0,
@@ -44,7 +45,11 @@ g_brightness = {
   clock_frac_deselected = 0,
   clock_frac_fours = 3,
   param_selected = 5,
-  param_deselected = 1
+  param_deselected = 1,
+  play_mode_selected = 10,
+  play_mode_deselected = 0,
+  sample_range_in = 5,
+  sample_range_out = 1
 }
 
 -- tables with 1 or 2 page options for each nav key
@@ -65,7 +70,6 @@ SEQ_BAR = 1  -- current sequence bar
 TRACK = 1    -- selected (sample) track
 BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
 PARAM = 'amp'
-PATTERN_PRESET = 1  -- currently selected pattern preset
 
 -----------------------------------------------------------------
 -- INIT
@@ -202,6 +206,9 @@ function d_grid.sample_seq_redraw()
         g:led(s, track, g_brightness.step_active)
       elseif pattern[track][bank[track]][step_] > 0 then
         g:led(s, track, g_brightness.step_inactive)
+      elseif step_range[track][1] <= step_ 
+              and step_ <= step_range[track][2] then
+        g:led(s, track, g_brightness.seq_step_range)
       elseif track ~= TRACK then
         g:led(s, track, g_brightness.step_empty)
       else
@@ -226,8 +233,7 @@ function d_grid.sample_seq_key(x, y, z)
         TRACK = y
       -- activate step
       else
-        empty_step_ = pattern[y][bank[y]][step_] == 0
-        pattern[y][bank[y]][step_] = empty_step_ and 1 or 0
+        d_seq.toggle_pattern_step(y, step_)
       end
     else
       -- move all tracks to that step
@@ -238,6 +244,31 @@ function d_grid.sample_seq_key(x, y, z)
       -- move just the associated track to that step
       else
         step[y] = step_
+      end
+    end
+  end
+
+  -- step range (only in focus mode)
+  if y < 8 and not PLAY_MODE then
+    if z == 1 then
+      KEY_HOLD[y][x] = 1
+      hold_span = span(KEY_HOLD[y])
+      -- selecting whole range removes "mini range"
+      if hold_span[2] - hold_span[1] == 15 then
+        step_range[y] = {0, 0}
+        step_range_updated = {1, 16}
+      elseif hold_span[2] > hold_span[1] then
+        step_range[y][1] = (SEQ_BAR - 1) * 16 + hold_span[1]
+        step_range[y][2] = (SEQ_BAR - 1) * 16 + hold_span[2]
+        step_range_updated = step_range[y]
+      end
+    else
+      KEY_HOLD[y][x] = 0
+      if step_range_updated then
+        -- undo the de/selection that came from setting the range
+        d_seq.toggle_pattern_step(y, step_range_updated[1])
+        d_seq.toggle_pattern_step(y, step_range_updated[2])
+        step_range_updated = nil
       end
     end
   end
@@ -484,6 +515,9 @@ function d_grid.draw_bank(bank)
 
   end
 
+  -- draw playback modes
+  -- ...
+
   -- show selected sample (or bank it's in) if current bank is held
   for bank_ = 1,4 do
     x, y = global_xy(origin, bank_, 1)
@@ -539,6 +573,9 @@ function d_grid.sample_config_redraw()
       g:led(p, 8, g_brightness.param_deselected)
     end
   end
+
+  -- draw play mode selection ...
+  -- ...
 
 end
 
@@ -645,8 +682,8 @@ function d_grid.sample_config_key(x, y, z)
     end
   end
 
-  -- pattern pool selection
-
+  -- play mode adjustment ...
+  -- ...
 
   grid_dirty = true
   screen_dirty = true

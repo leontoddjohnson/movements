@@ -26,9 +26,9 @@ function build_param_patterns()
   -- *needs to be converted to decibels between -48 and 0*
   param_pattern.amp = d_seq.pattern_init(track_param_default.amp)
 
-  -- [track][bank][step]: in [0, 1], (default 1)
-  -- 1 is the full length of the sample/slice
-  param_pattern.length = d_seq.pattern_init(track_param_default.length)
+  -- [track][bank][step]: in [0, 1], (default 0)
+  -- amount to send to engine/softcut delay
+  param_pattern.delay = d_seq.pattern_init(track_param_default.delay)
 
   -- [track][bank][step]: in [-1, 1] defaults to 0
   param_pattern.pan = d_seq.pattern_init(track_param_default.pan)
@@ -69,6 +69,13 @@ function d_seq.init()
   -- current *active* step/bar for each track
   step = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
+  -- optional selection of steps to sequence through on seq page
+  -- {0, 0} for no step range.
+  step_range = {
+    {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+    {0, 0}, {0, 0}, {0, 0}, {0, 0}
+  }
+
   -- options for num beats/secs per step for each track
   clock_fraction = {1/8, 1/7, 1/6, 1/5, 1/4, 1/3, 1/2, 1, 2, 3, 4, 5, 6}
 
@@ -92,14 +99,6 @@ function d_seq.init()
   -- pat[track][bank][step] = 1 or 0 (mult by param value). 
   -- rec tracks only have one bank
   pattern = d_seq.pattern_init()
-
-  -- four preset patterns across all tracks (sample and rec)
-  pattern_pool = {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-  }
 
   -- current pattern bank loaded
   bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
@@ -140,12 +139,12 @@ function d_seq.play_transport(i)
       clock.sleep(wait, wait * offset[i])
     end
 
-    -- increase step until the 16th step of the last bar
-    -- TODO: create a `pattern_range`, and update this for custom ranges
-    step[i] = util.wrap(step[i] + 1, 1, n_bars(i) * 16)
-  
-    -- TODO: create a `length_counter` for samples in the track_pool
-    -- in this function, add a note_off when it reaches the length
+    if step_range[i][1] > 0 then
+      step[i] = util.wrap(step[i] + 1, step_range[i][1], step_range[i][2])
+    else
+      -- increase step until the 16th step of the last bar
+      step[i] = util.wrap(step[i] + 1, 1, n_bars(i) * 16)
+    end
 
     grid_dirty = true
   end
@@ -170,6 +169,11 @@ end
 -----------------------------------------------------------------
 -- UTILITY
 -----------------------------------------------------------------
+-- if step == 0, send to 1. if step == 1 then send to 0.
+function d_seq.toggle_pattern_step(track, step)
+  empty_step_ = pattern[track][bank[track]][step] == 0
+  pattern[track][bank[track]][step] = empty_step_ and 1 or 0
+end
 
 -- load `track_pool` from `track_pool_cue` into current BANK
 function d_seq.load_track_pool(track)

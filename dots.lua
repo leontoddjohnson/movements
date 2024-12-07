@@ -25,7 +25,7 @@ p_options = {}
 -- track defaults. 
 track_param_default = {
   amp = 1,
-  length = 1,
+  delay = 0,
   pan = 0,
   filter = 20000,
   scale = 1,

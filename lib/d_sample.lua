@@ -372,7 +372,7 @@ function d_sample.sample_params_to_track(sample_ids, track)
 end
 
 -- update parameter value for sample loaded in a step.
--- `param` is in {amp, length, pan, filter, scale, rate, prob}
+-- `param` is in {amp, delay, pan, filter, scale, rate, prob}
 function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
 
   -- fill
