@@ -27,7 +27,7 @@ bank_folders = {}
 
 BANK = 1  -- currently selected sample bank
 TRACK = 1  -- currently selected track
-SAMPLE = nil  -- currently selected sample
+SAMPLE = 0  -- currently selected sample
 
 -----------------------------------------------------------------
 -- PARAMETERS
@@ -45,7 +45,6 @@ function d_sample.build_params()
     track_param_level[track] = track_param_default
   end
 
-  params:add_group("Sample Tracks", 7)  -- update 7 as you add more params
   d_sample.build_sample_track_params()
 
   Timber.add_params()
@@ -63,6 +62,10 @@ function d_sample.build_params()
 end
 
 function d_sample.build_sample_track_params()
+
+  -- SAMPLE AMPLITUDE
+  -- TODO: reverse this so that the navigation is track i > param ...
+  params:add_group("Sample Track Amp", 7)
   for t = 1,7 do
     params:add_number('track_' .. t .. '_amp', 'track_' .. t .. '_amp', 0, 1, 1)
     params:set_action('track_' .. t .. '_amp', 
@@ -124,6 +127,9 @@ function d_sample.init()
   lfos_view = Timber.UI.Lfos.new(0)
   mod_matrix_view = Timber.UI.ModMatrix.new(0)
   
+  -- initial sample
+  d_sample.set_sample_id(SAMPLE)
+
 end
 
 
@@ -316,6 +322,13 @@ end
 function d_sample.set_sample_id(id)
   SAMPLE = id
 
+  -- update play mode options on grid
+  if samples_meta[SAMPLE]['streaming'] == 1 then
+    g_play_modes = g_play_modes_all.streaming
+  else
+    g_play_modes = g_play_modes_all.buffer
+  end
+
   waveform_view:set_sample_id(id)
   filter_amp_view:set_sample_id(id)
   -- amp_env_view:set_sample_id(id)
@@ -385,6 +398,23 @@ function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
 
   end
   
+end
+
+-- return the *text* of a sample's play mode
+function d_sample.play_mode_option(id)
+  local play_mode_lookup = params:lookup_param("play_mode_" .. id)
+  local i = play_mode_lookup['selected']
+  local options_ = play_mode_lookup['options']
+
+  return options_[i]
+end
+
+-- return the *index* of a play mode (to pass into params:set)
+function d_sample.play_mode_i(id, option)
+  local play_mode_lookup = params:lookup_param("play_mode_" .. id)
+  local options_ = play_mode_lookup['options']
+
+  return index_of(options_, option)
 end
 
 -- squelch the amp of sample `id`. `value` is optional (e.g., step value)

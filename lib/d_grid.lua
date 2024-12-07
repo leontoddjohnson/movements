@@ -58,6 +58,13 @@ g_pages = {
   {'rec_seq', 'rec_levels'}, {'rec_time'}, {'rec_config'},
 }
 
+-- order of play modes on grid
+g_play_modes_all = {
+  buffer = {"Loop", "Inf. Loop", "1-Shot", "Gated"},
+  streaming = {"Loop", "Loop", "1-Shot", "Gated"},
+  rec_slice = {"Loop", "Loop", "1-Shot", "1-Shot"}
+}
+
 G_PAGE = 'sample_config'
 PLAY_MODE = false
 ALT = false
@@ -516,7 +523,13 @@ function d_grid.draw_bank(bank)
   end
 
   -- draw playback modes
-  -- ...
+  for i = 1,4 do
+    if d_sample.play_mode_option(SAMPLE) == g_play_modes[i] then
+      g:led(8 + i, 5, g_brightness.play_mode_selected)
+    else
+      g:led(8 + i, 5, g_brightness.play_mode_deselected)
+    end
+  end
 
   -- show selected sample (or bank it's in) if current bank is held
   for bank_ = 1,4 do
@@ -574,9 +587,6 @@ function d_grid.sample_config_redraw()
     end
   end
 
-  -- draw play mode selection ...
-  -- ...
-
 end
 
 function d_grid.sample_config_key(x, y, z)
@@ -587,6 +597,12 @@ function d_grid.sample_config_key(x, y, z)
       origin = {13, 5}
       BANK, _ = rel_xy(origin, x, y)
     end
+  end
+
+  -- play mode selection
+  if 8 < x and x < 13 and y == 5 and z == 1 then
+    i = d_sample.play_mode_i(SAMPLE, g_play_modes[x - 8])
+    params:set('play_mode_' .. SAMPLE, i)
   end
 
   -- track selection
