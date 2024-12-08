@@ -281,7 +281,18 @@ function d_grid.sample_seq_key(x, y, z)
   end
   
   if y == 8 and x < 9 then
-    SEQ_BAR = x
+    if z == 1 then
+      
+      -- copy bar for selected track
+      if ALT and KEY_HOLD[8][SEQ_BAR] > 0 and x ~= SEQ_BAR then
+        for i = 1,16 do
+          paste_step = pattern[TRACK][BANK][(SEQ_BAR - 1) * 16 + i]
+          pattern[TRACK][BANK][(x - 1) * 16 + i] = paste_step
+        end
+      end
+
+      SEQ_BAR = x
+    end
   end
 
   grid_dirty = true
