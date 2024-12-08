@@ -531,6 +531,19 @@ function d_grid.draw_bank(bank)
     end
   end
 
+  -- draw sample range
+  sample_range = sample_frame_grid(SAMPLE)
+  for i = 1,16 do
+    row_ = (i - 1) // 8 + 1
+    col_ = i - (row_ - 1) * 8
+
+    if sample_range[i] > 0 then
+      g:led(8 + col_, 5 + row_, g_brightness.sample_range_in)
+    else
+      g:led(8 + col_, 5 + row_, g_brightness.sample_range_out)
+    end
+  end
+
   -- show selected sample (or bank it's in) if current bank is held
   for bank_ = 1,4 do
     x, y = global_xy(origin, bank_, 1)
@@ -698,8 +711,17 @@ function d_grid.sample_config_key(x, y, z)
     end
   end
 
-  -- play mode adjustment ...
-  -- ...
+  -- slice adjustment ...
+  if 5 < y and y < 8 and 8 < x and z == 1 then
+    i = 8 * (y - 6) + (x - 8)
+
+    if ALT then
+      grid_sample_end(SAMPLE, i)
+    else
+      grid_sample_start(SAMPLE, i)
+    end
+
+  end
 
   grid_dirty = true
   screen_dirty = true
@@ -844,6 +866,56 @@ end
 -----------------------------------------------------------------
 -- UTILITY
 -----------------------------------------------------------------
+
+-- return a 16-step array with 1s encompassing the sample start and
+-- end, with 0s otherwise.
+function sample_frame_grid(id)
+  local start_frame = params:get('start_frame_' .. id)
+  local end_frame = params:get('end_frame_' .. id)
+  local num_frames = samples_meta[id]['num_frames']
+  local grid_range = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+  if num_frames == 0 then
+    return grid_range
+  end
+
+  first_frame = math.min(start_frame, end_frame)
+  last_frame = math.max(start_frame, end_frame)
+
+  interval = num_frames / 16
+
+  start_ = first_frame // interval + 1
+  stop_ = last_frame // interval
+  for i = start_, math.max(start_, stop_) do
+    grid_range[i] = 1
+  end
+
+  return grid_range
+end
+
+function grid_sample_start(id, i_16)
+  local num_frames = samples_meta[id]['num_frames']
+  local interval = num_frames / 16
+
+  if num_frames > 0 then
+    -- frame associated with the start of the i_16th step of 16
+    frame = math.ceil(interval * (i_16 - 1))
+    params:set('start_frame_' .. id, frame)
+  end
+  
+end
+
+function grid_sample_end(id, i_16)
+  local num_frames = samples_meta[id]['num_frames']
+  local interval = num_frames / 16
+
+  if num_frames > 0 then
+    -- frame associated with the end of the i_16th step of 16
+    frame = math.ceil(interval * i_16)
+    params:set('end_frame_' .. id, frame)
+  end
+  
+end
 
 -- "global" grid x and y from *relative* x and y from origin. 
 -- origin is {n_cols, n_rows} and this is *1-indexed*

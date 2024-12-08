@@ -310,12 +310,14 @@ end
 function d_sample.callback_set_screen_dirty(id)
   if id == nil or id == SAMPLE then
     screen_dirty = true
+    grid_dirty = true
   end
 end
 
 function d_sample.callback_set_waveform_dirty(id)
   if (id == nil or id == SAMPLE) then
     screen_dirty = true
+    grid_dirty = true
   end
 end
 
