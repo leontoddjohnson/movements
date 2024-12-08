@@ -257,27 +257,7 @@ function d_grid.sample_seq_key(x, y, z)
 
   -- step range (only in focus mode)
   if y < 8 and not PLAY_MODE then
-    if z == 1 then
-      KEY_HOLD[y][x] = 1
-      hold_span = span(KEY_HOLD[y])
-      -- selecting whole range removes "mini range"
-      if hold_span[2] - hold_span[1] == 15 then
-        step_range[y] = {0, 0}
-        step_range_updated = {1, 16}
-      elseif hold_span[2] > hold_span[1] then
-        step_range[y][1] = (SEQ_BAR - 1) * 16 + hold_span[1]
-        step_range[y][2] = (SEQ_BAR - 1) * 16 + hold_span[2]
-        step_range_updated = step_range[y]
-      end
-    else
-      KEY_HOLD[y][x] = 0
-      if step_range_updated then
-        -- undo the de/selection that came from setting the range
-        d_seq.toggle_pattern_step(y, step_range_updated[1])
-        d_seq.toggle_pattern_step(y, step_range_updated[2])
-        step_range_updated = nil
-      end
-    end
+    d_grid.set_step_range(x, y, z, y)
   end
   
   if y == 8 and x < 9 then
@@ -298,6 +278,34 @@ function d_grid.sample_seq_key(x, y, z)
   grid_dirty = true
 end
 
+-- **KEY FUNCTION**
+-- given current x, y, z of key press, determine whether to set 
+-- a step range for track `track`. *allow for z == 0 and z == 1.*
+function d_grid.set_step_range(x, y, z, track)
+  if z == 1 then
+    KEY_HOLD[y][x] = 1
+    hold_span = span(KEY_HOLD[y])
+    -- selecting whole range removes "mini range"
+    if hold_span[2] - hold_span[1] == 15 then
+      step_range[track] = {0, 0}
+      step_range_updated = {1, 16}
+    elseif hold_span[2] > hold_span[1] then
+      step_range[track][1] = (SEQ_BAR - 1) * 16 + hold_span[1]
+      step_range[track][2] = (SEQ_BAR - 1) * 16 + hold_span[2]
+      step_range_updated = step_range[track]
+    end
+  else
+    KEY_HOLD[y][x] = 0
+    if step_range_updated then
+      -- undo the de/selection that came from setting the range
+      d_seq.toggle_pattern_step(track, step_range_updated[1])
+      d_seq.toggle_pattern_step(track, step_range_updated[2])
+      step_range_updated = nil
+    end
+  end
+end
+
+
 -----------------------------------------------------------------
 -- SAMPLE LEVELS
 -----------------------------------------------------------------
@@ -312,6 +320,9 @@ function d_grid.sample_levels_redraw()
       g:led(s, 1, g_brightness.step_active)
     elseif pattern[TRACK][bank[TRACK]][step_] > 0 then
       g:led(s, 1, g_brightness.step_inactive)
+    elseif step_range[TRACK][1] <= step_ 
+          and step_ <= step_range[TRACK][2] then
+      g:led(s, 1, g_brightness.seq_step_range)
     else
       g:led(s, 1, g_brightness.seq_track_selected)
     end
@@ -321,7 +332,7 @@ function d_grid.sample_levels_redraw()
       value_ = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
 
       -- fill
-      if tab.contains({'amp', 'length', 'prob'}, PARAM) then
+      if tab.contains({'amp', 'delay', 'prob'}, PARAM) then
 
         for i=1,6 do
           if value_ >= param_levels[PARAM][i] then
@@ -347,6 +358,10 @@ function d_grid.sample_levels_key(x, y, z)
     step_ = (SEQ_BAR - 1) * 16 + x
   end
 
+  if y == 1 and not PLAY_MODE then
+    d_grid.set_step_range(x, y, z, TRACK)
+  end
+
   if y == 1 and z == 1 then
     if not PLAY_MODE then
       empty_step_ = pattern[TRACK][bank[TRACK]][step_] == 0
@@ -364,16 +379,26 @@ function d_grid.sample_levels_key(x, y, z)
   end
   
   if y == 8 and x < 9 then
-    SEQ_BAR = x
+    if z == 1 then
+      -- copy bar for selected track
+      if ALT and KEY_HOLD[8][SEQ_BAR] > 0 and x ~= SEQ_BAR then
+        for i = 1,16 do
+          paste_step = pattern[TRACK][BANK][(SEQ_BAR - 1) * 16 + i]
+          pattern[TRACK][BANK][(x - 1) * 16 + i] = paste_step
+        end
+      end
+
+      SEQ_BAR = x
+    end
   end
 
   if 1 < y and y < 8 and z == 1 and pattern[TRACK][bank[TRACK]][step_] > 0 then
 
-    -- currrent parameter value at that step
+    -- current parameter value at that step
     param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
 
     -- fill
-    if tab.contains({'amp', 'length', 'prob'}, PARAM) then
+    if tab.contains({'amp', 'delay', 'prob'}, PARAM) then
       -- parameter value range of selected cell
       range_ = {param_levels[PARAM][8 - y], param_levels[PARAM][8 - y + 1]}
 
