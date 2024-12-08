@@ -35,7 +35,8 @@ g_brightness = {
   level_met = 5,
   bar_active = 12,
   bar_empty = 0,
-  bar_populated = 5,
+  bar_populated = 3,
+  bar_moving = 6,
   track_selected = 8,
   track_playing = 10,
   track_stopped = 0,
@@ -989,6 +990,8 @@ function draw_sequence_bars(x_start, y, track_range)
 
     if SEQ_BAR == bar then
       g:led(x_start - 1 + bar, y, g_brightness.bar_active)
+    elseif (bar - 1) * 16 < step[TRACK] and step[TRACK] <= bar * 16 then
+      g:led(x_start - 1 + bar, y, g_brightness.bar_moving)
     end
   end
 end
