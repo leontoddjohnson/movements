@@ -266,10 +266,7 @@ function d_grid.sample_seq_key(x, y, z)
       
       -- copy bar for selected track
       if ALT and KEY_HOLD[8][SEQ_BAR] > 0 and x ~= SEQ_BAR then
-        for i = 1,16 do
-          paste_step = pattern[TRACK][BANK][(SEQ_BAR - 1) * 16 + i]
-          pattern[TRACK][BANK][(x - 1) * 16 + i] = paste_step
-        end
+        d_grid.copy_track_pattern(SEQ_BAR, x)
       end
 
       SEQ_BAR = x
@@ -383,10 +380,7 @@ function d_grid.sample_levels_key(x, y, z)
     if z == 1 then
       -- copy bar for selected track
       if ALT and KEY_HOLD[8][SEQ_BAR] > 0 and x ~= SEQ_BAR then
-        for i = 1,16 do
-          paste_step = pattern[TRACK][BANK][(SEQ_BAR - 1) * 16 + i]
-          pattern[TRACK][BANK][(x - 1) * 16 + i] = paste_step
-        end
+        d_grid.copy_track_pattern(SEQ_BAR, x)
       end
 
       SEQ_BAR = x
@@ -968,6 +962,23 @@ function rel_xy(origin, x_global, y_global)
   x = x_global - origin[1] + 1
   y = y_global - origin[2] + 1
   return x, y
+end
+
+-- copy 16 pattern steps and parameter pattern values `from_bar` to 
+-- `to_bar` (typically correspond to SEQ_BAR and another bar).
+function d_grid.copy_track_pattern(from_bar, to_bar)
+
+  for i = 1,16 do
+    paste_step = pattern[TRACK][bank[TRACK]][(from_bar - 1) * 16 + i]
+    pattern[TRACK][bank[TRACK]][(to_bar - 1) * 16 + i] = paste_step
+
+    for p, pattern_ in pairs(param_pattern) do
+      paste_param = pattern_[TRACK][bank[TRACK]][(from_bar - 1) * 16 + i]
+      param_pattern[p][TRACK][bank[TRACK]][(to_bar - 1) * 16 + i] = paste_param
+    end
+  
+  end
+
 end
 
 -- draw 8 sequence bars starting at y starting at x_start on grid
