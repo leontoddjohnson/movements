@@ -43,6 +43,8 @@ track_param_default = {
 
 function init()
 
+  manage_data()
+
   d_sample.build_params()
   d_seq.build_params()
 
@@ -116,4 +118,69 @@ function redraw_clock()
     end
 
   end
+end
+
+-----------------------------------------------------------------
+-- DATA
+-----------------------------------------------------------------
+
+function manage_data()
+
+  -- save
+  params.action_write = function(filename,name,number)
+    print("finished writing '"..filename.."' as '"..name.."'", number)
+    os.execute("mkdir -p "..norns.state.data.."/"..number.."/")
+
+    d_data = {
+      p_options = p_options,
+      partitions = partitions,
+      banks = banks,
+      bank_folders = bank_folders,
+      track_param_level = track_param_level,
+      param_pattern = param_pattern,
+      track_pool = track_pool,
+      track_pool_cue = track_pool_cue,
+      step = step,
+      step_range = step_range,
+      clock_range = clock_range,
+      offset = offset,
+      time_type = time_type,
+      pattern = pattern,
+      bank = bank
+    }
+
+    tab.save(d_data, norns.state.data.."/"..number.."/dots.data")
+
+  end
+
+  -- load
+  params.action_read = function(filename,silent,number)
+    print("finished reading '"..filename.."'", number)
+
+    d_data = tab.load(norns.state.data.."/"..number.."/dots.data")
+
+    p_options = d_data.p_options
+    partitions = d_data.partitions
+    banks = d_data.banks
+    bank_folders = d_data.bank_folders
+    track_param_level = d_data.track_param_level
+    param_pattern = d_data.param_pattern
+    track_pool = d_data.track_pool
+    track_pool_cue = d_data.track_pool_cue
+    step = d_data.step
+    step_range = d_data.step_range
+    clock_range = d_data.clock_range
+    offset = d_data.offset
+    time_type = d_data.time_type
+    pattern = d_data.pattern
+    bank = d_data.bank
+    
+  end
+
+  -- delete
+  params.action_delete = function(filename,name,number)
+    print("finished deleting '"..filename, number)
+    norns.system_cmd("rm -r "..norns.state.data.."/"..number.."/")
+  end
+
 end
