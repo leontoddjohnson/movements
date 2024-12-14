@@ -37,8 +37,9 @@ function d_sample.build_params()
 
   params:add_separator("Track Levels")
 
-  -- tracking track param levels to be able to squelch/adjust given new 
-  -- values. filter > 0 = LP freq and filter < 0 = HP freq.
+  -- track param levels to set squelch/adjust of steps in that track
+  -- filter > 0 = LP freq and filter < 0 = HP freq.
+  -- use track_param_level[track][param]
   track_param_level = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
 
   for track = 1,11 do
@@ -63,11 +64,12 @@ end
 
 function d_sample.build_sample_track_params()
 
-  -- SAMPLE AMPLITUDE
-  -- TODO: reverse this so that the navigation is track i > param ...
-  params:add_group("Sample Track Amp", 7)
   for t = 1,7 do
-    params:add_number('track_' .. t .. '_amp', 'track_' .. t .. '_amp', 0, 1, 1)
+    params:add_group("Track " .. t, 2)  -- # of track parameters
+
+    -- AMPLITUDE
+    params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
+                       controlspec.AMP, Formatters.round(0.01))
     params:set_action('track_' .. t .. '_amp', 
       function(value)
         last_value = track_param_level[t]['amp']
@@ -78,9 +80,38 @@ function d_sample.build_sample_track_params()
           d_sample.squelch_sample_amp(last_value, value, id)
         end
 
+        track_param_level[t]['amp'] = value
+        grid_dirty = true
       end
-  )
+    )
+
+    -- PANNING
+    params:add_control('track_' .. t .. '_pan', 'track_' .. t .. '_pan', 
+                       controlspec.PAN, Formatters.round(0.01))
+    params:set_action('track_' .. t .. '_pan', 
+      function(value)
+        last_value = track_param_level[t]['pan']
+        pan_left_in = math.max(-1, -1 + last_value)
+        pan_right_in = math.min(1, 1 - last_value)
+        in_range = {pan_left_in, pan_right_in}
+
+        pan_left_out = math.max(-1, -1 + value)
+        pan_right_out = math.min(1, 1 - value)
+        out_range = {pan_left_out, pan_right_out}
+
+        -- squelch samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          d_sample.squelch_sample_pan(in_range, out_range, id)
+        end
+
+        track_param_level[t]['pan'] = value
+        grid_dirty = true
+      end
+    )
+  
   end
+
 end
 
 -----------------------------------------------------------------
@@ -342,7 +373,7 @@ end
 -- update all sample parameters for a sample `id` loaded in a `track_`
 -- at some `step_`.
 function d_sample.set_sample_step_params(id, track_, step_)
-  timber_params = {'amp'}
+  timber_params = {'amp', 'pan'}
 
   for i = 1,#timber_params do
     d_sample.set_sample_step_param(id, timber_params[i], track_, 
@@ -390,13 +421,28 @@ end
 -- `param` is in {amp, delay, pan, filter, scale, rate, prob}
 function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
 
-  -- fill
+  -- AMP
   if param == 'amp' then
     amp_max = params:get('track_' .. track_ .. '_amp')  -- defined for track
     amp_step = param_pattern.amp[track_][bank_][step_]  -- defined at step
 
     -- squelch using track param default
     d_sample.squelch_sample_amp(1, amp_max, id, amp_step)
+  
+  -- PAN
+  elseif param == 'pan' then
+    track_pan = params:get('track_' .. track_ .. '_pan')
+
+    if track_pan < 0 then
+      pan_range = {-1, track_pan}
+    elseif track_pan > 0 then
+      pan_range = {track_pan, 1}
+    else
+      pan_range = {-1, 1}
+    end
+
+    pan_step = param_pattern.pan[track_][bank_][step_]
+    d_sample.squelch_sample_pan({-1, 1}, pan_range, id, pan_step)
 
   end
   
@@ -430,6 +476,18 @@ function d_sample.squelch_sample_amp(input_max, output_max, id, value)
   -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
   amp = util.clamp(ampdb(amp), -48, 0)
   params:set('amp_' .. id, amp)
+end
+
+-- given an `input_range` associated with `value` (or current pan of id),
+-- return a new pan value on the same "scale" but in `output_range`
+function d_sample.squelch_sample_pan(input_range, output_range, id, value)
+  pan_in = value or params:get("pan_" .. id)
+  
+  pan_out = util.linlin(input_range[1], input_range[2], 
+                        output_range[1], output_range[2], 
+                        pan_in)
+  
+  params:set('pan_' .. id, pan_out)
 end
 
 function d_sample.sample_length(id)

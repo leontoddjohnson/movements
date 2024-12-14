@@ -88,6 +88,7 @@ function d_seq.init()
 
   -- offset fraction for each transport -0.5 < offset < 0.5 (strict)
   -- does not apply to a step at t == 0 (when clock is run)
+  -- translates to "life". apply to every k steps, or random steps
   offset = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
   -- time type for transport: either 'beats' or 'seconds'

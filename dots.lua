@@ -22,7 +22,7 @@ PAGE_ID = 1
 -- parameter options for all non-timber parameters
 p_options = {}
 
--- track defaults. 
+-- track defaults across samples and recording
 track_param_default = {
   amp = 1,
   delay = 0,
@@ -32,7 +32,7 @@ track_param_default = {
   rate = 1,
   prob = 1,
   noise = 0,
-  midi_transpose = 1,
+  midi_1 = 1,
   midi_2 = 0,
   midi_3 = 0
 }
@@ -52,6 +52,13 @@ function init()
   d_seq.init()
   d_ui.init()
   d_grid.init()
+
+  -- set default parameters
+  for i, p in ipairs({'amp', 'pan'}) do
+    for t=1,7 do
+      params:set('track_' .. t .. "_" .. p, track_param_default[p])
+    end
+  end
   
   -- redraw clock
   screen_dirty = true

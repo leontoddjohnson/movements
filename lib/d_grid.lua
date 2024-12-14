@@ -87,11 +87,11 @@ function d_grid.init()
   -- param options at the bottom of config page.
   -- the last one is only assumed if all are deselected
   p_options.PARAMS = {
-    'length', 'pan', 'filter', 'scale', 'rate', 'prob', 'amp'
+    'pan', 'filter', 'delay', 'scale', 'rate', 'prob', 'amp'
   }
   
   p_options.PARAMS_MIDI = {
-    'length', 'midi_1', 'midi_2', 'scale', 'rate', 'prob', 'vel'
+    'midi_1', 'midi_2', 'midi_3', 'scale', 'rate', 'prob', 'vel'
   }
 
   d_grid.build_param_levels()
@@ -340,7 +340,22 @@ function d_grid.sample_levels_redraw()
 
       end
 
-      -- etc ...
+      -- centered value (handle fraction rounding)
+      if tab.contains({'pan'}, PARAM) then
+        for i = 1,6 do
+          if value_ > 0 and i >= 4 then
+            if value_ >= param_levels[PARAM][i] - 0.001 then
+              g:led(s, 8 - i, g_brightness.level_met)
+            end
+          elseif value_ < 0 and i <= 3 then
+            if value_ <= param_levels[PARAM][i] + 0.001 then
+              g:led(s, 8 - i, g_brightness.level_met)
+            end
+          end
+        end
+      end
+
+      -- TODO: options (e.g., rate, scale, etc.) are not "centered"
 
     end
 
@@ -365,9 +380,9 @@ function d_grid.sample_levels_key(x, y, z)
       empty_step_ = pattern[TRACK][bank[TRACK]][step_] == 0
       pattern[TRACK][bank[TRACK]][step_] = empty_step_ and 1 or 0
 
-      -- reset "new" step parameters to default
+      -- reset "new" step parameters to track value
       if empty_step_ then
-        default = track_param_default[PARAM]
+        default = track_param_level[TRACK][PARAM]
         param_pattern[PARAM][TRACK][bank[TRACK]][step_] = default
       end
     else
@@ -391,25 +406,8 @@ function d_grid.sample_levels_key(x, y, z)
 
     -- current parameter value at that step
     param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
-
-    -- fill
-    if tab.contains({'amp', 'delay', 'prob'}, PARAM) then
-      -- parameter value range of selected cell
-      range_ = {param_levels[PARAM][8 - y], param_levels[PARAM][8 - y + 1]}
-
-      if (range_[1] <= param_value and param_value < range_[2]) or
-         (param_value == param_levels[PARAM][6] and y == 2) then
-        
-        -- if selecting already set value, make the "minimum"/"default"
-        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = param_levels[PARAM][7]
-      
-      else
-
-        -- otherwise, assign value
-        v = param_levels[PARAM][8-y]
-        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = v
-      end
-    end
+    value = d_grid.select_param_value(PARAM, 8 - y, param_value)
+    param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
     
   end
 
@@ -608,8 +606,23 @@ function d_grid.draw_tracks()
 
       -- fill
       if tab.contains({'amp'}, PARAM) then
-        if params:get('track_' .. y .. '_amp') >= param_levels[PARAM][i] then
+        p = 'track_' .. y .. '_' .. PARAM
+        if params:get(p) >= param_levels[PARAM][i] then
           g:led(i, y, g_brightness.level_met)
+        end
+      end
+
+      -- 0-centered value
+      if tab.contains({'pan'}, PARAM) then
+        p = 'track_' .. y .. '_' .. PARAM
+        if params:get(p) > 0 and i >= 4 then
+          if params:get(p) >= param_levels[PARAM][i] - 0.001 then
+            g:led(i, y, g_brightness.level_met)
+          end
+        elseif params:get(p) < 0 and i <= 3 then
+          if params:get(p) <= param_levels[PARAM][i] + 0.001 then
+            g:led(i, y, g_brightness.level_met)
+          end
         end
       end
 
@@ -723,14 +736,11 @@ function d_grid.sample_config_key(x, y, z)
 
   -- track param levels
   if x < 7 and y < 8 and z == 1 then
-    -- temp ... while building the rest of the params
-    if PARAM == 'amp' then
-      if params:get('track_' .. y .. '_amp') == param_levels[PARAM][x] then
-        params:set('track_' .. y .. '_amp', param_levels[PARAM][7])
-      else
-        params:set('track_' .. y .. '_amp', param_levels[PARAM][x])
-      end
-    end
+
+    param_value = params:get('track_' .. y .. '_' .. PARAM)
+    value = d_grid.select_param_value(PARAM, x, param_value)
+    params:set('track_' .. y .. '_' .. PARAM, value)
+    
   end
 
   -- param selection
@@ -979,6 +989,23 @@ function d_grid.copy_track_pattern(from_bar, to_bar)
   
   end
 
+end
+
+-- return parameter `param` value given the `i`th value selected
+-- if selecting an already set value, then set to the "0"th (7th) value
+-- *ONLY FOR NUMERIC VALUES*
+function d_grid.select_param_value(param, i, current_value)
+
+  -- if selecting already set value (rounding fractions), make "zero" value
+  if (param_levels[param][i] - 0.001 <= current_value) and
+     (current_value <= param_levels[param][i] + 0.001) then
+    
+    return param_levels[param][7]
+  
+  -- otherwise, return that value
+  else
+    return param_levels[param][i]
+  end
 end
 
 -- draw 8 sequence bars starting at y starting at x_start on grid
