@@ -90,19 +90,23 @@ function d_sample.build_sample_track_params()
                        controlspec.PAN, Formatters.round(0.01))
     params:set_action('track_' .. t .. '_pan', 
       function(value)
-        last_value = track_param_level[t]['pan']
-        pan_left_in = math.max(-1, -1 + last_value)
-        pan_right_in = math.min(1, 1 - last_value)
-        in_range = {pan_left_in, pan_right_in}
+        local last_value = track_param_level[t]['pan']
+        local ranges = {}  -- ranges for `last_value` and `value`
 
-        pan_left_out = math.max(-1, -1 + value)
-        pan_right_out = math.min(1, 1 - value)
-        out_range = {pan_left_out, pan_right_out}
+        for i, v in ipairs({last_value, value}) do
+          if v < 0 then
+            ranges[i] = {-1, v + 1/3}
+          elseif v > 0 then
+            ranges[i] = {v - 1/3, 1}
+          else
+            ranges[i] = {-1, 1}
+          end
+        end
 
         -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          d_sample.squelch_sample_pan(in_range, out_range, id)
+          d_sample.squelch_sample_pan(ranges[1], ranges[2], id)
         end
 
         track_param_level[t]['pan'] = value
@@ -434,9 +438,9 @@ function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
     track_pan = params:get('track_' .. track_ .. '_pan')
 
     if track_pan < 0 then
-      pan_range = {-1, track_pan}
+      pan_range = {-1, track_pan + 1/3}
     elseif track_pan > 0 then
-      pan_range = {track_pan, 1}
+      pan_range = {track_pan - 1/3, 1}
     else
       pan_range = {-1, 1}
     end
