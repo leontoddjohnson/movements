@@ -326,7 +326,7 @@ function m_grid.sample_levels_redraw()
     end
 
     -- draw levels for selected parameter
-    -- TODO: add new params here
+    -- TAG: param 3
     if pattern[TRACK][bank[TRACK]][step_] > 0 then
       value_ = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
 
@@ -630,7 +630,7 @@ function m_grid.draw_tracks()
   for y = 1,7 do
     for i=1,6 do
 
-      -- TODO: add new params here
+      -- TAG: param 4
       -- fill
       if tab.contains({'amp'}, PARAM) then
         p = 'track_' .. y .. '_' .. PARAM

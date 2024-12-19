@@ -117,7 +117,7 @@ function m_sample.build_sample_track_params()
       end
     )
 
-    -- TODO: add new params here
+    -- TAG: param 5?
   
   end
 
@@ -382,7 +382,7 @@ end
 -- update all sample parameters for a sample `id` loaded in a `track_`
 -- at some `step_`.
 function m_sample.set_sample_step_params(id, track_, step_)
-  -- TODO: add new params here
+  -- TAG: param 7
   timber_params = {'amp', 'pan'}
 
   for i = 1,#timber_params do
@@ -404,7 +404,7 @@ function m_sample.sample_params_to_default(sample_ids)
     amp = util.clamp(ampdb(track_param_default.amp), -48, 0)
     params:set('amp_' .. id, amp)
 
-    -- TODO: add new params here
+    -- TAG: param 8
     for i,p in ipairs({'pan'}) do
       params:set(p .. '_' .. id, track_param_default[p])
     end
@@ -414,7 +414,6 @@ end
 
 -- set a collection of sample ids to the track levels
 function m_sample.sample_params_to_track(sample_ids, track)
-  -- TODO: fill this out ... use params:set etc. for sample params
   -- do this before a sample is added to a track_pool
   local id
   for i = 1,#sample_ids do
@@ -424,7 +423,7 @@ function m_sample.sample_params_to_track(sample_ids, track)
     amp = util.clamp(ampdb(params:get('track_' .. track .. '_amp')), -48, 0)
     params:set('amp_' .. id, amp)
 
-    -- TODO: add new params here
+    -- TAG: param 2
     for i,p in ipairs({'pan'}) do
       p_track = params:get('track_' .. track .. '_' .. p)
       params:set(p .. '_' .. id, p_track)
@@ -459,7 +458,7 @@ function m_sample.set_sample_step_param(id, param, track_, bank_, step_)
     pan_step = param_pattern.pan[track_][bank_][step_]
     m_sample.squelch_sample_pan({-1, 1}, pan_range, id, pan_step)
 
-  -- TODO: add new params here
+  -- TAG: param 6?
 
   end
   
@@ -478,6 +477,26 @@ end
 function m_sample.play_mode_i(id, option)
   local play_mode_lookup = params:lookup_param("play_mode_" .. id)
   local options_ = play_mode_lookup['options']
+
+  return index_of(options_, option)
+end
+
+-- return the *text* of a sample's option-based parameter value
+-- `id` is the sample id, `param` is without the trailing underscore
+-- and `options` is an optional argument (e.g., options.FILTER_TYPE)
+function m_sample.param_option(id, param, options)
+  local lookup = params:lookup_param(param .. "_" .. id)
+  local i = lookup['selected']
+  local options_ = options or lookup['options']
+
+  return options_[i]
+end
+
+-- return the *index* of an option-based parameter's option
+-- ... (to pass into params:set). `options` is optional.
+function m_sample.option_param_i(id, param, option, options)
+  local lookup = params:lookup_param(param .. "_" .. id)
+  local options_ = options or lookup['options']
 
   return index_of(options_, option)
 end
@@ -505,6 +524,13 @@ function m_sample.squelch_sample_pan(input_range, output_range, id, value)
                         pan_in)
   
   params:set('pan_' .. id, pan_out)
+end
+
+-- TAG: param 1 – add squelch above
+function m_sample.squelch_sample_filter(input_freq, output_freq, id, value)
+  freq_in = value or params:get("filter_freq_" .. id)
+  filter_type = params:get("filter_type_" .. id)
+  
 end
 
 function m_sample.sample_length(id)
