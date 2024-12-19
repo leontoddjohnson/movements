@@ -43,7 +43,10 @@ function d_sample.build_params()
   track_param_level = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
 
   for track = 1,11 do
-    track_param_level[track] = track_param_default
+    for k,v in pairs(track_param_default) do
+      track_param_level[track][k] = v
+    end
+    
   end
 
   d_sample.build_sample_track_params()
@@ -113,6 +116,8 @@ function d_sample.build_sample_track_params()
         grid_dirty = true
       end
     )
+
+    -- TODO: add new params here
   
   end
 
@@ -377,6 +382,7 @@ end
 -- update all sample parameters for a sample `id` loaded in a `track_`
 -- at some `step_`.
 function d_sample.set_sample_step_params(id, track_, step_)
+  -- TODO: add new params here
   timber_params = {'amp', 'pan'}
 
   for i = 1,#timber_params do
@@ -390,17 +396,18 @@ end
 
 -- set a collection of sample ids back to default
 function d_sample.sample_params_to_default(sample_ids)
-  -- TODO: fill this out ... use params:set etc. for sample params
-  -- do this when a sample is removed from a track_pool
   local id
   for i = 1,#sample_ids do
     id = sample_ids[i]
 
-    -- TODO: add the rest of the params
-
     -- AMP
     amp = util.clamp(ampdb(track_param_default.amp), -48, 0)
     params:set('amp_' .. id, amp)
+
+    -- TODO: add new params here
+    for i,p in ipairs({'pan'}) do
+      params:set(p .. '_' .. id, track_param_default[p])
+    end
   end
 
 end
@@ -413,11 +420,15 @@ function d_sample.sample_params_to_track(sample_ids, track)
   for i = 1,#sample_ids do
     id = sample_ids[i]
 
-    -- TODO: add the rest of the params
-
     -- AMP
-    amp = util.clamp(params:get('track_' .. track .. '_amp'), -48, 0)
+    amp = util.clamp(ampdb(params:get('track_' .. track .. '_amp')), -48, 0)
     params:set('amp_' .. id, amp)
+
+    -- TODO: add new params here
+    for i,p in ipairs({'pan'}) do
+      p_track = params:get('track_' .. track .. '_' .. p)
+      params:set(p .. '_' .. id, p_track)
+    end
   end
 end
 
@@ -447,6 +458,8 @@ function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
 
     pan_step = param_pattern.pan[track_][bank_][step_]
     d_sample.squelch_sample_pan({-1, 1}, pan_range, id, pan_step)
+
+  -- TODO: add new params here
 
   end
   

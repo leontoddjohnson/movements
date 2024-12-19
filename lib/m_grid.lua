@@ -44,7 +44,7 @@ g_brightness = {
   time_seconds = 2,
   clock_frac_selected = 7,
   clock_frac_deselected = 0,
-  clock_frac_fours = 3,
+  clock_frac_highlighted = 3,
   param_selected = 5,
   param_deselected = 1,
   play_mode_selected = 10,
@@ -326,11 +326,12 @@ function d_grid.sample_levels_redraw()
     end
 
     -- draw levels for selected parameter
+    -- TODO: add new params here
     if pattern[TRACK][bank[TRACK]][step_] > 0 then
       value_ = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
 
       -- fill
-      if tab.contains({'amp', 'delay', 'prob'}, PARAM) then
+      if tab.contains({'amp'}, PARAM) then
 
         for i=1,6 do
           if value_ >= param_levels[PARAM][i] then
@@ -361,8 +362,19 @@ function d_grid.sample_levels_redraw()
 
   end
 
-  -- draw sequence bars
-  draw_sequence_bars(1, 8, {1, 7})
+  if PLAY_MODE then
+    -- draw param selection
+    for p = 1,6 do
+      if PARAM == p_options.PARAMS[p] then
+        g:led(p, 8, g_brightness.param_selected)
+      else
+        g:led(p, 8, g_brightness.param_deselected)
+      end
+    end
+  else
+    -- draw sequence bars
+    draw_sequence_bars(1, 8, {1, 7})
+  end
 
 end
 
@@ -391,14 +403,25 @@ function d_grid.sample_levels_key(x, y, z)
     end
   end
   
-  if y == 8 and x < 9 then
-    if z == 1 then
-      -- copy bar for selected track
-      if ALT and KEY_HOLD[8][SEQ_BAR] > 0 and x ~= SEQ_BAR then
-        d_grid.copy_track_pattern(SEQ_BAR, x)
+  if PLAY_MODE then
+    -- param selection
+    if x < 7 and y == 8 and z == 1 then
+      if p_options.PARAMS[x] == PARAM then
+        PARAM = 'amp'
+      else
+        PARAM = p_options.PARAMS[x]
       end
-
-      SEQ_BAR = x
+    end
+  else
+    if y == 8 and x < 9 then
+      if z == 1 then
+        -- copy bar for selected track
+        if ALT and KEY_HOLD[8][SEQ_BAR] > 0 and x ~= SEQ_BAR then
+          d_grid.copy_track_pattern(SEQ_BAR, x)
+        end
+  
+        SEQ_BAR = x
+      end
     end
   end
 
@@ -441,9 +464,12 @@ function d_grid.sample_time_redraw()
       -- in selected range
       if clock_range[t][1] <= frac and frac <= clock_range[t][2] then
         g:led(c, t, g_brightness.clock_frac_selected)
-      -- indicate 1/8, 1/4, 1, and 4
-      elseif frac == 1 or frac == 5 or frac == 8 or frac == 11 then
-        g:led(c, t, g_brightness.clock_frac_fours)
+      -- indicate 1/8, 1/4, 1, and 4 
+      elseif not ALT and tab.contains({1, 5, 8, 11}, frac) then
+        g:led(c, t, g_brightness.clock_frac_highlighted)
+      -- indicate 1/6, 1/3, 1, 3, and 6
+      elseif ALT and tab.contains({3, 6, 8, 10, 13}, frac) then
+        g:led(c, t, g_brightness.clock_frac_highlighted)
       else
         g:led(c, t, g_brightness.clock_frac_deselected)
       end
@@ -604,6 +630,7 @@ function d_grid.draw_tracks()
   for y = 1,7 do
     for i=1,6 do
 
+      -- TODO: add new params here
       -- fill
       if tab.contains({'amp'}, PARAM) then
         p = 'track_' .. y .. '_' .. PARAM

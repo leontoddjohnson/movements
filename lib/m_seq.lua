@@ -192,7 +192,9 @@ function d_seq.load_track_pool(track)
     d_sample.sample_params_to_track(track_pool_cue[track][BANK], track)
   end
 
-  track_pool[track] = track_pool_cue[track][BANK]
+  -- fill track pool with cue (but don't link arrays)
+  track_pool[track] = {}
+  for i,x in ipairs(track_pool_cue[track][BANK]) do track_pool[track][i] = x end
 
   -- assign current bank for track
   bank[track] = BANK
