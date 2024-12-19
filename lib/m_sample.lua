@@ -1,8 +1,8 @@
 -- sample pages
 
-d_sample = {}
+m_sample = {}
 
-local Timber = include "lib/d_timber"
+local Timber = include "lib/m_timber"
 local MusicUtil = require "musicutil"
 local Formatters = require "formatters"
 
@@ -33,7 +33,7 @@ SAMPLE = 0  -- currently selected sample
 -- PARAMETERS
 -----------------------------------------------------------------
 
-function d_sample.build_params()
+function m_sample.build_params()
 
   params:add_separator("Track Levels")
 
@@ -49,7 +49,7 @@ function d_sample.build_params()
     
   end
 
-  d_sample.build_sample_track_params()
+  m_sample.build_sample_track_params()
 
   Timber.add_params()
   params:add_separator("Timber Samples")
@@ -65,7 +65,7 @@ function d_sample.build_params()
   end
 end
 
-function d_sample.build_sample_track_params()
+function m_sample.build_sample_track_params()
 
   for t = 1,7 do
     params:add_group("Track " .. t, 2)  -- # of track parameters
@@ -80,7 +80,7 @@ function d_sample.build_sample_track_params()
         -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          d_sample.squelch_sample_amp(last_value, value, id)
+          m_sample.squelch_sample_amp(last_value, value, id)
         end
 
         track_param_level[t]['amp'] = value
@@ -109,7 +109,7 @@ function d_sample.build_sample_track_params()
         -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          d_sample.squelch_sample_pan(ranges[1], ranges[2], id)
+          m_sample.squelch_sample_pan(ranges[1], ranges[2], id)
         end
 
         track_param_level[t]['pan'] = value
@@ -127,7 +127,7 @@ end
 -- INIT
 -----------------------------------------------------------------
 
-function d_sample.init()
+function m_sample.init()
 
   for i = 0, NUM_SAMPLES - 1 do sample_status[i] = STATUS.STOPPED end
 
@@ -140,7 +140,7 @@ function d_sample.init()
     end
     
     grid_dirty = true
-    d_sample.callback_set_screen_dirty(id)
+    m_sample.callback_set_screen_dirty(id)
   end
 
   Timber.meta_changed_callback = function(id)
@@ -151,12 +151,12 @@ function d_sample.init()
     end
 
     grid_dirty = true
-    d_sample.callback_set_screen_dirty(id)
+    m_sample.callback_set_screen_dirty(id)
   end
 
-  Timber.waveform_changed_callback = d_sample.callback_set_waveform_dirty
-  Timber.play_positions_changed_callback = d_sample.callback_set_waveform_dirty
-  Timber.views_changed_callback = d_sample.callback_set_screen_dirty
+  Timber.waveform_changed_callback = m_sample.callback_set_waveform_dirty
+  Timber.play_positions_changed_callback = m_sample.callback_set_waveform_dirty
+  Timber.views_changed_callback = m_sample.callback_set_screen_dirty
 
   -- Timber views  ----------------------------------------------
   -- sample_setup_view = Timber.UI.SampleSetup.new(0, nil)
@@ -168,7 +168,7 @@ function d_sample.init()
   mod_matrix_view = Timber.UI.ModMatrix.new(0)
   
   -- initial sample
-  d_sample.set_sample_id(SAMPLE)
+  m_sample.set_sample_id(SAMPLE)
 
 end
 
@@ -215,7 +215,7 @@ function id_bankrowcol(id)
 end
 
 
-function d_sample:load_bank(bank)
+function m_sample:load_bank(bank)
   Timber.FileSelect.enter(_path.audio, function(file)
     file_select_active = false
     if file ~= "cancel" then
@@ -224,7 +224,7 @@ function d_sample:load_bank(bank)
   end)
 end
 
-function d_sample.load_folder(file, bank)
+function m_sample.load_folder(file, bank)
   
   -- first sample in bank
   local sample_id = (bank - 1) * 32
@@ -284,7 +284,7 @@ function d_sample.load_folder(file, bank)
   grid_dirty = true
 end
 
-function d_sample.note_on(sample_id, vel)
+function m_sample.note_on(sample_id, vel)
   if sample_id ~= nil and (params:get('sample_' .. sample_id) ~= "-") 
       and (sum(sample_status) < 7) then
 
@@ -306,7 +306,7 @@ end
 
 -- reverse buffer samples less than 5 seconds long. 
 -- streaming samples (> 5 sec) cannot be reversed ... sad day.
-function d_sample.reverse_buffer(id)
+function m_sample.reverse_buffer(id)
 
   if samples_meta[id]['streaming'] == 0 then
     local start_frame = params:get("start_frame_" .. id)
@@ -321,7 +321,7 @@ function d_sample.reverse_buffer(id)
   
 end
 
-function d_sample.note_off(sample_id)
+function m_sample.note_off(sample_id)
   if sample_id then print("note_off: " .. sample_id) end
   engine.noteOff(sample_id)
   if sample_id ~= nil then
@@ -331,7 +331,7 @@ function d_sample.note_off(sample_id)
   -- grid_dirty = true
 end
 
-function d_sample.note_kill_all()
+function m_sample.note_kill_all()
   engine.noteKillAll()
   -- screen_dirty = true
   -- grid_dirty = true
@@ -347,21 +347,21 @@ function sum(t)
   return s
 end
 
-function d_sample.callback_set_screen_dirty(id)
+function m_sample.callback_set_screen_dirty(id)
   if id == nil or id == SAMPLE then
     screen_dirty = true
     grid_dirty = true
   end
 end
 
-function d_sample.callback_set_waveform_dirty(id)
+function m_sample.callback_set_waveform_dirty(id)
   if (id == nil or id == SAMPLE) then
     screen_dirty = true
     grid_dirty = true
   end
 end
 
-function d_sample.set_sample_id(id)
+function m_sample.set_sample_id(id)
   SAMPLE = id
 
   -- update play mode options on grid
@@ -381,12 +381,12 @@ end
 
 -- update all sample parameters for a sample `id` loaded in a `track_`
 -- at some `step_`.
-function d_sample.set_sample_step_params(id, track_, step_)
+function m_sample.set_sample_step_params(id, track_, step_)
   -- TODO: add new params here
   timber_params = {'amp', 'pan'}
 
   for i = 1,#timber_params do
-    d_sample.set_sample_step_param(id, timber_params[i], track_, 
+    m_sample.set_sample_step_param(id, timber_params[i], track_, 
                               bank[track_], step_)
   end
 
@@ -395,7 +395,7 @@ function d_sample.set_sample_step_params(id, track_, step_)
 end
 
 -- set a collection of sample ids back to default
-function d_sample.sample_params_to_default(sample_ids)
+function m_sample.sample_params_to_default(sample_ids)
   local id
   for i = 1,#sample_ids do
     id = sample_ids[i]
@@ -413,7 +413,7 @@ function d_sample.sample_params_to_default(sample_ids)
 end
 
 -- set a collection of sample ids to the track levels
-function d_sample.sample_params_to_track(sample_ids, track)
+function m_sample.sample_params_to_track(sample_ids, track)
   -- TODO: fill this out ... use params:set etc. for sample params
   -- do this before a sample is added to a track_pool
   local id
@@ -434,7 +434,7 @@ end
 
 -- update parameter value for sample loaded in a step.
 -- `param` is in {amp, delay, pan, filter, scale, rate, prob}
-function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
+function m_sample.set_sample_step_param(id, param, track_, bank_, step_)
 
   -- AMP
   if param == 'amp' then
@@ -442,7 +442,7 @@ function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
     amp_step = param_pattern.amp[track_][bank_][step_]  -- defined at step
 
     -- squelch using track param default
-    d_sample.squelch_sample_amp(1, amp_max, id, amp_step)
+    m_sample.squelch_sample_amp(1, amp_max, id, amp_step)
   
   -- PAN
   elseif param == 'pan' then
@@ -457,7 +457,7 @@ function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
     end
 
     pan_step = param_pattern.pan[track_][bank_][step_]
-    d_sample.squelch_sample_pan({-1, 1}, pan_range, id, pan_step)
+    m_sample.squelch_sample_pan({-1, 1}, pan_range, id, pan_step)
 
   -- TODO: add new params here
 
@@ -466,7 +466,7 @@ function d_sample.set_sample_step_param(id, param, track_, bank_, step_)
 end
 
 -- return the *text* of a sample's play mode
-function d_sample.play_mode_option(id)
+function m_sample.play_mode_option(id)
   local play_mode_lookup = params:lookup_param("play_mode_" .. id)
   local i = play_mode_lookup['selected']
   local options_ = play_mode_lookup['options']
@@ -475,7 +475,7 @@ function d_sample.play_mode_option(id)
 end
 
 -- return the *index* of a play mode (to pass into params:set)
-function d_sample.play_mode_i(id, option)
+function m_sample.play_mode_i(id, option)
   local play_mode_lookup = params:lookup_param("play_mode_" .. id)
   local options_ = play_mode_lookup['options']
 
@@ -484,7 +484,7 @@ end
 
 -- squelch the amp of sample `id`. `value` is optional (e.g., step value)
 -- linear mapping: [0, `input_max`] --> [0, `output_max`]
-function d_sample.squelch_sample_amp(input_max, output_max, id, value)
+function m_sample.squelch_sample_amp(input_max, output_max, id, value)
   v_sample = value or util.dbamp(params:get("amp_" .. id))  -- current value
 
   -- squelch using new maximum
@@ -497,7 +497,7 @@ end
 
 -- given an `input_range` associated with `value` (or current pan of id),
 -- return a new pan value on the same "scale" but in `output_range`
-function d_sample.squelch_sample_pan(input_range, output_range, id, value)
+function m_sample.squelch_sample_pan(input_range, output_range, id, value)
   pan_in = value or params:get("pan_" .. id)
   
   pan_out = util.linlin(input_range[1], input_range[2], 
@@ -507,7 +507,7 @@ function d_sample.squelch_sample_pan(input_range, output_range, id, value)
   params:set('pan_' .. id, pan_out)
 end
 
-function d_sample.sample_length(id)
+function m_sample.sample_length(id)
   local duration = math.abs(params:get("end_frame_" .. id) - 
                             params:get("start_frame_" .. id)) / 
                             samples_meta[id].sample_rate
@@ -519,4 +519,4 @@ function ampdb(amp)
   return math.log(amp, 10) * 20.0
 end
 
-return d_sample
+return m_sample

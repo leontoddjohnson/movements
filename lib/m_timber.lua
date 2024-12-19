@@ -5,6 +5,8 @@
 -- @release v1.0.0 Beta 7
 -- @author Mark Eats
 
+-- minor adjustments by Leon T Johnson
+
 local ControlSpec = require "controlspec"
 local Formatters = require "formatters"
 local MusicUtil = require "musicutil"

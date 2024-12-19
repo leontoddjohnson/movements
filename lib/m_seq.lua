@@ -1,12 +1,12 @@
 -- sequence operations
 
-d_seq = {}
+m_seq = {}
 
 -----------------------------------------------------------------
 -- BUILD PARAMETERS
 -----------------------------------------------------------------
 
-function d_seq.build_params()
+function m_seq.build_params()
   p_options.PLAY_ORDER = {'forward', 'reverse', 'random'}
 
   -- Forward/reverse (in order of selection), random
@@ -24,28 +24,28 @@ function build_param_patterns()
 
   -- [track][bank][step]: in [0, 1], (default 1)
   -- *needs to be converted to decibels between -48 and 0*
-  param_pattern.amp = d_seq.pattern_init(track_param_default.amp)
+  param_pattern.amp = m_seq.pattern_init(track_param_default.amp)
 
   -- [track][bank][step]: in [0, 1], (default 0)
   -- amount to send to engine/softcut delay
-  param_pattern.delay = d_seq.pattern_init(track_param_default.delay)
+  param_pattern.delay = m_seq.pattern_init(track_param_default.delay)
 
   -- [track][bank][step]: in [-1, 1] defaults to 0
-  param_pattern.pan = d_seq.pattern_init(track_param_default.pan)
+  param_pattern.pan = m_seq.pattern_init(track_param_default.pan)
 
   -- [track][bank][step]: in [-20k, 20k] defaults to 20000
   -- filter > 0 = LP freq and filter < 0 = HP freq
-  param_pattern.filter = d_seq.pattern_init(track_param_default.filter)
+  param_pattern.filter = m_seq.pattern_init(track_param_default.filter)
 
   -- [track][bank][step]: in -3, -2, -1, 0, 1, 2, 3 defaults to 0
   -- steps (or halfsteps) from an unchanged pitch
-  param_pattern.scale = d_seq.pattern_init(track_param_default.scale)
+  param_pattern.scale = m_seq.pattern_init(track_param_default.scale)
 
   -- [track][bank][step]: in -2, -1, -1/2, 0, 1/2, 1, 2 default to 1
-  param_pattern.rate = d_seq.pattern_init(track_param_default.rate)
+  param_pattern.rate = m_seq.pattern_init(track_param_default.rate)
 
   -- [track][bank][step]: in [0, 1] default to 1
-  param_pattern.prob = d_seq.pattern_init(track_param_default.prob)
+  param_pattern.prob = m_seq.pattern_init(track_param_default.prob)
 
 end
 
@@ -53,7 +53,7 @@ end
 -- INIT
 -----------------------------------------------------------------
 
-function d_seq.init()
+function m_seq.init()
   -- options (samples or slices) to cycle through for each track.
   -- track_pool[track] gives list of sample ids.
   track_pool = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
@@ -99,7 +99,7 @@ function d_seq.init()
 
   -- pat[track][bank][step] = 1 or 0 (mult by param value). 
   -- rec tracks only have one bank
-  pattern = d_seq.pattern_init()
+  pattern = m_seq.pattern_init()
 
   -- current pattern bank loaded
   bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
@@ -113,21 +113,21 @@ end
 
 -- transport 1-7 = sample
 -- transport 8-11 = rec
-function d_seq.start_transport(i)
+function m_seq.start_transport(i)
   if span(pattern[i][bank[i]])[2] > 0 then
-    transport[i] = clock.run(d_seq.play_transport, i)
+    transport[i] = clock.run(m_seq.play_transport, i)
   else
     print("Pattern ".. i .. " is empty.")
   end
 end
 
-function d_seq.play_transport(i)
+function m_seq.play_transport(i)
   local wait = nil
 
   while true do
     -- step starts at 0, then waits before playing next step
     if pattern[i][bank[i]][step[i]] > 0 and #track_pool[i] > 0 then
-      d_seq.play_track_pool(i)
+      m_seq.play_track_pool(i)
     end
 
     -- choose clock_fraction index from selected option range
@@ -152,7 +152,7 @@ function d_seq.play_transport(i)
 
 end
 
-function d_seq.stop_transport(i)
+function m_seq.stop_transport(i)
   clock.cancel(transport[i])
   transport[i] = nil
 
@@ -161,7 +161,7 @@ function d_seq.stop_transport(i)
   pool_i = track_pool_i[i]
 
   if i < 8 then
-    d_sample.note_off(pool_[pool_i])
+    m_sample.note_off(pool_[pool_i])
   end
   
 end
@@ -171,25 +171,25 @@ end
 -- UTILITY
 -----------------------------------------------------------------
 -- if step == 0, send to 1. if step == 1 then send to 0.
-function d_seq.toggle_pattern_step(track, step)
+function m_seq.toggle_pattern_step(track, step)
   empty_step_ = pattern[track][bank[track]][step] == 0
   pattern[track][bank[track]][step] = empty_step_ and 1 or 0
 end
 
 -- load `track_pool` from `track_pool_cue` into current BANK
-function d_seq.load_track_pool(track)
+function m_seq.load_track_pool(track)
 
   -- kill samples from "current" pool
   if track < 8 then
     for i = 1,#track_pool[track] do
-      d_sample.note_off(track_pool[track][i])
+      m_sample.note_off(track_pool[track][i])
     end
 
     -- reset samples in last track_pool
-    d_sample.sample_params_to_default(track_pool[track])
+    m_sample.sample_params_to_default(track_pool[track])
 
     -- squelch samples in track_cue
-    d_sample.sample_params_to_track(track_pool_cue[track][BANK], track)
+    m_sample.sample_params_to_track(track_pool_cue[track][BANK], track)
   end
 
   -- fill track pool with cue (but don't link arrays)
@@ -201,7 +201,7 @@ function d_seq.load_track_pool(track)
 end
 
 -- play the cue from the track pool, and cycle through
-function d_seq.play_track_pool(track)
+function m_seq.play_track_pool(track)
   pool_ = track_pool[track]
   pool_i = track_pool_i[track]
   order_ = params:get('sample_play_order')
@@ -221,11 +221,11 @@ function d_seq.play_track_pool(track)
     -- TODO: figure out gated situation ...
     -- TODO: it's probably okay, but 1-shots will keep playing ...
     if pool_i > 0 and sample_status[pool_[pool_i]] == 1 then 
-      d_sample.note_off(pool_[pool_i])
+      m_sample.note_off(pool_[pool_i])
     end
 
-    d_sample.set_sample_step_params(pool_[next_pool_i], track, step[track])
-    d_sample.note_on(pool_[next_pool_i])
+    m_sample.set_sample_step_params(pool_[next_pool_i], track, step[track])
+    m_sample.note_on(pool_[next_pool_i])
     track_pool_i[track] = next_pool_i
 
   -- SLICES
@@ -267,7 +267,7 @@ function empty_pattern(v)
 end
 
 -- empty pattern for each track-bank combination, with value `v` as default
-function d_seq.pattern_init(v)
+function m_seq.pattern_init(v)
   local pattern = {}
 
   -- transports 1-7 for samples, 8-11 for recordings
@@ -291,4 +291,4 @@ function n_bars(i)
   return math.abs(span_ - 1) // 16 + 1
 end
 
-return d_seq
+return m_seq

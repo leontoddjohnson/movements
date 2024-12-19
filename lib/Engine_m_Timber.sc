@@ -2,7 +2,9 @@
 //
 // v1.0.0 Beta 7 Mark Eats
 
-Engine_d_Timber : CroneEngine {
+// ... minor adjustments by Leon T Johnson
+
+Engine_m_Timber : CroneEngine {
 
 	var maxVoices = 7;
 	var maxSamples = 256;

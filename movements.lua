@@ -1,18 +1,19 @@
--- dots
+-- movements
 --
--- See docs.
+-- time allows for movement.
 
 -- norns `require` statements
 -- x = require('module')
 
-engine.name = "d_Timber"
+engine.name = "m_Timber"
 
 -- script components
-d_rec = include 'lib/d_rec'
-d_sample = include 'lib/d_sample'
-d_seq = include 'lib/d_seq'
-d_grid = include 'lib/d_grid'
-d_ui = include 'lib/d_ui'
+m_tape = include 'lib/m_tape'
+m_sample = include 'lib/m_sample'
+m_seq = include 'lib/m_seq'
+m_grid = include 'lib/m_grid'
+m_ui = include 'lib/m_ui'
+m_delay = include 'lib/m_delay'
 
 HOLD_K1 = false
 REDRAW_FRAMERATE = 30  -- same for grid and screen
@@ -45,13 +46,13 @@ function init()
 
   manage_data()
 
-  d_sample.build_params()
-  d_seq.build_params()
+  m_sample.build_params()
+  m_seq.build_params()
 
-  d_sample.init()
-  d_seq.init()
-  d_ui.init()
-  d_grid.init()
+  m_sample.init()
+  m_seq.init()
+  m_ui.init()
+  m_grid.init()
 
   -- set default parameters
   for i, p in ipairs({'amp', 'pan'}) do
@@ -74,7 +75,7 @@ function redraw()
   screen.clear()
 
   display[DISPLAY_ID]:redraw()
-  d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_redraw"]()
+  m_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_redraw"]()
 
   screen.update()
 end
@@ -88,7 +89,7 @@ function key(n, z)
     end
   end
 
-  d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_key"](n,z)
+  m_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_key"](n,z)
 
   -- !! "screen_dirty" decided in primary function !!
 end
@@ -105,7 +106,7 @@ function enc(n, d)
     screen_dirty = true
   end
 
-  d_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_enc"](n,d)
+  m_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_enc"](n,d)
 
   -- !! "screen_dirty" decided in primary function !!
 end
@@ -120,7 +121,7 @@ function redraw_clock()
     end
 
     if grid_dirty then
-      d_grid:grid_redraw()
+      m_grid:grid_redraw()
       grid_dirty = false
     end
 
@@ -138,7 +139,7 @@ function manage_data()
     print("finished writing '"..filename.."' as '"..name.."'", number)
     os.execute("mkdir -p "..norns.state.data.."/"..number.."/")
 
-    d_data = {
+    m_data = {
       p_options = p_options,
       partitions = partitions,
       banks = banks,
@@ -156,7 +157,7 @@ function manage_data()
       bank = bank
     }
 
-    tab.save(d_data, norns.state.data.."/"..number.."/dots.data")
+    tab.save(m_data, norns.state.data.."/"..number.."/dots.data")
 
   end
 
@@ -164,23 +165,23 @@ function manage_data()
   params.action_read = function(filename,silent,number)
     print("finished reading '"..filename.."'", number)
 
-    d_data = tab.load(norns.state.data.."/"..number.."/dots.data")
+    m_data = tab.load(norns.state.data.."/"..number.."/dots.data")
 
-    p_options = d_data.p_options
-    partitions = d_data.partitions
-    banks = d_data.banks
-    bank_folders = d_data.bank_folders
-    track_param_level = d_data.track_param_level
-    param_pattern = d_data.param_pattern
-    track_pool = d_data.track_pool
-    track_pool_cue = d_data.track_pool_cue
-    step = d_data.step
-    step_range = d_data.step_range
-    clock_range = d_data.clock_range
-    offset = d_data.offset
-    time_type = d_data.time_type
-    pattern = d_data.pattern
-    bank = d_data.bank
+    p_options = m_data.p_options
+    partitions = m_data.partitions
+    banks = m_data.banks
+    bank_folders = m_data.bank_folders
+    track_param_level = m_data.track_param_level
+    param_pattern = m_data.param_pattern
+    track_pool = m_data.track_pool
+    track_pool_cue = m_data.track_pool_cue
+    step = m_data.step
+    step_range = m_data.step_range
+    clock_range = m_data.clock_range
+    offset = m_data.offset
+    time_type = m_data.time_type
+    pattern = m_data.pattern
+    bank = m_data.bank
     
   end
 

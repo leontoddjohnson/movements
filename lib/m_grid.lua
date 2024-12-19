@@ -6,7 +6,7 @@
 -- all screen pages (except dots) correspond to grid pages
 -- add dots to the end, maybe with a | separator from the rest
 
-local d_grid = {}
+local m_grid = {}
 
 g = grid.connect()  -- requires 8x16 grid
 
@@ -83,7 +83,7 @@ PARAM = 'amp'
 -- INIT
 -----------------------------------------------------------------
 
-function d_grid.init()
+function m_grid.init()
   -- param options at the bottom of config page.
   -- the last one is only assumed if all are deselected
   p_options.PARAMS = {
@@ -94,7 +94,7 @@ function d_grid.init()
     'midi_1', 'midi_2', 'midi_3', 'scale', 'rate', 'prob', 'vel'
   }
 
-  d_grid.build_param_levels()
+  m_grid.build_param_levels()
 
   -- key_hold map
   for r = 1,8 do
@@ -105,7 +105,7 @@ function d_grid.init()
   end
 end
 
-function d_grid.build_param_levels()
+function m_grid.build_param_levels()
   -- parameter level values on the grid (see p_options.PARAMS).
   -- *the "zero" value is the 7th item in the list!*
   param_levels = {}
@@ -137,7 +137,7 @@ end
 -- NAVIGATION
 -----------------------------------------------------------------
 
-function d_grid.draw_nav()
+function m_grid.draw_nav()
   local origin = {9, 8}
   
   -- pages
@@ -167,7 +167,7 @@ function d_grid.draw_nav()
 
 end
 
-function d_grid.nav_key(x, y, z)
+function m_grid.nav_key(x, y, z)
 
   -- page selection
   if 9 <= x and x < 15 and y == 8 then
@@ -203,7 +203,7 @@ end
 -- SAMPLE SEQ 
 -----------------------------------------------------------------
 
-function d_grid.sample_seq_redraw()
+function m_grid.sample_seq_redraw()
 
   -- draw steps and selected track
   for track = 1,7 do
@@ -230,7 +230,7 @@ function d_grid.sample_seq_redraw()
 
 end
 
-function d_grid.sample_seq_key(x, y, z)
+function m_grid.sample_seq_key(x, y, z)
 
   if y < 8 and z == 1 then
     step_ = (SEQ_BAR - 1) * 16 + x
@@ -241,7 +241,7 @@ function d_grid.sample_seq_key(x, y, z)
         TRACK = y
       -- activate step
       else
-        d_seq.toggle_pattern_step(y, step_)
+        m_seq.toggle_pattern_step(y, step_)
       end
     else
       -- move all tracks to that step
@@ -258,7 +258,7 @@ function d_grid.sample_seq_key(x, y, z)
 
   -- step range (only in focus mode)
   if y < 8 and not PLAY_MODE then
-    d_grid.set_step_range(x, y, z, y)
+    m_grid.set_step_range(x, y, z, y)
   end
   
   if y == 8 and x < 9 then
@@ -266,7 +266,7 @@ function d_grid.sample_seq_key(x, y, z)
       
       -- copy bar for selected track
       if ALT and KEY_HOLD[8][SEQ_BAR] > 0 and x ~= SEQ_BAR then
-        d_grid.copy_track_pattern(SEQ_BAR, x)
+        m_grid.copy_track_pattern(SEQ_BAR, x)
       end
 
       SEQ_BAR = x
@@ -279,7 +279,7 @@ end
 -- **KEY FUNCTION**
 -- given current x, y, z of key press, determine whether to set 
 -- a step range for track `track`. *allow for z == 0 and z == 1.*
-function d_grid.set_step_range(x, y, z, track)
+function m_grid.set_step_range(x, y, z, track)
   if z == 1 then
     KEY_HOLD[y][x] = 1
     hold_span = span(KEY_HOLD[y])
@@ -296,8 +296,8 @@ function d_grid.set_step_range(x, y, z, track)
     KEY_HOLD[y][x] = 0
     if step_range_updated then
       -- undo the de/selection that came from setting the range
-      d_seq.toggle_pattern_step(track, step_range_updated[1])
-      d_seq.toggle_pattern_step(track, step_range_updated[2])
+      m_seq.toggle_pattern_step(track, step_range_updated[1])
+      m_seq.toggle_pattern_step(track, step_range_updated[2])
       step_range_updated = nil
     end
   end
@@ -308,7 +308,7 @@ end
 -- SAMPLE LEVELS
 -----------------------------------------------------------------
 
-function d_grid.sample_levels_redraw()
+function m_grid.sample_levels_redraw()
 
   for s = 1,16 do
     step_ = (SEQ_BAR - 1) * 16 + s
@@ -378,13 +378,13 @@ function d_grid.sample_levels_redraw()
 
 end
 
-function d_grid.sample_levels_key(x, y, z)
+function m_grid.sample_levels_key(x, y, z)
   if y < 8 then
     step_ = (SEQ_BAR - 1) * 16 + x
   end
 
   if y == 1 and not PLAY_MODE then
-    d_grid.set_step_range(x, y, z, TRACK)
+    m_grid.set_step_range(x, y, z, TRACK)
   end
 
   if y == 1 and z == 1 then
@@ -417,7 +417,7 @@ function d_grid.sample_levels_key(x, y, z)
       if z == 1 then
         -- copy bar for selected track
         if ALT and KEY_HOLD[8][SEQ_BAR] > 0 and x ~= SEQ_BAR then
-          d_grid.copy_track_pattern(SEQ_BAR, x)
+          m_grid.copy_track_pattern(SEQ_BAR, x)
         end
   
         SEQ_BAR = x
@@ -429,7 +429,7 @@ function d_grid.sample_levels_key(x, y, z)
 
     -- current parameter value at that step
     param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
-    value = d_grid.select_param_value(PARAM, 8 - y, param_value)
+    value = m_grid.select_param_value(PARAM, 8 - y, param_value)
     param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
     
   end
@@ -440,7 +440,7 @@ end
 -----------------------------------------------------------------
 -- SAMPLE TIME
 -----------------------------------------------------------------
-function d_grid.sample_time_redraw()
+function m_grid.sample_time_redraw()
 
   for t = 1,7 do
     -- play/stop column
@@ -478,15 +478,15 @@ function d_grid.sample_time_redraw()
 
 end
 
-function d_grid.sample_time_key(x, y, z)
+function m_grid.sample_time_key(x, y, z)
   
   if y < 8 then
     -- play/stop
     if x == 1 and z == 1 then
       if transport[y] then
-        d_seq.stop_transport(y)
+        m_seq.stop_transport(y)
       else
-        d_seq.start_transport(y)
+        m_seq.start_transport(y)
       end
     end
 
@@ -519,7 +519,7 @@ end
 -- SAMPLE CONFIG 
 -----------------------------------------------------------------
 
-function d_grid.draw_bank(bank)
+function m_grid.draw_bank(bank)
   local origin = {9, 1}
 
   -- draw bank samples
@@ -579,7 +579,7 @@ function d_grid.draw_bank(bank)
 
   -- draw playback modes
   for i = 1,4 do
-    if d_sample.play_mode_option(SAMPLE) == g_play_modes[i] then
+    if m_sample.play_mode_option(SAMPLE) == g_play_modes[i] then
       g:led(8 + i, 5, g_brightness.play_mode_selected)
     else
       g:led(8 + i, 5, g_brightness.play_mode_deselected)
@@ -625,7 +625,7 @@ function d_grid.draw_bank(bank)
 
 end
 
-function d_grid.draw_tracks()
+function m_grid.draw_tracks()
 
   for y = 1,7 do
     for i=1,6 do
@@ -658,9 +658,9 @@ function d_grid.draw_tracks()
 
 end
 
-function d_grid.sample_config_redraw()
-  d_grid.draw_bank(BANK)
-  d_grid.draw_tracks()
+function m_grid.sample_config_redraw()
+  m_grid.draw_bank(BANK)
+  m_grid.draw_tracks()
 
   -- draw param selection
   for p = 1,6 do
@@ -673,7 +673,7 @@ function d_grid.sample_config_redraw()
 
 end
 
-function d_grid.sample_config_key(x, y, z)
+function m_grid.sample_config_key(x, y, z)
 
   -- bank selection
   if 12 < x and y == 5 then
@@ -685,7 +685,7 @@ function d_grid.sample_config_key(x, y, z)
 
   -- play mode selection
   if 8 < x and x < 13 and y == 5 and z == 1 then
-    i = d_sample.play_mode_i(SAMPLE, g_play_modes[x - 8])
+    i = m_sample.play_mode_i(SAMPLE, g_play_modes[x - 8])
     params:set('play_mode_' .. SAMPLE, i)
   end
 
@@ -694,7 +694,7 @@ function d_grid.sample_config_key(x, y, z)
     if z == 1 then
       -- load onto track (only if track already selected)
       if TRACK == y and ALT then
-        d_seq.load_track_pool(TRACK)
+        m_seq.load_track_pool(TRACK)
       end
       TRACK = y
 
@@ -712,14 +712,14 @@ function d_grid.sample_config_key(x, y, z)
     sample_id = rowcol_id(row_ .. col_, BANK)
     
     if z == 1 then
-      d_sample.set_sample_id(sample_id)
+      m_sample.set_sample_id(sample_id)
       
       -- play sample
       if PLAY_MODE then
         if sample_status[sample_id] == 1 then
-          d_sample.note_off(sample_id)
+          m_sample.note_off(sample_id)
         else
-          d_sample.note_on(sample_id, 1)
+          m_sample.note_on(sample_id, 1)
         end
       
       -- assign samples
@@ -748,14 +748,14 @@ function d_grid.sample_config_key(x, y, z)
             index_of(track_pool[TRACK], sample_id))
 
             -- set parameters back to default
-            d_sample.sample_params_to_default({sample_id})
+            m_sample.sample_params_to_default({sample_id})
           end
         end
       end
     else
       
       if PLAY_MODE and sample_status[sample_id] > 0 and play_mode_is_hold(sample_id) then
-        d_sample.note_off(sample_id)
+        m_sample.note_off(sample_id)
       end
 
     end
@@ -765,7 +765,7 @@ function d_grid.sample_config_key(x, y, z)
   if x < 7 and y < 8 and z == 1 then
 
     param_value = params:get('track_' .. y .. '_' .. PARAM)
-    value = d_grid.select_param_value(PARAM, x, param_value)
+    value = m_grid.select_param_value(PARAM, x, param_value)
     params:set('track_' .. y .. '_' .. PARAM, value)
     
   end
@@ -801,7 +801,7 @@ end
 temp_on = {}
 
 -- temporary redraw
-function d_grid.rec_seq_redraw()
+function m_grid.rec_seq_redraw()
 
   for i = 1,8 do
     g:led(i, i, 3)
@@ -813,7 +813,7 @@ function d_grid.rec_seq_redraw()
 
 end
 
-function d_grid.rec_seq_key(x, y, z)
+function m_grid.rec_seq_key(x, y, z)
   if z == 1 then
     temp_on = {x, y}
   else
@@ -828,7 +828,7 @@ end
 temp_on = {}
 
 -- temporary redraw
-function d_grid.rec_levels_redraw()
+function m_grid.rec_levels_redraw()
 
   for i = 1,8 do
     g:led(i + 2, i, 3)
@@ -840,7 +840,7 @@ function d_grid.rec_levels_redraw()
 
 end
 
-function d_grid.rec_levels_key(x, y, z)
+function m_grid.rec_levels_key(x, y, z)
   if z == 1 then
     temp_on = {x, y}
   else
@@ -855,7 +855,7 @@ end
 temp_on = {}
 
 -- temporary redraw
-function d_grid.rec_time_redraw()
+function m_grid.rec_time_redraw()
 
   for i = 1,8 do
     g:led(i + 4, i, 3)
@@ -867,7 +867,7 @@ function d_grid.rec_time_redraw()
 
 end
 
-function d_grid.rec_time_key(x, y, z)
+function m_grid.rec_time_key(x, y, z)
   if z == 1 then
     temp_on = {x, y}
   else
@@ -882,7 +882,7 @@ end
 temp_on = {}
 
 -- temporary redraw
-function d_grid.rec_config_redraw()
+function m_grid.rec_config_redraw()
 
   for i = 1,8 do
     g:led(i + 6, i, 3)
@@ -894,7 +894,7 @@ function d_grid.rec_config_redraw()
 
 end
 
-function d_grid.rec_config_key(x, y, z)
+function m_grid.rec_config_key(x, y, z)
   if z == 1 then
     temp_on = {x, y}
   else
@@ -907,10 +907,10 @@ end
 -- REDRAW
 -----------------------------------------------------------------
 
-function d_grid:grid_redraw()
+function m_grid:grid_redraw()
   g:all(0)
-  d_grid[G_PAGE .. '_redraw']()
-  d_grid.draw_nav()
+  m_grid[G_PAGE .. '_redraw']()
+  m_grid.draw_nav()
   g:refresh()
 end
 
@@ -924,9 +924,9 @@ function g.key(x, y, z)
   end
 
   if x > 8 and y == 8 then
-    d_grid.nav_key(x, y, z)
+    m_grid.nav_key(x, y, z)
   else
-    d_grid[G_PAGE .. '_key'](x, y, z)
+    m_grid[G_PAGE .. '_key'](x, y, z)
   end
 
 end
@@ -1003,7 +1003,7 @@ end
 
 -- copy 16 pattern steps and parameter pattern values `from_bar` to 
 -- `to_bar` (typically correspond to SEQ_BAR and another bar).
-function d_grid.copy_track_pattern(from_bar, to_bar)
+function m_grid.copy_track_pattern(from_bar, to_bar)
 
   for i = 1,16 do
     paste_step = pattern[TRACK][bank[TRACK]][(from_bar - 1) * 16 + i]
@@ -1021,7 +1021,7 @@ end
 -- return parameter `param` value given the `i`th value selected
 -- if selecting an already set value, then set to the "0"th (7th) value
 -- *ONLY FOR NUMERIC VALUES*
-function d_grid.select_param_value(param, i, current_value)
+function m_grid.select_param_value(param, i, current_value)
 
   -- if selecting already set value (rounding fractions), make "zero" value
   if (param_levels[param][i] - 0.001 <= current_value) and
@@ -1105,4 +1105,4 @@ function flatten(t)
   return t_flat
 end
 
-return d_grid
+return m_grid

@@ -1,14 +1,12 @@
 -- half sec loop 75% decay
 
-local d_delay = {}
-
-
+local m_delay = {}
 
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
 
-function d_delay.build_params()
+function m_delay.build_params()
   params:add_group("halfsecond",4)
   params:add{id="delay", name="delay", type="control", 
     controlspec=controlspec.new(0,1,'lin',0,0.5,""),
@@ -24,7 +22,7 @@ function d_delay.build_params()
     action=function(x) softcut.pan(1,x) end}
 end
 
-function d_delay.init()
+function m_delay.init()
   print("starting halfsecond")
 	audio.level_cut(1.0)
 	audio.level_adc_cut(1)
@@ -62,4 +60,4 @@ end
 --
 
 
-return d_delay
+return m_delay

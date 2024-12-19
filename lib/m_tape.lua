@@ -1,10 +1,9 @@
--- record
--- maybe change the name to "reel" or "tape"?
+-- tape
 
 -- softcut buffer length = 5 minutes 49.52 seconds
 -- first 20 for delay, start at 30 for the rest.
 
-local d_rec = {}
+local m_tape = {}
 
 -- {start, stop} for each partion. use [partition][row][col].
 -- (samples use `banks`)
@@ -30,5 +29,5 @@ SLICE = nil  -- currently selected slice
 -- TODO : instead of sample_ids, use {start_time, stop_time}
 
 
-return d_rec
+return m_tape
 
