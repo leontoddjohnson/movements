@@ -33,8 +33,7 @@ function build_param_patterns()
   -- [track][bank][step]: in [-1, 1] defaults to 0
   param_pattern.pan = m_seq.pattern_init(track_param_default.pan)
 
-  -- [track][bank][step]: in [-20k, 20k] defaults to 20000
-  -- v < 0 ==> high pass, v > 0 ==> low pass
+  -- [track][bank][step]: in [20, 20k] defaults to 20000
   param_pattern.filter = m_seq.pattern_init(track_param_default.filter_freq)
 
   -- [track][bank][step]: in -3, -2, -1, 0, 1, 2, 3 defaults to 0

@@ -521,7 +521,7 @@ function m_sample.set_sample_step_param(id, param, track_, bank_, step_)
     pan_step = param_pattern.pan[track_][bank_][step_]
     m_sample.squelch_sample_pan({-1, 1}, pan_range, id, pan_step)
 
-  -- TAG: param 6?
+  -- TAG: param 6
   elseif param == 'filter' then
     track_freq = params:get('track_' .. track_ .. '_filter_freq')
     track_type = params:get('track_' .. track_ .. '_filter_type')
@@ -530,9 +530,9 @@ function m_sample.set_sample_step_param(id, param, track_, bank_, step_)
     freq_track = sign * track_freq
     freq_step = param_pattern.filter[track_][bank_][step_]
     
-    cutoff = freq_step > 0 and 20000 or -20
+    cutoff = freq_track > 0 and 20000 or -20
 
-    m_sample.squelch_sample_filter(cutoff, freq_track, id, freq_step)
+    m_sample.squelch_sample_filter(cutoff, freq_track, id, sign * freq_step)
 
   end
   

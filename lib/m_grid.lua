@@ -361,12 +361,12 @@ function m_grid.sample_levels_redraw()
       if PARAM == 'filter' and value_ then
         
         for i = 1,6 do
-          if value_ > 0 then
+          if params:get('track_' .. TRACK .. '_filter_type') == 1 then
             if value_ >= param_levels[PARAM][i] - 0.001 then
               g:led(s, 8 - i, g_brightness.level_met)
             end
-          elseif value_ < 0 then
-            if -value_ <= param_levels[PARAM][i] + 0.001 then
+          else
+            if value_ <= param_levels[PARAM][i] + 0.001 then
               g:led(s, 8 - i, g_brightness.level_met)
             end
           end
@@ -411,10 +411,7 @@ function m_grid.sample_levels_key(x, y, z)
       -- reset "new" step parameters to track value
       if empty_step_ then
         if PARAM == 'filter' then
-          default_freq = params:get('track_' .. TRACK .. '_filter_freq')
-          default_type = params:get('track_' .. TRACK .. '_filter_type')
-          default_sign = default_type == 1 and 1 or -1
-          default = default_sign * default_freq
+          default = params:get('track_' .. TRACK .. '_filter_freq')
         else
           default = params:get('track_' .. TRACK .. '_' .. PARAM)
         end
@@ -454,13 +451,11 @@ function m_grid.sample_levels_key(x, y, z)
     if PARAM == 'filter' then
       -- current parameter value at that step
       param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
-      param_sign = param_value > 0 and 1 or -1
-      value = m_grid.select_param_value(PARAM, 8 - y, math.abs(param_value))
+      value = m_grid.select_param_value(PARAM, 8 - y, param_value)
 
-      if value == -1 then
-        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = -1 * param_value
-      else
-        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = param_sign * value
+      -- not selecting the same key
+      if value > 0 then
+        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
       end
       
     else
