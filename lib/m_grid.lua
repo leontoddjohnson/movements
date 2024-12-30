@@ -123,7 +123,7 @@ function m_grid.build_param_levels()
   -- for filter, the "zero" value translates to swapping from HP <--> LP
   -- for LP, highlight up to the value, for HP, highlight above the value
   -- final value: filter > 0 = LP freq and filter < 0 = HP freq
-  param_levels.filter = {20, 500, 1000, 2000, 10000, 20000, -1}
+  param_levels.filter = {100, 500, 1000, 5000, 10000, 20000, -1}
 
   param_levels.scale = {-3, -2, -1, 1, 2, 3, 0}
 
@@ -272,7 +272,8 @@ function m_grid.sample_seq_key(x, y, z)
       SEQ_BAR = x
     end
   end
-
+  
+  screen_dirty = true
   grid_dirty = true
 end
 
@@ -356,7 +357,22 @@ function m_grid.sample_levels_redraw()
         end
       end
 
-      -- TODO: options (e.g., rate, scale, etc.) are not "centered"
+      -- swapping filter
+      if PARAM == 'filter' and value_ then
+        
+        for i = 1,6 do
+          if value_ > 0 then
+            if value_ >= param_levels[PARAM][i] - 0.001 then
+              g:led(s, 8 - i, g_brightness.level_met)
+            end
+          elseif value_ < 0 then
+            if -value_ <= param_levels[PARAM][i] + 0.001 then
+              g:led(s, 8 - i, g_brightness.level_met)
+            end
+          end
+        end
+
+      end
 
     end
 
@@ -394,7 +410,15 @@ function m_grid.sample_levels_key(x, y, z)
 
       -- reset "new" step parameters to track value
       if empty_step_ then
-        default = track_param_level[TRACK][PARAM]
+        if PARAM == 'filter' then
+          default_freq = params:get('track_' .. TRACK .. '_filter_freq')
+          default_type = params:get('track_' .. TRACK .. '_filter_type')
+          default_sign = default_type == 1 and 1 or -1
+          default = default_sign * default_freq
+        else
+          default = params:get('track_' .. TRACK .. '_' .. PARAM)
+        end
+        
         param_pattern[PARAM][TRACK][bank[TRACK]][step_] = default
       end
     else
@@ -427,10 +451,24 @@ function m_grid.sample_levels_key(x, y, z)
 
   if 1 < y and y < 8 and z == 1 and pattern[TRACK][bank[TRACK]][step_] > 0 then
 
-    -- current parameter value at that step
-    param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
-    value = m_grid.select_param_value(PARAM, 8 - y, param_value)
-    param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
+    if PARAM == 'filter' then
+      -- current parameter value at that step
+      param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
+      param_sign = param_value > 0 and 1 or -1
+      value = m_grid.select_param_value(PARAM, 8 - y, math.abs(param_value))
+
+      if value == -1 then
+        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = -1 * param_value
+      else
+        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = param_sign * value
+      end
+      
+    else
+      -- current parameter value at that step
+      param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
+      value = m_grid.select_param_value(PARAM, 8 - y, param_value)
+      param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
+    end
     
   end
 
@@ -653,6 +691,22 @@ function m_grid.draw_tracks()
         end
       end
 
+      -- filter swapping
+      if PARAM == 'filter' then
+        p_freq = 'track_' .. y .. '_filter_freq'
+        p_type = 'track_' .. y .. '_filter_type'
+
+        if params:get(p_type) == 1 then
+          if params:get(p_freq) >= param_levels[PARAM][i] - 0.001 then
+            g:led(i, y, g_brightness.level_met)
+          end
+        else
+          if params:get(p_freq) <= param_levels[PARAM][i] + 0.001 then
+            g:led(i, y, g_brightness.level_met)
+          end
+        end
+      end
+
     end
   end
 
@@ -764,9 +818,23 @@ function m_grid.sample_config_key(x, y, z)
   -- track param levels
   if x < 7 and y < 8 and z == 1 then
 
-    param_value = params:get('track_' .. y .. '_' .. PARAM)
-    value = m_grid.select_param_value(PARAM, x, param_value)
-    params:set('track_' .. y .. '_' .. PARAM, value)
+    if PARAM == 'filter' then
+      local f_type = params:get('track_' .. y .. '_filter_type')
+      local f_freq = params:get('track_' .. y .. '_filter_freq')
+
+      value = m_grid.select_param_value(PARAM, x, f_freq)
+
+      if value == -1 then
+        params:set('track_' .. y .. '_filter_type', f_type % 2 + 1)
+      else
+        params:set('track_' .. y .. '_filter_freq', value)
+      end
+      
+    else
+      param_value = params:get('track_' .. y .. '_' .. PARAM)
+      value = m_grid.select_param_value(PARAM, x, param_value)
+      params:set('track_' .. y .. '_' .. PARAM, value)
+    end
     
   end
 

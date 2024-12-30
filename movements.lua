@@ -28,7 +28,9 @@ track_param_default = {
   amp = 1,
   delay = 0,
   pan = 0,
-  filter = 20000,
+  filter_freq = 20000,
+  filter_type = 1,
+  filter_resonance = 0,
   scale = 1,
   rate = 1,
   prob = 1,
@@ -54,8 +56,13 @@ function init()
   m_ui.init()
   m_grid.init()
 
+  -- TAG : param 9
   -- set default parameters
-  for i, p in ipairs({'amp', 'pan'}) do
+  local timber_params = {
+    'amp', 'pan', 'filter_freq', 'filter_type', 'filter_resonance'
+  }
+
+  for i, p in ipairs(timber_params) do
     for t=1,7 do
       params:set('track_' .. t .. "_" .. p, track_param_default[p])
     end

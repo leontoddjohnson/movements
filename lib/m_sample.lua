@@ -68,7 +68,7 @@ end
 function m_sample.build_sample_track_params()
 
   for t = 1,7 do
-    params:add_group("Track " .. t, 2)  -- # of track parameters
+    params:add_group("Track " .. t, 5)  -- # of track parameters
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
@@ -117,7 +117,65 @@ function m_sample.build_sample_track_params()
       end
     )
 
-    -- TAG: param 5?
+    -- FILTER TYPE
+    params:add_option('track_' .. t .. '_filter_type', 
+                      'track_' .. t .. '_filter_type',
+                      options.FILTER_TYPE, 1)
+    params:set_action('track_' .. t .. '_filter_type',
+      function(value)
+        last_value = track_param_level[t]['filter_type']
+        local freq = track_param_level[t]['filter_freq']
+        sign_in = last_value == 1 and 1 or -1
+        sign_out = value == 1 and 1 or -1
+
+        -- squelch samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          m_sample.squelch_sample_filter(freq * sign_in, freq * sign_out, id)
+        end
+
+        track_param_level[t]['filter_type'] = value
+        grid_dirty = true
+      end
+    )
+
+    -- FILTER FREQ
+    params:add_control('track_' .. t .. '_filter_freq', 
+                       'track_' .. t .. '_filter_freq',
+                       specs.FILTER_FREQ)
+    params:set_action('track_' .. t .. '_filter_freq', 
+      function(value)
+        last_value = track_param_level[t]['filter_freq']
+        local pass = track_param_level[t]['filter_type']
+        local sign = pass == 1 and 1 or -1
+
+        -- squelch samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          m_sample.squelch_sample_filter(last_value * sign, value * sign, id)
+        end
+
+        track_param_level[t]['filter_freq'] = value
+        grid_dirty = true
+      end
+    )
+
+    -- FILTER RESONANCE
+    params:add_control('track_' .. t .. '_filter_resonance', 
+                       'track_' .. t .. '_filter_resonance',
+                       specs.FILTER_RESONANCE)
+    params:set_action('track_' .. t .. '_filter_resonance', 
+      function(value)
+        -- set samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          params:set('filter_resonance_' .. id, value)
+        end
+      end
+    )
+
+    
+    -- TAG: param 5, add params above.
   
   end
 
@@ -383,14 +441,12 @@ end
 -- at some `step_`.
 function m_sample.set_sample_step_params(id, track_, step_)
   -- TAG: param 7
-  timber_params = {'amp', 'pan'}
+  local timber_params = {'amp', 'pan', 'filter'}
 
   for i = 1,#timber_params do
     m_sample.set_sample_step_param(id, timber_params[i], track_, 
                               bank[track_], step_)
   end
-
-  -- .. etc. ..
 
 end
 
@@ -405,7 +461,11 @@ function m_sample.sample_params_to_default(sample_ids)
     params:set('amp_' .. id, amp)
 
     -- TAG: param 8
-    for i,p in ipairs({'pan'}) do
+    local timber_params = {
+      'pan', 'filter_freq', 'filter_type', 'filter_resonance'
+    }
+
+    for i,p in ipairs(timber_params) do
       params:set(p .. '_' .. id, track_param_default[p])
     end
   end
@@ -423,8 +483,11 @@ function m_sample.sample_params_to_track(sample_ids, track)
     amp = util.clamp(ampdb(params:get('track_' .. track .. '_amp')), -48, 0)
     params:set('amp_' .. id, amp)
 
-    -- TAG: param 2
-    for i,p in ipairs({'pan'}) do
+    -- TAG: param 2 - make sure this works, or add new above ...
+    local params_ = {
+      "pan", "filter_freq", "filter_type", "filter_resonance"
+    }
+    for i,p in ipairs(params_) do
       p_track = params:get('track_' .. track .. '_' .. p)
       params:set(p .. '_' .. id, p_track)
     end
@@ -459,6 +522,17 @@ function m_sample.set_sample_step_param(id, param, track_, bank_, step_)
     m_sample.squelch_sample_pan({-1, 1}, pan_range, id, pan_step)
 
   -- TAG: param 6?
+  elseif param == 'filter' then
+    track_freq = params:get('track_' .. track_ .. '_filter_freq')
+    track_type = params:get('track_' .. track_ .. '_filter_type')
+    sign = track_type == 1 and 1 or -1
+
+    freq_track = sign * track_freq
+    freq_step = param_pattern.filter[track_][bank_][step_]
+    
+    cutoff = freq_step > 0 and 20000 or -20
+
+    m_sample.squelch_sample_filter(cutoff, freq_track, id, freq_step)
 
   end
   
@@ -526,12 +600,53 @@ function m_sample.squelch_sample_pan(input_range, output_range, id, value)
   params:set('pan_' .. id, pan_out)
 end
 
--- TAG: param 1 – add squelch above
-function m_sample.squelch_sample_filter(input_freq, output_freq, id, value)
-  freq_in = value or params:get("filter_freq_" .. id)
-  filter_type = params:get("filter_type_" .. id)
+-- use input and output to convert current freq (e.g. `value`) accordingly.
+-- `*_cutoff` > 0 --> "Low Pass", with maximum at `*_cutoff`.
+-- `*_cutoff` < 0 --> "High Pass", with minimum at |`*_cutoff`|.
+-- the same holds true for `value` (which is *optional*).
+-- min freq = 20, max freq = 20000 (in Hz)
+function m_sample.squelch_sample_filter(input_cutoff, output_cutoff, id, value)
+  freq_in = value and math.abs(value) or params:get("filter_freq_" .. id)
+
+  -- low pass to low pass -> simple squelch
+  if input_cutoff > 0 and output_cutoff > 0 then
+    freq_out = util.linlin(20, input_cutoff,
+                           20, output_cutoff, freq_in)
+    
+  -- high pass to high pass -> simple squelch
+  elseif input_cutoff < 0 and output_cutoff < 0 then
+    freq_out = util.linlin(-1 * input_cutoff, 20000, 
+                           -1 * output_cutoff, 20000, freq_in)
   
+  -- simply swapping between high pass and low pass
+  elseif math.abs(input_cutoff) == math.abs(output_cutoff) then
+    freq_out = freq_in
+  
+  -- low pass to high pass -> quasi-mirror then squelch
+  elseif input_cutoff > 0 and output_cutoff < 0 then
+    freq_out = util.linlin(20, input_cutoff, 
+                           -1 * output_cutoff, 20000, freq_in)
+
+  -- high pass to low pass -> quasi-mirror then squelch
+  elseif input_cutoff < 0 and output_cutoff > 0 then
+    freq_out = util.linlin(-1 * input_cutoff, 20000,
+                           20, output_cutoff, freq_in)
+  end
+
+  params:set('filter_freq_' .. id, freq_out)
+
+  -- see options.FILTER_TYPE
+  if output_cutoff > 0 then
+    params:set('filter_type_' .. id, 1)
+  else
+    params:set('filter_type_' .. id, 2)
+  end
+
 end
+
+
+-- TAG: param 1 – add squelch above ...
+---------------------------------------
 
 function m_sample.sample_length(id)
   local duration = math.abs(params:get("end_frame_" .. id) - 
