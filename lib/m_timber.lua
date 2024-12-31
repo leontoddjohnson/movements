@@ -100,7 +100,7 @@ specs.MOD_ENV_SUSTAIN = ControlSpec.new(0, 1, "lin", 0, 0.65, "")
 specs.MOD_ENV_RELEASE = ControlSpec.new(0.003, 10, "lin", 0, 1, "s")
 options.QUALITY = {"Nasty", "Low", "Medium", "High"}
 specs.AMP = ControlSpec.new(-48, 16, 'db', 0, 0, "dB")
-specs.NOISE = ControlSpec.new(0, 5, 'lin', 0, 0, 'x', 0.01)
+specs.NOISE = ControlSpec.new(0, 10, 'lin', 0, 0, 'x', 0.01)
 
 QUALITY_SAMPLE_RATES = {8000, 16000, 32000, 48000}
 QUALITY_BIT_DEPTHS = {8, 10, 12, 24}
