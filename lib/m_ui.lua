@@ -20,7 +20,7 @@ local UI = require "ui"
 
 function m_ui.init()
   display = {}
-  display[1] = UI.Pages.new(1, 3)  -- sample
+  display[1] = UI.Pages.new(1, 4)  -- sample
   display[2] = UI.Pages.new(2, 1)  -- tape
   display[3] = UI.Pages.new(3, 1)  -- delay
 
@@ -46,7 +46,15 @@ function m_ui.draw_nav(header)
 
   -- current display header
   screen.move_rel(glyph_buffer * 2, 0)
-  screen.text(header)
+
+  if display_names[DISPLAY_ID] == 'sample' then
+    screen.text(TRACK .. " • " .. 
+                BANK .. " • " .. 
+                header)
+  else
+    screen.text(header)
+  end
+
   screen.stroke()
 end
 
@@ -55,25 +63,70 @@ end
 -----------------------------------------------------------------
 
 -- 0: OVERVIEW --------------------------------------------------
--- TODO: build this, connect with K1
--- top portion: track banks assigned
--- bottom: reminder of params (and selected param)
 
--- 1: TRACK -----------------------------------------------
+-- draw track folders 
+function m_ui.draw_sample_overview()
+  local y_buffer = 10
+  local text_width = 20
+  local folder = nil
+
+  -- list banks
+  for b=1,4 do
+    folder = bank_folders[b]
+    folder = folder ~= nil and folder or "-"
+
+    if BANK == b then
+      screen.level(15)
+    else
+      screen.level(3)
+    end
+
+    screen.move(2, 8 + y_buffer * (b - 1))
+    text = b .. " : " .. folder
+    
+    if string.len(text) > text_width then
+      text = string.sub(text, 1, text_width) .. " ..."
+    end
+
+    screen.text(text)
+  end
+
+  -- divider
+  screen.level(8)
+  screen.move(2, 45)
+  screen.line(126, 45)
+  screen.stroke()
+
+  -- list parameters (a reminder)
+  x_buffer = 2
+  
+  screen.move(1, 53)
+  screen.level(3)
+
+  for i,p in ipairs(p_options.PARAMS) do
+    if p == PARAM then
+      screen.level(10)
+    else
+      screen.level(3)
+    end
+
+    if p == 'amp' then
+      screen.move(64, 62)
+      screen.text_center(p)
+    else
+      screen.text(p)
+      screen.move_rel(x_buffer, 0)
+    end
+  end
+
+end
+
+-- 1: TRACK POOL SELECTION --------------------------------------
 
 function m_ui.sample_1_redraw()
-  local folder = bank_folders[BANK]
-  local p
-
-  bank_text = "send midi or K2"
-  bank_text = folder ~= nil and folder or bank_text
-
   screen.aa(0)
 
-  m_ui.draw_nav(
-      TRACK .. " • " .. 
-      BANK .. " • " .. 
-      bank_text)
+  m_ui.draw_nav(SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
 
   list_buffer = 8
   max_samples = 5
@@ -117,7 +170,38 @@ function m_ui.sample_1_redraw()
     screen.text_center(" . . . ")
   end
 
-  -- screen.level(12)
+  -- indicate bank folder for this track
+  local folder = bank_folders[BANK]
+
+  bank_text = "send midi or K2"
+  bank_text = folder ~= nil and folder or bank_text
+
+  screen.level(5)
+  screen.move(60, 61)
+  screen.text_center(" -- " .. bank_text .. " --")
+
+end
+
+function m_ui.sample_1_key(n,z)
+
+  if n == 2 and z == 1 then
+    m_sample:load_bank(BANK)
+  end
+
+end
+
+function m_ui.sample_1_enc(n,d)
+  -- 
+end
+
+-- 2: TRACK PARAMS --------------------------------------------
+
+function m_ui.sample_2_redraw()
+  screen.aa(0)
+
+  m_ui.draw_nav(SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
+
+  screen.level(12)
 
   -- p = params:get('track_' .. TRACK .. '_' .. PARAM)
   -- lookup = params:lookup_param('track_' .. TRACK .. '_' .. PARAM)
@@ -135,34 +219,47 @@ function m_ui.sample_1_redraw()
   -- m_ui.draw_slider({10, 18}, min_, max_, p, 101, center)
   -- screen.stroke()
 
-  -- screen.move(10, 36)
-  -- screen.text(PARAM)
-  -- screen.move(10 + 100, 36)
-  -- screen.text_right(params:string('track_' .. TRACK .. '_' .. PARAM))
+  -- current parameter
+  screen.move(30, 36)
+  screen.text_center(PARAM)
+  screen.move(30, 50)
 
-end
-
-function m_ui.sample_1_key(n,z)
-
-  if n == 2 and z == 1 then
-    m_sample:load_bank(BANK)
+  if PARAM == 'filter' then
+    screen.text_center(params:string('track_' .. TRACK .. '_filter_freq'))
+    screen.move(30, 58)
+    screen.text_center(params:string('track_' .. TRACK .. '_filter_type'))
+  
+  -- TAG: param 10 ... add here.
+  elseif tab.contains({'amp', 'pan', 'filter'}, PARAM) then
+    screen.text_center(params:string('track_' .. TRACK .. '_' .. PARAM))
   end
+  
+  -- extra parameter
+  screen.move(90, 36)
+  screen.text_center('noise')
+  screen.move(90, 50)
+  screen.text_center(params:string('track_' .. TRACK .. '_noise'))
 
 end
 
-function m_ui.sample_1_enc(n,d)
-  if n == 3 then
+function m_ui.sample_2_key(n,z)
+  -- 
+end
+
+function m_ui.sample_2_enc(n,d)
+  if n == 2 then
     params:delta('track_' .. TRACK .. '_' .. PARAM, d)
+  elseif n == 3 then
+    params:delta('track_' .. TRACK .. '_noise', d)
   end
   screen_dirty = true
 end
 
--- 2: SAMPLE  ------------------------------------------------------
-function m_ui.sample_2_redraw()
-  m_ui.draw_nav(
-      TRACK .. " • " .. 
-      BANK .. " • " .. 
-      (SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"))
+-- 3: SAMPLE  ------------------------------------------------------
+function m_ui.sample_3_redraw()
+  local header = SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+
+  m_ui.draw_nav(header)
 
   waveform_view:update()
   waveform_view:redraw()
@@ -170,22 +267,19 @@ function m_ui.sample_2_redraw()
   screen.stroke()
 end
 
-function m_ui.sample_2_key(n,z)
+function m_ui.sample_3_key(n,z)
   waveform_view:key(n, z)
   screen_dirty = true
 end
 
-function m_ui.sample_2_enc(n,d)
+function m_ui.sample_3_enc(n,d)
   waveform_view:enc(n, d)
   screen_dirty = true
 end
 
--- 3: FILTER AMP --------------------------------------------------
-function m_ui.sample_3_redraw()
-  m_ui.draw_nav(
-      TRACK .. " • " .. 
-      BANK .. " • " .. 
-      (SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"))
+-- 4: FILTER AMP --------------------------------------------------
+function m_ui.sample_4_redraw()
+  m_ui.draw_nav(SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
 
   screen.aa(1)
   filter_amp_view:redraw()
@@ -193,7 +287,7 @@ function m_ui.sample_3_redraw()
   screen.stroke()
 end
 
-function m_ui.sample_3_key(n,z)
+function m_ui.sample_4_key(n,z)
   -- for fine tuning
   if n == 1 then
     if z == 1 then
@@ -207,7 +301,7 @@ function m_ui.sample_3_key(n,z)
   screen_dirty = true
 end
 
-function m_ui.sample_3_enc(n,d)
+function m_ui.sample_4_enc(n,d)
   filter_amp_view:enc(n, d)
   screen_dirty = true
 end

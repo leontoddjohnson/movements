@@ -81,8 +81,12 @@ end
 function redraw()
   screen.clear()
 
-  display[DISPLAY_ID]:redraw()
-  m_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_redraw"]()
+  if HOLD_K1 and display_names[DISPLAY_ID] == 'sample' then
+    m_ui.draw_sample_overview()
+  else
+    display[DISPLAY_ID]:redraw()
+    m_ui[display_names[DISPLAY_ID] .. "_" .. PAGE_ID .."_redraw"]()
+  end
 
   screen.update()
 end
@@ -91,8 +95,10 @@ function key(n, z)
   if n == 1 then
     if z == 1 then
       HOLD_K1 = true
+      screen_dirty = true
     else
       HOLD_K1 = false
+      screen_dirty = true
     end
   end
 

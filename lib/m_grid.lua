@@ -89,10 +89,6 @@ function m_grid.init()
   p_options.PARAMS = {
     'pan', 'filter', 'delay', 'scale', 'rate', 'prob', 'amp'
   }
-  
-  p_options.PARAMS_MIDI = {
-    'midi_1', 'midi_2', 'midi_3', 'scale', 'rate', 'prob', 'vel'
-  }
 
   m_grid.build_param_levels()
 

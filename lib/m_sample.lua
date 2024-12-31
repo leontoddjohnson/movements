@@ -173,9 +173,20 @@ function m_sample.build_sample_track_params()
         end
       end
     )
-
     
-    -- TAG: param 5, add params above.
+    -- TAG: param 5, add params ABOVE.
+    params:add_control('track_' .. t .. '_noise', 
+                       'track_' .. t .. '_noise',
+                       specs.NOISE)
+    params:set_action('track_' .. t .. '_noise', 
+    function(value)
+        -- set samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          params:set('noise_' .. id, value)
+        end
+      end
+    )
   
   end
 
