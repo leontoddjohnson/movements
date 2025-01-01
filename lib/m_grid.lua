@@ -778,8 +778,14 @@ function m_grid.sample_config_key(x, y, z)
   -- bank selection
   if 12 < x and y == 5 then
     if z == 1 then
-      origin = {13, 5}
-      BANK, _ = rel_xy(origin, x, y)
+      local b = x - 12
+
+      -- copy bank patterns for selected track
+      if ALT and KEY_HOLD[5][BANK + 12] > 0 and b ~= BANK then
+        m_grid.copy_bank_pattern(BANK, b)
+      end
+
+      BANK = b
     end
   end
 
