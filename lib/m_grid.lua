@@ -196,48 +196,52 @@ function m_grid.nav_key(x, y, z)
 end
 
 -----------------------------------------------------------------
--- SAMPLE SEQ 
+-- SEQUENCE
 -----------------------------------------------------------------
 
-function m_grid.sample_seq_redraw()
+function m_grid.seq_redraw(track_range)
 
   -- draw steps and selected track
-  for track = 1,7 do
+  for track = track_range[1], track_range[2] do
+    local y = track - track_range[1] + 1
+    
     for s = 1,16 do
       step_ = (SEQ_BAR - 1) * 16 + s
       
       if step_ == step[track] then
-        g:led(s, track, g_brightness.step_active)
+        g:led(s, y, g_brightness.step_active)
       elseif pattern[track][bank[track]][step_] > 0 then
-        g:led(s, track, g_brightness.step_inactive)
+        g:led(s, y, g_brightness.step_inactive)
       elseif step_range[track][1] <= step_ 
               and step_ <= step_range[track][2] then
-        g:led(s, track, g_brightness.seq_step_range)
+        g:led(s, y, g_brightness.seq_step_range)
       elseif track ~= TRACK then
-        g:led(s, track, g_brightness.step_empty)
+        g:led(s, y, g_brightness.step_empty)
       else
-        g:led(s, track, g_brightness.seq_track_selected)
+        g:led(s, y, g_brightness.seq_track_selected)
       end
     end
   end
 
   -- draw sequence bars
-  draw_sequence_bars(1, 8, {1, 7})
+  draw_sequence_bars(1, 8, track_range)
 
 end
 
-function m_grid.sample_seq_key(x, y, z)
+function m_grid.seq_key(x, y, z, track_range)
+  local n_tracks = track_range[2] - track_range[1] + 1
+  local track = track_range[1] - 1 + y
 
-  if y < 8 and z == 1 then
+  if y <= n_tracks and z == 1 then
     step_ = (SEQ_BAR - 1) * 16 + x
 
     if not PLAY_MODE then
       -- select track
       if ALT then
-        TRACK = y
+        TRACK = track
       -- activate step
       else
-        m_seq.toggle_pattern_step(y, step_)
+        m_seq.toggle_pattern_step(track, step_)
       end
     else
       -- move all tracks to that step
@@ -247,14 +251,14 @@ function m_grid.sample_seq_key(x, y, z)
         end
       -- move just the associated track to that step
       else
-        step[y] = step_
+        step[track] = step_
       end
     end
   end
 
   -- step range (only in focus mode)
-  if y < 8 and not PLAY_MODE then
-    m_grid.set_step_range(x, y, z, y)
+  if y <= n_tracks and not PLAY_MODE then
+    m_grid.set_step_range(x, y, z, track)
   end
   
   if y == 8 and x < 9 then
@@ -302,10 +306,10 @@ end
 
 
 -----------------------------------------------------------------
--- SAMPLE LEVELS
+-- LEVELS
 -----------------------------------------------------------------
 
-function m_grid.sample_levels_redraw()
+function m_grid.levels_redraw()
 
   for s = 1,16 do
     step_ = (SEQ_BAR - 1) * 16 + s
@@ -385,12 +389,12 @@ function m_grid.sample_levels_redraw()
     end
   else
     -- draw sequence bars
-    draw_sequence_bars(1, 8, {1, 7})
+    draw_sequence_bars(1, 8, {TRACK, TRACK})
   end
 
 end
 
-function m_grid.sample_levels_key(x, y, z)
+function m_grid.levels_key(x, y, z)
   if y < 8 then
     step_ = (SEQ_BAR - 1) * 16 + x
   end
@@ -467,23 +471,25 @@ function m_grid.sample_levels_key(x, y, z)
 end
 
 -----------------------------------------------------------------
--- SAMPLE TIME
+-- TIME
 -----------------------------------------------------------------
-function m_grid.sample_time_redraw()
+function m_grid.time_redraw(track_range)
 
-  for t = 1,7 do
+  for t = track_range[1], track_range[2] do
+    local y = t - track_range[1] + 1
+
     -- play/stop column
     if transport[t] then
-      g:led(1, t, g_brightness.track_playing)
+      g:led(1, y, g_brightness.track_playing)
     else
-      g:led(1, t, g_brightness.track_stopped)
+      g:led(1, y, g_brightness.track_stopped)
     end
 
     -- beat/sec column
     if time_type[t] == 'beats' then
-      g:led(2, t, g_brightness.time_beats)
+      g:led(2, y, g_brightness.time_beats)
     else
-      g:led(2, t, g_brightness.time_seconds)
+      g:led(2, y, g_brightness.time_seconds)
     end
 
     -- time rows
@@ -492,39 +498,42 @@ function m_grid.sample_time_redraw()
       frac = c - 3
       -- in selected range
       if clock_range[t][1] <= frac and frac <= clock_range[t][2] then
-        g:led(c, t, g_brightness.clock_frac_selected)
+        g:led(c, y, g_brightness.clock_frac_selected)
       -- indicate 1/8, 1/4, 1, and 4 
       elseif not ALT and tab.contains({1, 5, 8, 11}, frac) then
-        g:led(c, t, g_brightness.clock_frac_highlighted)
+        g:led(c, y, g_brightness.clock_frac_highlighted)
       -- indicate 1/6, 1/3, 1, 3, and 6
       elseif ALT and tab.contains({3, 6, 8, 10, 13}, frac) then
-        g:led(c, t, g_brightness.clock_frac_highlighted)
+        g:led(c, y, g_brightness.clock_frac_highlighted)
       else
-        g:led(c, t, g_brightness.clock_frac_deselected)
+        g:led(c, y, g_brightness.clock_frac_deselected)
       end
     end
   end
 
 end
 
-function m_grid.sample_time_key(x, y, z)
+function m_grid.time_key(x, y, z, track_range)
   
-  if y < 8 then
+  local n_tracks = track_range[2] - track_range[1] + 1
+  local track = track_range[1] - 1 + y
+  
+  if y <= n_tracks then
     -- play/stop
     if x == 1 and z == 1 then
-      if transport[y] then
-        m_seq.stop_transport(y)
+      if transport[track] then
+        m_seq.stop_transport(track)
       else
-        m_seq.start_transport(y)
+        m_seq.start_transport(track)
       end
     end
 
     -- beats or seconds
     if x == 2 and z == 1 then
-      if time_type[y] == 'beats' then
-        time_type[y] = 'seconds'
+      if time_type[track] == 'beats' then
+        time_type[track] = 'seconds'
       else
-        time_type[y] = 'beats'
+        time_type[track] = 'beats'
       end
     end
 
@@ -533,8 +542,8 @@ function m_grid.sample_time_key(x, y, z)
       if z == 1 then
         KEY_HOLD[y][x] = 1
         hold_span = span(KEY_HOLD[y])
-        clock_range[y][1] = hold_span[1] - 3
-        clock_range[y][2] = hold_span[2] - 3
+        clock_range[track][1] = hold_span[1] - 3
+        clock_range[track][2] = hold_span[2] - 3
       else
         KEY_HOLD[y][x] = 0
       end
@@ -542,6 +551,42 @@ function m_grid.sample_time_key(x, y, z)
   end
 
   grid_dirty = true
+end
+
+-----------------------------------------------------------------
+-- SAMPLE SEQ 
+-----------------------------------------------------------------
+
+function m_grid.sample_seq_redraw()
+  m_grid.seq_redraw({1, 7})
+end
+
+function m_grid.sample_seq_key(x, y, z)
+  m_grid.seq_key(x, y, z, {1, 7})
+end
+
+-----------------------------------------------------------------
+-- SAMPLE LEVELS 
+-----------------------------------------------------------------
+
+function m_grid.sample_levels_redraw()
+  m_grid.levels_redraw()
+end
+
+function m_grid.sample_levels_key(x, y, z)
+  m_grid.levels_key(x, y, z)
+end
+
+-----------------------------------------------------------------
+-- SAMPLE TIME 
+-----------------------------------------------------------------
+
+function m_grid.sample_time_redraw()
+  m_grid.time_redraw({1, 7})
+end
+
+function m_grid.sample_time_key(x, y, z)
+  m_grid.time_key(x, y, z, {1, 7})
 end
 
 -----------------------------------------------------------------
@@ -1077,6 +1122,22 @@ function m_grid.copy_track_pattern(from_bar, to_bar)
 
 end
 
+-- copy *all* pattern steps and parameter pattern values `from_bank` to
+-- `to_bank` for current TRACK. **This will overwrite `to_bank`.
+function m_grid.copy_bank_pattern(from_bank, to_bank)
+
+for i = 1,16*8 do
+    paste_step = pattern[TRACK][from_bank][i]
+    pattern[TRACK][to_bank][i] = paste_step
+
+    for p, pattern_ in pairs(param_pattern) do
+      paste_param = pattern_[TRACK][from_bank][i]
+      param_pattern[p][TRACK][to_bank][i] = paste_param
+    end
+  
+  end
+end
+
 -- return parameter `param` value given the `i`th value selected
 -- if selecting an already set value, then set to the "0"th (7th) value
 -- *ONLY FOR NUMERIC VALUES*
@@ -1094,7 +1155,7 @@ function m_grid.select_param_value(param, i, current_value)
   end
 end
 
--- draw 8 sequence bars starting at y starting at x_start on grid
+-- draw 8 sequence bars at row `y` starting at `x_start` on grid
 -- only consider the tracks from track_range[1] to track_range[2]
 function draw_sequence_bars(x_start, y, track_range)
   local last_bar = 1
