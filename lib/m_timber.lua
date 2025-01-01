@@ -55,7 +55,7 @@ local param_ids = {
   "scale_by", "by_percentage", "by_length", "by_bars",
   "freq_mod_lfo_1", "freq_mod_lfo_2", "freq_mod_env",
   "filter_type", "filter_freq", "filter_resonance", "filter_freq_mod_lfo_1", "filter_freq_mod_lfo_2", "filter_freq_mod_env", "filter_freq_mod_vel", "filter_freq_mod_pressure", "filter_tracking",
-  "pan", "pan_mod_lfo_1", "pan_mod_lfo_2", "pan_mod_env", "amp", "amp_mod_lfo_1", "amp_mod_lfo_2", "noise",
+  "pan", "pan_mod_lfo_1", "pan_mod_lfo_2", "pan_mod_env", "amp", "amp_mod_lfo_1", "amp_mod_lfo_2", "noise", "delay",
   "amp_env_attack", "amp_env_decay", "amp_env_sustain", "amp_env_release",
   "mod_env_attack", "mod_env_decay", "mod_env_sustain", "mod_env_release",
   "lfo_1_fade", "lfo_2_fade"
@@ -802,6 +802,13 @@ function Timber.add_sample_params(id, include_beat_params, extra_params)
   params:add{type = "control", id = "noise_" .. id, name = "Noise", 
   controlspec = specs.NOISE, formatter = function(p) return p:get() .. "x" end, action = function(value)
     engine.noiseLevel(id, value)
+    Timber.views_changed_callback(id)
+    Timber.setup_params_dirty = true
+  end}
+
+  params:add{type = "control", id = "delay_" .. id, name = "Delay", 
+  controlspec = controlspec.AMP, action = function(value)
+    engine.echoLevel(id, value)
     Timber.views_changed_callback(id)
     Timber.setup_params_dirty = true
   end}

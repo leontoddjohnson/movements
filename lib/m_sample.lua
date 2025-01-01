@@ -68,7 +68,7 @@ end
 function m_sample.build_sample_track_params()
 
   for t = 1,7 do
-    params:add_group("Track " .. t, 5)  -- # of track parameters
+    params:add_group("Track " .. t, 7)  -- # of track parameters
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
@@ -173,8 +173,24 @@ function m_sample.build_sample_track_params()
         end
       end
     )
+
+    -- DELAY
+    params:add_control('track_' .. t .. '_delay', 
+                       'track_' .. t .. '_delay',
+                       controlspec.AMP)
+    params:set_action('track_' .. t .. '_delay', 
+    function(value)
+        -- set samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          params:set('delay_' .. id, value)
+        end
+      end
+    )
     
     -- TAG: param 5, add params ABOVE.
+
+    -- NOISE
     params:add_control('track_' .. t .. '_noise', 
                        'track_' .. t .. '_noise',
                        specs.NOISE)
