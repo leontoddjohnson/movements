@@ -56,14 +56,14 @@ g_brightness = {
 -- tables with 1 or 2 page options for each nav key
 g_pages = {
   {'sample_seq', 'sample_levels'}, {'sample_time'}, {'sample_config'},
-  {'rec_seq', 'rec_levels'}, {'rec_time'}, {'rec_config'},
+  {'tape_seq', 'tape_levels'}, {'tape_time'}, {'tape_config'},
 }
 
 -- order of play modes on grid
 g_play_modes_all = {
   buffer = {"Loop", "Inf. Loop", "1-Shot", "Gated"},
   streaming = {"Loop", "Loop", "1-Shot", "Gated"},
-  rec_slice = {"Loop", "Loop", "1-Shot", "1-Shot"}
+  tape_slice = {"Loop", "Loop", "1-Shot", "Gated"}
 }
 
 G_PAGE = 'sample_config'
@@ -175,6 +175,14 @@ function m_grid.nav_key(x, y, z)
         i = 1
       end
       G_PAGE = g_pages[x - 8][i]
+      
+      -- if needed, set TRACK to "first" within a functionality
+      if string.match(G_PAGE, '^sample') and TRACK > 7 then 
+        TRACK = 1
+      elseif string.match(G_PAGE, '^tape') and TRACK < 8 then
+        TRACK = 8
+      end
+
     end
   
   -- mode
@@ -246,7 +254,7 @@ function m_grid.seq_key(x, y, z, track_range)
     else
       -- move all tracks to that step
       if ALT then
-        for track_ = 1,7 do
+        for track_ = track_range[1], track_range[2] do
           step[track_] = step_
         end
       -- move just the associated track to that step
@@ -281,16 +289,18 @@ end
 -- given current x, y, z of key press, determine whether to set 
 -- a step range for track `track`. *allow for z == 0 and z == 1.*
 function m_grid.set_step_range(x, y, z, track)
+  local bar_0 = (SEQ_BAR - 1) * 16
+
   if z == 1 then
     KEY_HOLD[y][x] = 1
     hold_span = span(KEY_HOLD[y])
     -- selecting whole range removes "mini range"
     if hold_span[2] - hold_span[1] == 15 then
       step_range[track] = {0, 0}
-      step_range_updated = {1, 16}
+      step_range_updated = {bar_0 + 1, bar_0 + 16}
     elseif hold_span[2] > hold_span[1] then
-      step_range[track][1] = (SEQ_BAR - 1) * 16 + hold_span[1]
-      step_range[track][2] = (SEQ_BAR - 1) * 16 + hold_span[2]
+      step_range[track][1] = bar_0 + hold_span[1]
+      step_range[track][2] = bar_0 + hold_span[2]
       step_range_updated = step_range[track]
     end
   else
@@ -900,93 +910,48 @@ function m_grid.sample_config_key(x, y, z)
 end
 
 -----------------------------------------------------------------
--- REC SEQ
+-- TAPE SEQ
+-----------------------------------------------------------------
+
+function m_grid.tape_seq_redraw()
+  m_grid.seq_redraw({8, 11})
+end
+
+function m_grid.tape_seq_key(x, y, z)
+  m_grid.seq_key(x, y, z, {8, 11})
+end
+
+-----------------------------------------------------------------
+-- TAPE LEVELS
+-----------------------------------------------------------------
+
+function m_grid.tape_levels_redraw()
+  m_grid.levels_redraw()
+end
+
+function m_grid.tape_levels_key(x, y, z)
+  m_grid.levels_key(x, y, z)
+end
+
+-----------------------------------------------------------------
+-- TAPE TIME
+-----------------------------------------------------------------
+
+function m_grid.tape_time_redraw()
+  m_grid.time_redraw({8, 11})
+end
+
+function m_grid.tape_time_key(x, y, z)
+  m_grid.time_key(x, y, z, {8, 11})
+end
+
+-----------------------------------------------------------------
+-- TAPE CONFIG
 -----------------------------------------------------------------
 temp_on = {}
 
 -- temporary redraw
-function m_grid.rec_seq_redraw()
-
-  for i = 1,8 do
-    g:led(i, i, 3)
-  end
-
-  if temp_on[1] then
-    g:led(temp_on[1], temp_on[2], 10)
-  end
-
-end
-
-function m_grid.rec_seq_key(x, y, z)
-  if z == 1 then
-    temp_on = {x, y}
-  else
-    temp_on = {}
-  end
-  grid_dirty = true
-end
-
------------------------------------------------------------------
--- REC LEVELS
------------------------------------------------------------------
-temp_on = {}
-
--- temporary redraw
-function m_grid.rec_levels_redraw()
-
-  for i = 1,8 do
-    g:led(i + 2, i, 3)
-  end
-
-  if temp_on[1] then
-    g:led(temp_on[1], temp_on[2], 10)
-  end
-
-end
-
-function m_grid.rec_levels_key(x, y, z)
-  if z == 1 then
-    temp_on = {x, y}
-  else
-    temp_on = {}
-  end
-  grid_dirty = true
-end
-
------------------------------------------------------------------
--- REC TIME
------------------------------------------------------------------
-temp_on = {}
-
--- temporary redraw
-function m_grid.rec_time_redraw()
-
-  for i = 1,8 do
-    g:led(i + 4, i, 3)
-  end
-
-  if temp_on[1] then
-    g:led(temp_on[1], temp_on[2], 10)
-  end
-
-end
-
-function m_grid.rec_time_key(x, y, z)
-  if z == 1 then
-    temp_on = {x, y}
-  else
-    temp_on = {}
-  end
-  grid_dirty = true
-end
-
------------------------------------------------------------------
--- REC CONFIG
------------------------------------------------------------------
-temp_on = {}
-
--- temporary redraw
-function m_grid.rec_config_redraw()
+function m_grid.tape_config_redraw()
 
   for i = 1,8 do
     g:led(i + 6, i, 3)
@@ -998,7 +963,7 @@ function m_grid.rec_config_redraw()
 
 end
 
-function m_grid.rec_config_key(x, y, z)
+function m_grid.tape_config_key(x, y, z)
   if z == 1 then
     temp_on = {x, y}
   else
