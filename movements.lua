@@ -34,10 +34,7 @@ track_param_default = {
   scale = 1,
   rate = 1,
   prob = 1,
-  noise = 0,
-  midi_1 = 1,
-  midi_2 = 0,
-  midi_3 = 0
+  noise = 0
 }
 
 -----------------------------------------------------------------
@@ -46,32 +43,60 @@ track_param_default = {
 
 function init()
 
-  manage_data()
-
-  m_sample.build_params()
-  m_seq.build_params()
-
-  m_sample.init()
+  -- MAIN INIT --------------------------------------------------
   m_seq.init()
   m_ui.init()
   m_grid.init()
 
-  -- TAG : param 9
-  -- set default parameters
-  local timber_params = {
-    'amp', 'pan', 'filter_freq', 'filter_type', 'filter_resonance'
-  }
+  -- BUILD PARAMS -----------------------------------------------
+  -- define track param levels (to squelch/adjust step values for tracks)
+  -- use track_param_level[track][param]
+  track_param_level = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
 
-  for i, p in ipairs(timber_params) do
-    for t=1,7 do
-      params:set('track_' .. t .. "_" .. p, track_param_default[p])
+  for track = 1,11 do
+    for k,v in pairs(track_param_default) do
+      track_param_level[track][k] = v
     end
   end
-  
+
+  -- save/load from PSET
+  manage_data()
+
+  -- define params
+  params:add_separator("Tape")
+  m_tape.build_params()
+
+  params:add_separator("Sequencer")
+  m_seq.build_params()
+
+  params:add_separator("Sample Track Levels")
+  m_sample.build_sample_track_params()
+  params:add_separator("Tape Track Levels")
+  m_tape.build_tape_track_params()
+  set_track_defaults()
+
+  m_sample.build_timber_params()
+  m_sample.timber_init()  -- separate init for timber after params
+
+  -- MAIN INIT --------------------------------------------------
   -- redraw clock
   screen_dirty = true
   grid_dirty = true
   clock.run(redraw_clock)
+end
+
+function set_track_defaults()
+  -- TAG : param 9
+  -- set default parameters
+  local temp_params = {
+    'amp', 'pan', 'filter_freq', 'filter_type', 'filter_resonance'
+  }
+
+  for i, p in ipairs(temp_params) do
+    for t=1,11 do
+      params:set('track_' .. t .. "_" .. p, track_param_default[p])
+    end
+  end
 end
 
 -----------------------------------------------------------------

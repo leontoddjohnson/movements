@@ -33,23 +33,7 @@ SAMPLE = 0  -- currently selected sample
 -- PARAMETERS
 -----------------------------------------------------------------
 
-function m_sample.build_params()
-
-  params:add_separator("Track Levels")
-
-  -- track param levels to set squelch/adjust of steps in that track
-  -- filter > 0 = LP freq and filter < 0 = HP freq.
-  -- use track_param_level[track][param]
-  track_param_level = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
-
-  for track = 1,11 do
-    for k,v in pairs(track_param_default) do
-      track_param_level[track][k] = v
-    end
-    
-  end
-
-  m_sample.build_sample_track_params()
+function m_sample.build_timber_params()
 
   Timber.add_params()
   params:add_separator("Timber Samples")
@@ -212,7 +196,7 @@ end
 -- INIT
 -----------------------------------------------------------------
 
-function m_sample.init()
+function m_sample.timber_init()
 
   for i = 0, NUM_SAMPLES - 1 do sample_status[i] = STATUS.STOPPED end
 

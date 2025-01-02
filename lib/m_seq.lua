@@ -162,6 +162,10 @@ function m_seq.stop_transport(i)
   if i < 8 then
     m_sample.note_off(pool_[pool_i])
   end
+
+  if i > 7 then
+    -- ... stop softcut for track i
+  end
   
 end
 

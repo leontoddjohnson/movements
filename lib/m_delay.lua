@@ -8,29 +8,31 @@ local m_delay = {}
 
 function m_delay.build_params()
   params:add_group("halfsecond",4)
-  params:add{id="delay", name="delay", type="control", 
+
+  params:add{id="tape_delay", name="tape delay",
+		type="control", 
     controlspec=controlspec.new(0,1,'lin',0,0.5,""),
     action=function(x) softcut.level(1,x) end}
-  params:add{id="delay_rate", name="delay rate", type="control", 
+
+  params:add{id="tape_delay_rate", name="tape delay rate",
+		type="control", 
     controlspec=controlspec.new(0.5,2.0,'lin',0,1,""),
     action=function(x) softcut.rate(1,x) end}
-  params:add{id="delay_feedback", name="delay feedback", type="control", 
+
+  params:add{id="tape_delay_feedback", name="tape delay feedback", 
+		type="control", 
     controlspec=controlspec.new(0,1.0,'lin',0,0.75,""),
     action=function(x) softcut.pre_level(1,x) end}
-  params:add{id="delay_pan", name="delay pan", type="control", 
-    controlspec=controlspec.new(-1,1.0,'lin',0,0,""),
-    action=function(x) softcut.pan(1,x) end}
+
 end
 
 function m_delay.init()
-  print("starting halfsecond")
-	audio.level_cut(1.0)
-	audio.level_adc_cut(1)
-	audio.level_eng_cut(1)
+
+
   softcut.level(1,1.0)
   softcut.level_slew_time(1,0.25)
-	softcut.level_input_cut(1, 1, 1.0)
-	softcut.level_input_cut(2, 1, 1.0)
+	-- softcut.level_input_cut(1, 1, 1.0)
+	-- softcut.level_input_cut(2, 1, 1.0)
 	softcut.pan(1, 0.0)
 
   softcut.play(1, 1)
@@ -57,7 +59,6 @@ end
 -----------------------------------------------------------------
 -- UTILITY
 -----------------------------------------------------------------
---
 
 
 return m_delay

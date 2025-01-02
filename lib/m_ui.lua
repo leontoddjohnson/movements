@@ -279,6 +279,25 @@ function m_ui.tape_1_enc(n,d)
   print('recording encoder')
 end
 
+-- function m_ui.draw_waveform(voice)
+
+--   -- display buffer
+--   screen.level(6)
+--   local x_pos = 0
+--   for i, s in ipairs(waveform_samples[track_focus]) do
+--     local height = util.round(math.abs(s) * (14 / wave_gain[track_focus]))
+--     screen.move(util.linlin(0, 128, 5, 123, x_pos), 36 - height)
+--     screen.line_rel(0, 2 * height)
+--     screen.stroke()
+--     x_pos = x_pos + 1
+--   end
+--   -- update buffer
+--   if track[track_focus].rec == 1 then
+--     render_splice()
+--   end
+
+-- end
+
 
 -----------------------------------------------------------------
 -- DELAY
