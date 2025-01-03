@@ -47,6 +47,7 @@ function init()
   m_seq.init()
   m_ui.init()
   m_grid.init()
+  m_tape.init()
 
   -- BUILD PARAMS -----------------------------------------------
   -- define track param levels (to squelch/adjust step values for tracks)

@@ -1,7 +1,7 @@
 -- tape
 
 -- softcut buffer length = 5 minutes 49.52 seconds
--- first 20 for delay, start at 30 for the rest.
+-- first 320 (80 * 4) seconds for tape, last 20 seconds for delay
 
 local m_tape = {}
 
@@ -16,10 +16,21 @@ partitions = {
   {{}, {}, {}, {}}
 }
 
+-- voice positions for each track (8 - 11)
+positions = {}
+
+-- up to 192000 samples (min slice = 1s, 60 samples per waveform)
+-- only loads when a slice is recorded from [a, a+dur]
+-- stores frames/samples for the whole 320s buffer (up to delay)
+buffer_waveform = {{}, {}}
+
+-- buffers assigned for each track
+track_buffer = {}
+
 armed = {}  -- 1 or 0 for whether armed[track] is armed for recording
 
 PARTITION = 1  -- currently selected record partition
-SLICE = {nil, nil}  -- currently selected slice
+SLICE = {0, 5}  -- currently selected slice [start, duration]
 
 -----------------------------------------------------------------
 -- BUILD PARAMETERS
@@ -27,16 +38,25 @@ SLICE = {nil, nil}  -- currently selected slice
 
 function m_tape.build_params()
 
-  params:add{id="input_tape_level", name="input tape level",
-		type="control", 
-		controlspec=controlspec.AMP,
-		action=function(x) audio.level_adc_cut(x) end}
+	params:add_option("tape_audio_in", "tape audio in", 
+    {'none', 'input', 'samples', 'input+samples'}, 4)
+	params:set_action("tape_audio_in", 
+    function(x)
+      if x == 1 then
+        audio.level_adc_cut(0)
+        audio.level_eng_cut(0)
+      elseif x == 2 then
+        audio.level_adc_cut(1)
+        audio.level_eng_cut(0)
+      elseif x == 3 then
+        audio.level_adc_cut(0)
+        audio.level_eng_cut(1)
+      else
+        audio.level_adc_cut(1)
+        audio.level_eng_cut(1)
+      end
+    end)
 
-	params:add{id="sample_tape_level", name="sample tape level",
-		type="control", 
-		controlspec=controlspec.AMP,
-		action=function(x) audio.level_eng_cut(x) end}
-  
 end
 
 function m_tape.build_tape_track_params()
@@ -177,8 +197,11 @@ function m_tape.init()
 	audio.level_cut(1)
 
   -- these will only change when recording is armed
-	audio.level_adc_cut(0)
-	audio.level_eng_cut(0)
+	audio.level_adc_cut(1)
+	audio.level_eng_cut(1)
+
+  -- set callbacks
+  softcut.event_render(wave_render)
 
   -- waveform setup
   waveform_samples = {}
@@ -188,8 +211,11 @@ function m_tape.init()
   for i = 8, 11 do
     waveform_samples[i] = {}
     wave_gain[i] = {}
+    track_buffer[i] = i % 2 + 1  -- track 8 is "L"
   end
-  view_buffer = false
+
+  -- init softcut
+  m_tape.sc_init()
 
 end
 
@@ -201,12 +227,7 @@ end
 -- arm a track for recording
 function m_tape.arm(track)
   
-  -- armed
- 
-  if span(armed)[2] > 0 then
-    audio.level_adc_cut(params:get('input_tape_level'))
-	  audio.level_eng_cut(params:get('sample_tape_level'))
-  end
+  -- arm ...
 
 end
 
@@ -215,10 +236,7 @@ function m_tape.disarm(track)
   -- ...
 
   -- stop sending audio to delay if nothing is armed
-  if span(armed)[2] == 0 then
-    audio.level_adc_cut(0)
-	  audio.level_eng_cut(0)
-  end
+
 end
 
 
@@ -244,57 +262,72 @@ end
 --   softcut.buffer_clear()
 -- end
 
--- function m_tape.sc_start()
---   softcut.buffer_clear()
+function m_tape.sc_init()
+  softcut.buffer_clear()
 
---   for i=1,4 do
---     -- init for all four
---     softcut.enable(i, 1)
---     softcut.buffer(i, 1)
---     softcut.rate(i, 1)
---     softcut.loop(i, 1)
---     softcut.loop_start(i, 0)
---     softcut.loop_end(i, params:get('dots_loop_length'))
---     softcut.fade_time(i, 0.1)
---     softcut.pan(i, i % 2 == 0 and 1 or -1)
+  local track = nil
 
---     -- watch position
---     softcut.phase_quant(i, 0.01)
+  for i=1,4 do
+    track = i + 7
 
---     -- input
---     if i < 3 then
---       softcut.position(i, 0)
---       softcut.rec_level(i, 1)
---       softcut.pre_level(i, 0)
---       softcut.level_input_cut(i, i, 1)
---       softcut.level(i, 0)
---       softcut.play(i, 1)
---       softcut.rec(i, 1)
+    -- init
+    softcut.enable(i, 1)
+    softcut.position(i, 0)
+    positions[i] = 0
 
---     -- dots
---     else
---       softcut.play(i, 0)
---       softcut.level(i, 1)
---       softcut.position(i, params:get('dots_loop_length'))
---       m_dots.positions[i] = params:get('dots_loop_length')
---     end
---   end
+    softcut.buffer(i, track_buffer[track])
+    softcut.rate(i, 1)
+    softcut.loop(i, 0)
+    softcut.loop_start(i, SLICE[1])
+    softcut.loop_end(i, SLICE[2])
+    softcut.fade_time(i, 0.1)
+    softcut.pan(i, 0)
 
---   softcut.event_phase(m_dots.update_position)
---   softcut.poll_start_phase()
--- end
+    softcut.rec_level(i, 1)
+    softcut.pre_level(i, 0)
+    softcut.level_input_cut(i, i, 1)
+    softcut.level(i, 1)
+    softcut.play(i, 0)
+    softcut.rec(i, 0)
+  end
+
+end
+
+function m_tape.watch_position(i)
+  softcut.event_phase(m_tape.update_position)
+
+  softcut.phase_quant(i, 0.01)
+  softcut.poll_start_phase()
+end
+
+function m_tape.ignore_position(i)
+  softcut.poll_stop_phase()
+end
+
+function m_tape.update_position(i,pos)
+  positions[i] = pos
+  screen_dirty = true
+end
 
 
 -- WAVEFORM (cr: sonocircuit) -----------------------------------
 
--- function wave_render(ch, start, i, s)
---   waveform_samples[TRACK] = {}
---   waveform_samples[TRACK] = s
---   waveviz_reel = false
---   wave_gain[TRACK] = wave_getmax(waveform_samples[TRACK])
+function wave_render(ch, start, rate, samples)
+  -- rate should be 1/60 seconds per sample (60 samples per second)
+  -- local start_frame = util.round(start * 60, 1)
+  local start_frame = util.round(start / rate, 1)
 
---   screen_dirty = true
--- end
+  print("rendering waveform:")
+  print("rate: ".. rate)
+  print("n_samples: ".. #samples)
+  print("start: " .. start_frame)
+
+  for i,s in ipairs(samples) do
+    buffer_waveform[ch][start_frame - 1 + i] = s
+  end
+
+  screen_dirty = true
+end
 
 -- function wave_getmax(t)
 --   local max = 0
@@ -306,22 +339,16 @@ end
 --   return util.clamp(max, 0.4, 1)
 -- end
 
--- function render_splice()
---   if view == vTAPE and not (view_splice_info or view_presets) then 
---     if view_buffer then
---       local start = tp[TRACK].s
---       local length = tp[TRACK].e - tp[TRACK].s
---       local buffer = tp[TRACK].side
---       softcut.render_buffer(buffer, start, length, 128)
---     else
---       local n = track[TRACK].splice_focus
---       local start = tp[TRACK].splice[n].s
---       local length = tp[TRACK].splice[n].e - tp[TRACK].splice[n].s
---       local buffer = tp[TRACK].side
---       softcut.render_buffer(buffer, start, length, 128)
---     end
---   end
--- end
+function render_slice()
+
+  -- 60 samples per second
+  local n_samples = 60 * SLICE[2]
+
+  for i=1,2 do
+    softcut.render_buffer(i, SLICE[1], SLICE[2], n_samples)
+  end
+
+end
 
 return m_tape
 

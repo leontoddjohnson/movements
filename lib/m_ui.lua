@@ -114,7 +114,7 @@ function m_ui.sample_1_redraw()
   -- indicate bank folder for this track
   local folder = bank_folders[BANK]
 
-  bank_text = "send midi or K2"
+  bank_text = "K2 to load bank"
   bank_text = folder ~= nil and folder or bank_text
 
   screen.level(5)
@@ -253,16 +253,21 @@ end
 -----------------------------------------------------------------
 
 -- 1: MAIN ------------------------------------------------------
-tape_toggle = 0
+recording = 0
 
 function m_ui.tape_1_redraw()
-  m_ui.draw_nav("tape 1")
-  screen.move(64, 32)
-  screen.text_center('tape!')
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    PARTITION .. " • " ..
+    util.round(SLICE[1], 0.1) .. " - " .. util.round(SLICE[2], 0.1)
+  )
 
-  if tape_toggle == 1 then
-    screen.move(64, 50)
-    screen.text_center('ooooh!')
+  screen.move(64, 50)
+
+  if recording == 1 then
+    screen.text_center('recording voice 1 ...')
+  else
+    screen.text_center('STOPPED recording voice 1 ...')
   end
 
   screen.stroke()
@@ -270,7 +275,14 @@ end
 
 function m_ui.tape_1_key(n,z)
   if n == 3 and z == 1 then
-    tape_toggle = tape_toggle ~ 1
+    recording = recording ~ 1
+
+    if recording == 1 then
+      softcut.rec(1, 1)
+    else
+      softcut.rec(1, 0)
+    end
+
     screen_dirty = true
   end
 end
@@ -278,6 +290,14 @@ end
 function m_ui.tape_1_enc(n,d)
   print('recording encoder')
 end
+
+-- function m_ui.draw_partition(partition)
+--   screen.move(1, 12)
+--   screen.line(128, 12)
+--   screen.stroke()
+
+
+-- end
 
 -- function m_ui.draw_waveform(voice)
 
@@ -293,10 +313,14 @@ end
 --   end
 --   -- update buffer
 --   if track[track_focus].rec == 1 then
---     render_splice()
+--     render_slice()
 --   end
 
 -- end
+
+-- 2: TRACK PARAMS ----------------------------------------------
+
+-- TODO: second param option (analogous to noise) is overdub (pre)
 
 
 -----------------------------------------------------------------
