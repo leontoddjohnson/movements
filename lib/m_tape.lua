@@ -19,7 +19,7 @@ partitions = {
 -- voice positions for each track (8 - 11)
 positions = {}
 
--- up to 192000 samples (min slice = 1s, 60 samples per waveform)
+-- up to 19200 samples (min slice = 1s, 60 samples per waveform)
 -- only loads when a slice is recorded from [a, a+dur]
 -- stores frames/samples for the whole 320s buffer (up to delay)
 buffer_waveform = {{}, {}}
@@ -30,7 +30,7 @@ track_buffer = {}
 armed = {}  -- 1 or 0 for whether armed[track] is armed for recording
 
 PARTITION = 1  -- currently selected record partition
-SLICE = {0, 5}  -- currently selected slice [start, duration]
+SLICE = {0, 5}  -- currently selected slice [start, stop]
 
 -----------------------------------------------------------------
 -- BUILD PARAMETERS
@@ -278,14 +278,14 @@ function m_tape.sc_init()
     softcut.buffer(i, track_buffer[track])
     softcut.rate(i, 1)
     softcut.loop(i, 0)
-    softcut.loop_start(i, SLICE[1])
-    softcut.loop_end(i, SLICE[2])
+    softcut.loop_start(i, 0)
+    softcut.loop_end(i, 0)
     softcut.fade_time(i, 0.1)
     softcut.pan(i, 0)
 
     softcut.rec_level(i, 1)
     softcut.pre_level(i, 0)
-    softcut.level_input_cut(i, i, 1)
+    softcut.level_input_cut(track_buffer[track], i, 1)
     softcut.level(i, 1)
     softcut.play(i, 0)
     softcut.rec(i, 0)
@@ -309,6 +309,37 @@ function m_tape.update_position(i,pos)
   screen_dirty = true
 end
 
+function m_tape.play_section(track, range, loop)
+  local voice = track - 7
+  local loop = loop or 0
+
+  softcut.play(voice, 0)
+  softcut.rec(voice, 0)
+  
+  softcut.buffer(voice, track_buffer[track])
+  softcut.position(voice, range[1])
+  softcut.loop(voice, loop)
+  softcut.loop_start(voice, range[1])
+  softcut.loop_end(voice, range[2])
+  softcut.play(voice, 1)
+end
+
+function m_tape.record_section(track, range, loop)
+  local voice = track - 7
+  local loop = loop or 0
+
+  softcut.play(voice, 0)
+  softcut.rec(voice, 0)
+
+  softcut.buffer(voice, track_buffer[track])
+  softcut.level_input_cut(track_buffer[track], voice, 1)
+  softcut.position(voice, range[1])
+  softcut.loop(voice, loop)
+  softcut.loop_start(voice, range[1])
+  softcut.loop_end(voice, range[2])
+  softcut.rec(voice, 1)
+end
+
 
 -- WAVEFORM (cr: sonocircuit) -----------------------------------
 
@@ -317,7 +348,7 @@ function wave_render(ch, start, rate, samples)
   -- local start_frame = util.round(start * 60, 1)
   local start_frame = util.round(start / rate, 1)
 
-  print("rendering waveform:")
+  print("rendering buffer " .. ch)
   print("rate: ".. rate)
   print("n_samples: ".. #samples)
   print("start: " .. start_frame)
@@ -342,10 +373,11 @@ end
 function render_slice()
 
   -- 60 samples per second
-  local n_samples = 60 * SLICE[2]
+  local duration = SLICE[2] - SLICE[1]
+  local n_samples = 60 * duration
 
   for i=1,2 do
-    softcut.render_buffer(i, SLICE[1], SLICE[2], n_samples)
+    softcut.render_buffer(i, SLICE[1], duration, n_samples)
   end
 
 end

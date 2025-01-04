@@ -265,12 +265,14 @@ function m_ui.tape_1_redraw()
   screen.move(64, 50)
 
   if recording == 1 then
-    screen.text_center('recording voice 1 ...')
+    screen.text_center('recording voice ' .. TRACK - 7)
   else
-    screen.text_center('STOPPED recording voice 1 ...')
+    screen.text_center('not recording.')
   end
 
   screen.stroke()
+
+  m_ui.draw_partition(PARTITION)
 end
 
 function m_ui.tape_1_key(n,z)
@@ -278,43 +280,114 @@ function m_ui.tape_1_key(n,z)
     recording = recording ~ 1
 
     if recording == 1 then
-      softcut.rec(1, 1)
+      m_tape.record_section(TRACK, SLICE)
     else
-      softcut.rec(1, 0)
+      softcut.rec(TRACK - 7, 0)
     end
 
-    screen_dirty = true
   end
+
+  if n == 2 and z == 1 then
+    render_slice()
+  end
+
+  screen_dirty = true
 end
 
 function m_ui.tape_1_enc(n,d)
-  print('recording encoder')
+  if n == 2 then
+    SLICE[1] = util.clamp(SLICE[1] + d, 0, 80)
+  elseif n == 3 then
+    SLICE[2] = util.clamp(SLICE[2] + d, 0, 80)
+  end
+
+  screen_dirty = true
 end
 
--- function m_ui.draw_partition(partition)
---   screen.move(1, 12)
---   screen.line(128, 12)
---   screen.stroke()
+-- draw top lines for left and right buffers given the `partition`
+-- only present line if there is audio.
+function m_ui.draw_partition(partition)
+  -- TODO: clamp first/last partition samples within the 80 seconds allowed
 
+  local y_middle = 12
+  local n_frames = 80 * 60  -- per partition. see notes on `buffer_waveform`.
+  local frame
 
--- end
+  -- baseline
+  screen.level(2)
 
--- function m_ui.draw_waveform(voice)
+  screen.move(0, y_middle - 1)
+  screen.line(128, y_middle - 1)
+  screen.move(0, y_middle + 1)
+  screen.line(128, y_middle + 1)
+
+  screen.stroke()
+
+  screen.level(12)
+  for i=0,127 do
+    -- "frame" represents the end of each (n_frames / 127) region
+    frame = (partition - 1) * n_frames + i * (n_frames / 127)
+    frame = util.round(frame, 1)
+
+    -- left buffer
+    s = buffer_waveform[1][frame]
+    if s ~= nil and s ~= 0 then
+      screen.move(i, y_middle - 1)
+      screen.line(i+1, y_middle - 1)
+    end
+
+    -- right buffer
+    s = buffer_waveform[2][frame]
+    if s ~= nil and s ~= 0 then
+      screen.move(i, y_middle + 1)
+      screen.line(i+1, y_middle + 1)
+    end
+
+  end
+  screen.stroke()
+
+end
+
+-- function m_ui.draw_waveform()
 
 --   -- display buffer
---   screen.level(6)
---   local x_pos = 0
---   for i, s in ipairs(waveform_samples[track_focus]) do
---     local height = util.round(math.abs(s) * (14 / wave_gain[track_focus]))
---     screen.move(util.linlin(0, 128, 5, 123, x_pos), 36 - height)
---     screen.line_rel(0, 2 * height)
---     screen.stroke()
---     x_pos = x_pos + 1
---   end
---   -- update buffer
---   if track[track_focus].rec == 1 then
---     render_slice()
---   end
+--   -- screen.level(6)
+
+--   -- local x_pos = 0
+
+--   -- for i, s in ipairs(waveform_samples[track_focus]) do
+--   --   local height = util.round(math.abs(s) * (14 / wave_gain[track_focus]))
+--   --   screen.move(util.linlin(0, 128, 4, 120, x_pos), 36 - height)
+--   --   screen.line_rel(0, 2 * height)
+--   --   screen.stroke()
+--   --   x_pos = x_pos + 1
+--   -- end
+
+--   -- -- update buffer
+--   -- if track[track_focus].rec == 1 then
+--   --   render_slice()
+--   -- end
+
+--   -- waveform (adapted from cr: @markeats)
+--   screen.level(2)
+
+  -- local WAVE_H = 20
+  -- local wave_from_center_h = WAVE_H * 0.5
+  -- local frame
+
+  -- for i = 1,60 do
+  --   frame = (SLICE[1]) * 60 + i * (n_frames / 128)
+  --   local wave_x = 4 + i * 2 - 0.5
+
+  --   if sample then
+  --     screen.move(wave_x, util.round(y_center - sample[1] * wave_from_center_h))
+  --     screen.line(wave_x, util.round(y_center - math.max(sample[2] * wave_from_center_h, 1)))
+  --   else
+  --     screen.move(wave_x, y_center - 0.5)
+  --     screen.line(wave_x, y_center + 0.5)
+  --   end
+  -- end
+  -- screen.stroke()
 
 -- end
 
