@@ -275,7 +275,7 @@ function rowcol_id(rowcol, bank)
   return 32 * (bank - 1) + bank_id
 end
 
--- return triple: bank, row, col from the id number
+-- return triple: bank, row, col from a 0-indexed id number
 function id_bankrowcol(id)
   local bank = (id // 32) + 1
   local row = (id - (bank - 1) * 32) // 8 + 1

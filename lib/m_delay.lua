@@ -2,6 +2,9 @@
 
 local m_delay = {}
 
+-- starting place on buffer for delay. the rest is for tape.
+BUFFER_START = 322  
+
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------

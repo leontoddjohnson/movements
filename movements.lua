@@ -34,7 +34,8 @@ track_param_default = {
   scale = 1,
   rate = 1,
   prob = 1,
-  noise = 0
+  noise = 0,
+  fade_time = 0.1
 }
 
 -----------------------------------------------------------------

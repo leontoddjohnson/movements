@@ -331,6 +331,7 @@ function m_ui.draw_partition(partition)
 
     -- left buffer
     s = buffer_waveform[1][frame]
+    -- TODO: set this to be whether s is bigger (?) than threshold
     if s ~= nil and s ~= 0 then
       screen.move(i, y_middle - 1)
       screen.line(i+1, y_middle - 1)
@@ -338,6 +339,7 @@ function m_ui.draw_partition(partition)
 
     -- right buffer
     s = buffer_waveform[2][frame]
+    -- TODO: set this to be whether s is bigger (?) than threshold
     if s ~= nil and s ~= 0 then
       screen.move(i, y_middle + 1)
       screen.line(i+1, y_middle + 1)
