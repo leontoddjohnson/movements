@@ -19,7 +19,7 @@ slices_params = {}
 -- voice_slice_loc[voice][slice_id] where:
 -- 1: voice head is *playing* (not recording) in that slice range, and
 -- 0: voice head is not in that range.
-voice_slice_loc = {}
+voice_slice_loc = {{}, {}, {}, {}}
 
 -- voice_state[voice] stopped == 0, playing == 1, recording == 2
 voice_state = {}
@@ -33,6 +33,7 @@ positions = {}
 buffer_waveform = {{}, {}}
 
 -- buffers assigned for each track
+-- `track_buffer[track]` == 1 for left, and == 2 for right
 track_buffer = {}
 
 armed = {}  -- 1 or 0 for whether armed[track] is armed for recording
@@ -329,6 +330,7 @@ function m_tape.sc_init()
     -- init
     softcut.enable(i, 1)
     softcut.position(i, 0)
+    softcut.phase_quant(i, 1 / REDRAW_FRAMERATE)
     positions[i] = 0
 
     softcut.buffer(i, track_buffer[track])
@@ -345,18 +347,17 @@ function m_tape.sc_init()
     softcut.level(i, 1)
     softcut.play(i, 0)
     softcut.rec(i, 0)
+    voice_state[i] = 0
   end
 
 end
 
-function m_tape.watch_position(i)
+function m_tape.watch_positions()
   softcut.event_phase(m_tape.update_position)
-
-  softcut.phase_quant(i, 0.01)
   softcut.poll_start_phase()
 end
 
-function m_tape.ignore_position(i)
+function m_tape.ignore_positions()
   softcut.poll_stop_phase()
 end
 
@@ -365,13 +366,14 @@ function m_tape.update_position(i,pos)
 
   -- indicate if slice contains time for a voice that is playing
   for j=1,128 do
-    if slices[j][1] <= pos and pos < slices[j][2] and voice_state[i] == 1 then
+    if slices[j][1] <= pos and pos < slices[j][2] and voice_state[i] > 0 then
       voice_slice_loc[i][j] = 1
     else
       voice_slice_loc[i][j] = 0
     end
   end
 
+  grid_dirty = true
   screen_dirty = true
 end
 
@@ -416,6 +418,7 @@ function m_tape.record_section(track, range, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
   softcut.rec(voice, 1)
+  softcut.play(voice, 1)
 
   voice_state[voice] = 2
 end

@@ -304,6 +304,37 @@ function m_ui.tape_1_enc(n,d)
   screen_dirty = true
 end
 
+-- 2: WAVEFORMS ---------------------------------------------------
+recording = 0
+
+function m_ui.tape_2_redraw()
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    PARTITION .. " • " ..
+    util.round(SLICE[1], 0.1) .. " - " .. util.round(SLICE[2], 0.1)
+  )
+
+  m_ui.draw_partition(PARTITION)
+
+
+end
+
+function m_ui.tape_2_key(n,z)
+  
+
+  screen_dirty = true
+end
+
+function m_ui.tape_2_enc(n,d)
+  if n == 2 then
+    SLICE[1] = util.clamp(SLICE[1] + d, 0, 80)
+  elseif n == 3 then
+    SLICE[2] = util.clamp(SLICE[2] + d, 0, 80)
+  end
+
+  screen_dirty = true
+end
+
 -- draw top lines for left and right buffers given the `partition`
 -- only present line if there is audio.
 function m_ui.draw_partition(partition)
@@ -315,12 +346,10 @@ function m_ui.draw_partition(partition)
 
   -- baseline
   screen.level(2)
-
   screen.move(0, y_middle - 1)
   screen.line(128, y_middle - 1)
   screen.move(0, y_middle + 1)
   screen.line(128, y_middle + 1)
-
   screen.stroke()
 
   screen.level(12)
@@ -348,6 +377,22 @@ function m_ui.draw_partition(partition)
 
   end
   screen.stroke()
+
+  -- track position
+  if TRACK > 7 then
+    local voice_x = positions[TRACK - 7] - (PARTITION - 1) * 80
+    voice_x = voice_x * (128 / 80)
+
+    if track_buffer[TRACK] == 1 then
+      screen.move(voice_x, y_middle - 3)
+      screen.line(voice_x, y_middle)
+    else
+      screen.move(voice_x, y_middle - 1)
+      screen.line(voice_x, y_middle + 2)
+    end
+
+    screen.stroke()
+  end
 
 end
 

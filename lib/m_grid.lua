@@ -1379,13 +1379,11 @@ end
 -- manage actions needed when selecting a track
 function m_grid.set_track(track)
 
-  -- if tape track, watch position
-  for i = 1,4 do
-    if i == track - 7 then
-      m_tape.watch_position(track - 7)
-    else
-      m_tape.ignore_position(i)
-    end
+  -- if tape track, watch positions
+  if track > 7 then
+    m_tape.watch_positions()
+  else
+    m_tape.ignore_positions()
   end
 
   TRACK = track
