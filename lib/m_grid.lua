@@ -204,14 +204,14 @@ end
 function m_grid.set_functionality()
   -- if needed, set TRACK to "first" within a functionality
   if string.match(G_PAGE, '^sample') and TRACK > 7 then 
-    TRACK = 1
+    m_grid.set_track(1)
     DISPLAY_ID = index_of(display_names, 'sample')
     m_sample.set_sample_id(SAMPLE)
     
   elseif string.match(G_PAGE, '^tape') and TRACK < 8 then
-    TRACK = 8
     PAGE_ID = 1  -- TODO: remove this when #tape_pages = #sample_pages
     DISPLAY_ID = index_of(display_names, 'tape')
+    m_grid.set_track(8)
     m_tape.set_slice_id(SLICE_ID)
   end
 end
@@ -260,7 +260,7 @@ function m_grid.seq_key(x, y, z, track_range)
     if not PLAY_MODE then
       -- select track
       if ALT then
-        TRACK = track
+        m_grid.set_track(track)
       -- activate step
       else
         m_seq.toggle_pattern_step(track, step_)
@@ -823,7 +823,7 @@ function m_grid.sample_config_key(x, y, z)
       if TRACK == y and ALT then
         m_seq.load_track_pool(TRACK)
       end
-      TRACK = y
+      m_grid.set_track(y)
 
       -- show bank linked to track
       if #track_pool[TRACK] > 0 then
@@ -1115,7 +1115,7 @@ function m_grid.tape_config_key(x, y, z)
       if TRACK == y + 7 and ALT then
         m_seq.load_track_pool(TRACK)
       end
-      TRACK = y + 7
+      m_grid.set_track(y + 7)
 
       -- show bank linked to track
       if #track_pool[TRACK] > 0 then
@@ -1374,6 +1374,21 @@ function m_grid.select_param_value(param, i, current_value)
   else
     return param_levels[param][i]
   end
+end
+
+-- manage actions needed when selecting a track
+function m_grid.set_track(track)
+
+  -- if tape track, watch position
+  for i = 1,4 do
+    if i == track - 7 then
+      m_tape.watch_position(track - 7)
+    else
+      m_tape.ignore_position(i)
+    end
+  end
+
+  TRACK = track
 end
 
 -- draw 8 sequence bars at row `y` starting at `x_start` on grid
