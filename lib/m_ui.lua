@@ -282,13 +282,13 @@ function m_ui.tape_1_key(n,z)
     if recording == 1 then
       m_tape.record_section(TRACK, SLICE)
     else
-      softcut.rec(TRACK - 7, 0)
+      m_tape.stop_track(TRACK)
     end
 
   end
 
   if n == 2 and z == 1 then
-    render_slice()
+    render_slice(SLICE)
   end
 
   screen_dirty = true
@@ -311,7 +311,7 @@ function m_ui.draw_partition(partition)
 
   local y_middle = 12
   local n_frames = 80 * 60  -- per partition. see notes on `buffer_waveform`.
-  local frame
+  local frame, thresh
 
   -- baseline
   screen.level(2)
@@ -325,22 +325,23 @@ function m_ui.draw_partition(partition)
 
   screen.level(12)
   for i=0,127 do
-    -- "frame" represents the end of each (n_frames / 127) region
-    frame = (partition - 1) * n_frames + i * (n_frames / 127)
-    frame = util.round(frame, 1)
+    -- "frame" represents the beginning of each (n_frames / 128) region
+    frame = (partition - 1) * n_frames + i * (n_frames / 128)
+    frame = util.round(frame, 1) + 1
+
+    -- minimum amplitude threshold
+    thresh = util.dbamp(params:get('rec_threshold'))
 
     -- left buffer
     s = buffer_waveform[1][frame]
-    -- TODO: set this to be whether s is bigger (?) than threshold
-    if s ~= nil and s ~= 0 then
+    if s ~= nil and math.abs(s) > thresh then
       screen.move(i, y_middle - 1)
       screen.line(i+1, y_middle - 1)
     end
 
     -- right buffer
     s = buffer_waveform[2][frame]
-    -- TODO: set this to be whether s is bigger (?) than threshold
-    if s ~= nil and s ~= 0 then
+    if s ~= nil and math.abs(s) > thresh then
       screen.move(i, y_middle + 1)
       screen.line(i+1, y_middle + 1)
     end

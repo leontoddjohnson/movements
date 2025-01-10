@@ -63,7 +63,7 @@ g_pages = {
 g_play_modes_all = {
   buffer = {"Loop", "Inf. Loop", "1-Shot", "Gated"},
   streaming = {"Loop", "Loop", "1-Shot", "Gated"},
-  tape_slice = {"Loop", "Loop", "1-Shot", "Gated"}
+  tape_slice = {"Loop", "Loop", "1-Shot", "1-Shot"}
 }
 
 G_PAGE = 'sample_config'
@@ -75,7 +75,7 @@ ALT = false
 KEY_HOLD = {}
 
 SEQ_BAR = 1  -- current sequence bar
-TRACK = 1    -- selected (sample) track
+TRACK = 1    -- selected track
 BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
 PARAM = 'amp'
 
@@ -176,12 +176,7 @@ function m_grid.nav_key(x, y, z)
       end
       G_PAGE = g_pages[x - 8][i]
       
-      -- if needed, set TRACK to "first" within a functionality
-      if string.match(G_PAGE, '^sample') and TRACK > 7 then 
-        TRACK = 1
-      elseif string.match(G_PAGE, '^tape') and TRACK < 8 then
-        TRACK = 8
-      end
+      m_grid.set_functionality()
 
     end
   
@@ -200,8 +195,27 @@ function m_grid.nav_key(x, y, z)
     end
   end
 
+  screen_dirty = true
   grid_dirty = true
 end
+
+-- when moving between sample and tape on grid, set sample/slice
+-- and display (on UI) accordingly.
+function m_grid.set_functionality()
+  -- if needed, set TRACK to "first" within a functionality
+  if string.match(G_PAGE, '^sample') and TRACK > 7 then 
+    TRACK = 1
+    DISPLAY_ID = index_of(display_names, 'sample')
+    m_sample.set_sample_id(SAMPLE)
+    
+  elseif string.match(G_PAGE, '^tape') and TRACK < 8 then
+    TRACK = 8
+    PAGE_ID = 1  -- TODO: remove this when #tape_pages = #sample_pages
+    DISPLAY_ID = index_of(display_names, 'tape')
+    m_tape.set_slice_id(SLICE_ID)
+  end
+end
+
 
 -----------------------------------------------------------------
 -- SEQUENCE
@@ -605,6 +619,7 @@ end
 
 function m_grid.draw_bank(bank)
   local origin = {9, 1}
+  local track_pools = table_slice(track_pool, 1, 7)
 
   -- draw bank samples
   for row = 1,4 do
@@ -612,8 +627,8 @@ function m_grid.draw_bank(bank)
       x, y = global_xy(origin, col, row)
       sample_id_ = banks[bank][row][col]
       if sample_id_ then
-        -- sample is assigned to a track
-        if tab.contains(flatten(track_pool), sample_id_) then
+        -- sample is assigned to a sample track
+        if tab.contains(flatten(track_pools), sample_id_) then
           if tab.contains(track_pool[TRACK], sample_id_) then
             g:led(x, y, g_brightness.bank_sample_current_track)
           else
@@ -709,15 +724,20 @@ function m_grid.draw_bank(bank)
 
 end
 
-function m_grid.draw_tracks()
+function m_grid.draw_track_params(track_range)
 
-  for y = 1,7 do
+  local n_tracks = track_range[2] - track_range[1] + 1
+  local track
+
+  for y = 1,n_tracks do
+    track = track_range[1] + y - 1
+
     for i=1,6 do
 
       -- TAG: param 4
       -- fill
       if tab.contains({'amp'}, PARAM) then
-        p = 'track_' .. y .. '_' .. PARAM
+        p = 'track_' .. track .. '_' .. PARAM
         if params:get(p) >= param_levels[PARAM][i] then
           g:led(i, y, g_brightness.level_met)
         end
@@ -725,7 +745,7 @@ function m_grid.draw_tracks()
 
       -- 0-centered value
       if tab.contains({'pan'}, PARAM) then
-        p = 'track_' .. y .. '_' .. PARAM
+        p = 'track_' .. track .. '_' .. PARAM
         if params:get(p) > 0 and i >= 4 then
           if params:get(p) >= param_levels[PARAM][i] - 0.001 then
             g:led(i, y, g_brightness.level_met)
@@ -739,8 +759,8 @@ function m_grid.draw_tracks()
 
       -- filter swapping
       if PARAM == 'filter' then
-        p_freq = 'track_' .. y .. '_filter_freq'
-        p_type = 'track_' .. y .. '_filter_type'
+        p_freq = 'track_' .. track .. '_filter_freq'
+        p_type = 'track_' .. track .. '_filter_type'
 
         if params:get(p_type) == 1 then
           if params:get(p_freq) >= param_levels[PARAM][i] - 0.001 then
@@ -760,7 +780,7 @@ end
 
 function m_grid.sample_config_redraw()
   m_grid.draw_bank(BANK)
-  m_grid.draw_tracks()
+  m_grid.draw_track_params({1, 7})
 
   -- draw param selection
   for p = 1,6 do
@@ -774,7 +794,8 @@ function m_grid.sample_config_redraw()
 end
 
 function m_grid.sample_config_key(x, y, z)
-
+  local track_pools = table_slice(track_pool, 1, 7)
+  
   -- bank selection
   if 12 < x and y == 5 then
     if z == 1 then
@@ -835,7 +856,7 @@ function m_grid.sample_config_key(x, y, z)
         if banks[BANK][row_][col_] then
 
           -- if not already set in a track pool, then add to cue
-          if not tab.contains(flatten(track_pool), sample_id) then
+          if not tab.contains(flatten(track_pools), sample_id) then
 
             for track = 1,7 do
               track_cue = track_pool_cue[track][BANK]
@@ -868,36 +889,7 @@ function m_grid.sample_config_key(x, y, z)
   end
 
   -- track param levels
-  if x < 7 and y < 8 and z == 1 then
-
-    if PARAM == 'filter' then
-      local f_type = params:get('track_' .. y .. '_filter_type')
-      local f_freq = params:get('track_' .. y .. '_filter_freq')
-
-      value = m_grid.select_param_value(PARAM, x, f_freq)
-
-      if value == -1 then
-        params:set('track_' .. y .. '_filter_type', f_type % 2 + 1)
-      else
-        params:set('track_' .. y .. '_filter_freq', value)
-      end
-      
-    else
-      param_value = params:get('track_' .. y .. '_' .. PARAM)
-      value = m_grid.select_param_value(PARAM, x, param_value)
-      params:set('track_' .. y .. '_' .. PARAM, value)
-    end
-    
-  end
-
-  -- param selection
-  if x < 7 and y == 8 and z == 1 then
-    if p_options.PARAMS[x] == PARAM then
-      PARAM = 'amp'
-    else
-      PARAM = p_options.PARAMS[x]
-    end
-  end
+  m_grid.select_track_param_level(x, y, z, {1, 7})
 
   -- slice adjustment ...
   if 5 < y and y < 8 and 8 < x and z == 1 then
@@ -954,28 +946,286 @@ end
 -----------------------------------------------------------------
 -- TAPE CONFIG
 -----------------------------------------------------------------
-temp_on = {}
+function m_grid.draw_partition()
+  local origin = {9, 1}
+  local slice_id, slice_buffer
+  
+  -- tape track pools
+  local track_pools = table_slice(track_pool, 8, 11)
 
--- temporary redraw
-function m_grid.tape_config_redraw()
+  -- draw partition slices
+  for row = 1,4 do
+    for col = 1,8 do
+      x, y = global_xy(origin, col, row)
 
-  for i = 1,8 do
-    g:led(i + 6, i, 3)
+      -- baseline
+      g:led(x, y, g_brightness.bank_sample_empty)
+
+      slice_id = (PARTITION - 1) * 32 + (row - 1) * 8 + col
+      slice_buffer = m_tape.slice_buffer(slice_id, track_buffer[TRACK])
+
+      -- check if slice is loaded into at least one (tape) track
+      if tab.contains(flatten(track_pools), slice_id) then
+        if tab.contains(track_pool[TRACK], slice_id) then
+          g:led(x, y, g_brightness.bank_sample_current_track)
+        else
+          g:led(x, y, g_brightness.bank_sample_tracked)
+        end
+
+        -- show track that slice is loaded into
+        if KEY_HOLD[y][x] == 1 then
+          g:led(8, find(track_pools, slice_id), 
+                g_brightness.bank_sample_tracked)
+        end
+      
+      -- show if there is sound
+      elseif slice_buffer and span_thresh(slice_buffer)[2] > 0 then
+        g:led(x, y, g_brightness.bank_sample_loaded)
+      end
+
+      -- show cue if not already loaded into the selected track
+      if tab.contains(track_pool_cue[TRACK][PARTITION], slice_id) and 
+        not tab.contains(track_pool[TRACK], slice_id) then
+        g:led(x, y, g_brightness.bank_sample_cued)
+      end
+      
+      local loc = voice_slice_loc[TRACK - 7]
+      if loc and loc[slice_id] == 1 and PLAY_MODE then
+        g:led(x, y, g_brightness.bank_sample_playing)
+      end
+    end
   end
 
-  if temp_on[1] then
-    g:led(temp_on[1], temp_on[2], 10)
+  -- draw partition indicators
+  origin = {13, 5}
+  local buffer_l, buffer_r
+
+  for partition_ = 1,4 do
+    x, y = global_xy(origin, partition_, 1)
+
+    buffer_l = table_slice(buffer_waveform[1], 
+      (partition_ - 1) * 80 * 60 + 1, partition_ * 80 * 60)
+
+    buffer_r = table_slice(buffer_waveform[2], 
+      (partition_ - 1) * 80 * 60 + 1, partition_ * 80 * 60)
+
+    if PARTITION == partition_ then
+      g:led(x, y, g_brightness.bank_selected)
+    elseif (buffer_l and span_thresh(buffer_l)[2] > 0) 
+      or (buffer_r and span_thresh(buffer_r)[2] > 0) then
+      g:led(x, y, g_brightness.bank_loaded)
+    else
+      g:led(x, y, g_brightness.bank_empty)
+    end
+
+  end
+
+  -- draw playback modes
+  for i = 1,4 do
+    if slices_params[SLICE_ID]['play_mode'] == g_play_modes[i] then
+      g:led(8 + i, 5, g_brightness.play_mode_selected)
+    else
+      g:led(8 + i, 5, g_brightness.play_mode_deselected)
+    end
+  end
+
+  -- draw grid slice range
+  for i = 1,32 do
+    row_ = (i - 1) // 16 + 1
+    col_ = i - (row_ - 1) * 16
+
+    local cell_start = (PARTITION - 1) * 80 + (i - 1) * 2.5
+    local cell_end = (PARTITION - 1) * 80 + i * 2.5
+
+    if grid_slice[PARTITION][1] <= cell_start 
+      and cell_end <= grid_slice[PARTITION][2] then
+      g:led(col_, 5 + row_, g_brightness.sample_range_in)
+    else
+      g:led(col_, 5 + row_, g_brightness.sample_range_out)
+    end
+  end
+
+  -- show selected slice (or partition it's in) if current bank is held
+  for partition_ = 1,4 do
+    x, y = global_xy(origin, partition_, 1)
+
+    if KEY_HOLD[y][x] == 1 and SLICE_ID and not PLAY_MODE then
+      p_, r_, c_ = id_bankrowcol(SLICE_ID - 1)
+      if p_ == PARTITION then
+        -- highlight selected sample in bank
+        g:led(c_ + 8, r_, g_brightness.bank_sample_selected)
+      else
+        -- highlight partition location
+        g:led(p_ + 12, 5, g_brightness.bank_selected)
+      end
+    end
+  end
+
+  -- track selected for bank (overwrites the "find track")
+  for y = 1,4 do
+    if y + 7 == TRACK then
+      g:led(8, y, g_brightness.track_selected)
+    end
+  end
+
+
+end
+
+function m_grid.tape_config_redraw()
+  m_grid.draw_partition()
+  m_grid.draw_track_params({8, 11})
+
+  -- draw param selection
+  for p = 1,6 do
+    if PARAM == p_options.PARAMS[p] then
+      g:led(p, 5, g_brightness.param_selected)
+    else
+      g:led(p, 5, g_brightness.param_deselected)
+    end
   end
 
 end
 
 function m_grid.tape_config_key(x, y, z)
-  if z == 1 then
-    temp_on = {x, y}
-  else
-    temp_on = {}
+  local track_pools = table_slice(track_pool, 8, 11)
+
+  -- partition selection
+  if 12 < x and y == 5 then
+    if z == 1 then
+      local p = x - 12
+
+      -- copy bank patterns for selected track
+      if ALT and KEY_HOLD[5][PARTITION + 12] > 0 and p ~= PARTITION then
+        m_grid.copy_bank_pattern(PARTITION, p)
+      end
+
+      PARTITION = p
+    end
   end
+
+  -- play mode selection
+  if 8 < x and x < 13 and y == 5 and z == 1 then
+    slices_params[SLICE_ID]['play_mode'] = g_play_modes[x - 8]
+  end
+
+  -- track selection
+  if x == 8 and y < 5 then
+    if z == 1 then
+      -- load onto track (only if track already selected)
+      if TRACK == y + 7 and ALT then
+        m_seq.load_track_pool(TRACK)
+      end
+      TRACK = y + 7
+
+      -- show bank linked to track
+      if #track_pool[TRACK] > 0 then
+        PARTITION = bank[TRACK]
+      end
+    end
+  end
+
+  -- slice selection
+  if 8 < x and y < 5 then
+    row_ = y
+    col_ = x - 8
+    slice_id = rowcol_id(row_ .. col_, PARTITION) + 1
+    local voice = TRACK - 7
+
+    if z == 1 then
+      m_tape.set_slice_id(slice_id)
+      
+      -- play slice
+      if PLAY_MODE then
+        if voice_state[voice] == 1 then
+          m_tape.stop_track(TRACK)
+        else
+          m_tape.play_section(TRACK, SLICE)
+        end
+      
+      -- assign slices to pool/cue (even if they're empty)
+      elseif ALT then
+
+        -- if not already set in a track pool, then add to cue
+        if not tab.contains(flatten(track_pools), slice_id) then
+
+          for track = 8, 11 do
+            track_cue = track_pool_cue[track][PARTITION]
+            -- if not in TRACK cue, then add it
+            if track == TRACK and not tab.contains(track_cue, slice_id) then
+              table.insert(track_cue, slice_id)
+            -- otherwise, in any case, remove it from the cue
+            elseif tab.contains(track_cue, slice_id) then
+              table.remove(track_cue, index_of(track_cue, slice_id))
+            end
+          end
+        
+        -- otherwise, if sample in the current track pool, remove it
+        elseif tab.contains(track_pool[TRACK], slice_id) then
+          table.remove(track_pool[TRACK], 
+            index_of(track_pool[TRACK], slice_id))
+
+          -- set parameters back to default
+          m_tape.slice_params_to_default({slice_id})
+        end
+      end
+
+    end
+  end
+
+  -- select param level (if x,y, and z meet requirements)
+  m_grid.select_track_param_level(x, y, z, {8, 11})
+
+  -- slice adjustment ...
+  if 5 < y and y < 8 and z == 1 then
+    i = 16 * (y - 6) + x
+
+    if ALT then
+      grid_slice[PARTITION][2] = (PARTITION - 1) * 80 + math.ceil(2.5 * i)
+    else
+      grid_slice[PARTITION][1] = (PARTITION - 1) * 80 + math.ceil(2.5 * (i - 1))
+    end
+
+  end
+
   grid_dirty = true
+  screen_dirty = true
+end
+
+function m_grid.select_track_param_level(x, y, z, track_range)
+  local n_tracks = track_range[2] - track_range[1] + 1
+  local track = track_range[1] + y - 1
+
+  -- track param levels
+  if x < 7 and y <= n_tracks and z == 1 then
+
+    if PARAM == 'filter' then
+      local f_type = params:get('track_' .. track .. '_filter_type')
+      local f_freq = params:get('track_' .. track .. '_filter_freq')
+
+      value = m_grid.select_param_value(PARAM, x, f_freq)
+
+      if value == -1 then
+        params:set('track_' .. track .. '_filter_type', f_type % 2 + 1)
+      else
+        params:set('track_' .. track .. '_filter_freq', value)
+      end
+      
+    else
+      param_value = params:get('track_' .. track .. '_' .. PARAM)
+      value = m_grid.select_param_value(PARAM, x, param_value)
+      params:set('track_' .. track .. '_' .. PARAM, value)
+    end
+    
+  end
+
+  -- param selection
+  if x < 7 and y == n_tracks + 1 and z == 1 then
+    if p_options.PARAMS[x] == PARAM then
+      PARAM = 'amp'
+    else
+      PARAM = p_options.PARAMS[x]
+    end
+  end
 end
 
 -----------------------------------------------------------------

@@ -435,9 +435,9 @@ function m_sample.set_sample_id(id)
 
   -- update play mode options on grid
   if samples_meta[SAMPLE]['streaming'] == 1 then
-    g_play_modes = g_play_modes_all.streaming
+    g_play_modes = shallow_copy(g_play_modes_all.streaming)
   else
-    g_play_modes = g_play_modes_all.buffer
+    g_play_modes = shallow_copy(g_play_modes_all.buffer)
   end
 
   waveform_view:set_sample_id(id)
@@ -669,6 +669,15 @@ end
 -- convert amp [0, 1] to decibels [-inf, 0]
 function ampdb(amp)
   return math.log(amp, 10) * 20.0
+end
+
+-- create a shallow copy of a table `t`
+function shallow_copy(t)
+  local t2 = {}
+  for k,v in pairs(t) do
+    t2[k] = v
+  end
+  return t2
 end
 
 return m_sample

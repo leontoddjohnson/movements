@@ -7,16 +7,24 @@ local m_tape = {}
 
 local Formatters = require "formatters"
 
--- {start, stop} for each partion. use [partition][row][col].
--- (samples use `banks`)
-partitions = {
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}},
-  {{}, {}, {}, {}}
-}
+-- 128 slices. these are represented in 4 partitions, where
+-- the `n`th partition starts with slice #(`n` - 1) * 32 + 1.
+-- slices[i] gives {start, stop} for that slice.
+slices = {}
 
--- voice positions for each track (8 - 11)
+-- all parameters for slices (including `play_mode` *strings*, etc.)
+-- indexed by slice_id
+slices_params = {}
+
+-- voice_slice_loc[voice][slice_id] where:
+-- 1: voice head is *playing* (not recording) in that slice range, and
+-- 0: voice head is not in that range.
+voice_slice_loc = {}
+
+-- voice_state[voice] stopped == 0, playing == 1, recording == 2
+voice_state = {}
+
+-- voice positions for each *voice* (1-4)
 positions = {}
 
 -- up to 19200 samples (min slice = 1s, 60 samples per waveform)
@@ -31,6 +39,10 @@ armed = {}  -- 1 or 0 for whether armed[track] is armed for recording
 
 PARTITION = 1  -- currently selected record partition
 SLICE = {0, 5}  -- currently selected slice [start, stop]
+SLICE_ID = 1  -- TODO: replace `SLICE` instances with `SLICE_ID`
+
+-- currently selected slice on the grid for each partition
+grid_slice = {{0, 80}, {80, 160}, {160, 240}, {240, 320}}
 
 -----------------------------------------------------------------
 -- BUILD PARAMETERS
@@ -56,6 +68,10 @@ function m_tape.build_params()
         audio.level_eng_cut(1)
       end
     end)
+
+  params:add_control('rec_threshold', 'rec threshold',
+    controlspec.DB,
+    function(p) return util.round(p:get(), 0.1) .. ' db' end)
 
 end
 
@@ -214,6 +230,8 @@ function m_tape.init()
     track_buffer[i] = i % 2 + 1  -- track 8 is "L"
   end
 
+  m_tape.init_slices()
+
   -- init softcut
   m_tape.sc_init()
 
@@ -223,6 +241,36 @@ end
 -- UTILITY
 -----------------------------------------------------------------
 
+-- default slices
+function m_tape.init_slices()
+
+  for s=1,128 do 
+    slices[s] = {(s - 1) * 2.5, s * 2.5}
+    
+    slices_params[s] = {}
+    for k,v in pairs(track_param_default) do
+      slices_params[s][k] = v
+    end
+
+    slices_params[s]['play_mode'] = "1-Shot"  -- or "Gated"
+  end
+
+end
+
+-- return buffer waveform samples for a `slice_id`, on buffer `ch`
+function m_tape.slice_buffer(slice_id, ch)
+  local slice = slices[slice_id]
+
+  local start_frame = util.round(60 * slice[1], 1) + 1  -- 60 frames per second
+  local end_frame = util.round(60 * slice[2], 1)
+
+  left_buffer = table_slice(buffer_waveform[1], start_frame, end_frame)
+  right_buffer = table_slice(buffer_waveform[2], start_frame, end_frame)
+
+  slice_buffer = {left_buffer, right_buffer}
+  return slice_buffer[ch]
+
+end
 
 -- arm a track for recording
 function m_tape.arm(track)
@@ -239,6 +287,14 @@ function m_tape.disarm(track)
 
 end
 
+function m_tape.set_slice_id(id)
+  SLICE_ID = id
+  SLICE = slices[SLICE_ID]
+
+  -- update play mode options on grid
+  g_play_modes = shallow_copy(g_play_modes_all.tape_slice)
+
+end
 
 -- function m_tape.sc_stop()
 --   for i=1,4 do
@@ -306,6 +362,16 @@ end
 
 function m_tape.update_position(i,pos)
   positions[i] = pos
+
+  -- indicate if slice contains time for a voice that is playing
+  for j=1,128 do
+    if slices[j][1] <= pos and pos < slices[j][2] and voice_state[i] == 1 then
+      voice_slice_loc[i][j] = 1
+    else
+      voice_slice_loc[i][j] = 0
+    end
+  end
+
   screen_dirty = true
 end
 
@@ -322,6 +388,18 @@ function m_tape.play_section(track, range, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
   softcut.play(voice, 1)
+
+  voice_state[voice] = 1
+end
+
+-- TODO: set this to happen when needed?
+function m_tape.stop_track(track)
+  local voice = track - 7
+
+  softcut.play(voice, 0)
+  softcut.rec(voice, 0)
+
+  voice_state[voice] = 0
 end
 
 function m_tape.record_section(track, range, loop)
@@ -338,26 +416,87 @@ function m_tape.record_section(track, range, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
   softcut.rec(voice, 1)
+
+  voice_state[voice] = 2
 end
 
+-- set a collection of slice ids back to default
+function m_tape.slice_params_to_default(slice_ids)
+  local id
+  for i = 1,#slice_ids do
+    id = slice_ids[i]
+
+    -- TAG: param 8
+    local params = {
+      'amp', 'pan', 'filter_freq', 'filter_type', 'filter_resonance'
+    }
+
+    for i,p in ipairs(params) do
+      slices_params[id][p] = track_param_default[p]
+    end
+  end
+
+end
+
+-- set a collection of slice ids to the track levels
+function m_tape.slice_params_to_track(slice_ids, track)
+  -- do this before a slice is added to a track_pool
+  local id
+  for i = 1,#slice_ids do
+    id = slice_ids[i]
+
+    -- TAG: param 2 - make sure this works, or add new above ...
+    local params_ = {
+      "amp", "pan", "filter_freq", "filter_type", "filter_resonance"
+    }
+
+    for i,p in ipairs(params_) do
+      p_track = params:get('track_' .. track .. '_' .. p)
+      slices_params[id][p] = p_track
+    end
+  end
+end
+
+-- span of values that are greater in magnitude than some threshold
+-- **default `thresh` = params:get('rec_threshold')**
+-- span[0] indexes the first sufficient value (or 0 for none)
+-- span[1] indexes the last sufficient value (or 0 for none)
+function span_thresh(t, thresh)
+  local span_l = 0
+  local span_r = 0
+
+  thresh = thresh or util.dbamp(params:get('rec_threshold'))
+
+  for i=1,#t do
+    if math.abs(t[i]) > thresh and span_l == 0 then
+      span_l = i
+    end
+
+    span_r = math.abs(t[i]) > thresh and i or span_r
+  end
+
+  return {span_l, span_r}
+end
 
 -- WAVEFORM (cr: sonocircuit) -----------------------------------
 
 function wave_render(ch, start, rate, samples)
   -- rate should be 1/60 seconds per sample (60 samples per second)
-  -- local start_frame = util.round(start * 60, 1)
-  local start_frame = util.round(start / rate, 1)
+  -- keep 1-index
+  local start_frame = util.round(start / rate, 1) + 1
 
   print("rendering buffer " .. ch)
   print("rate: ".. rate)
   print("n_samples: ".. #samples)
-  print("start: " .. start_frame)
+  print("start (s): " .. start)
+  print("start frame: " .. start_frame)
 
   for i,s in ipairs(samples) do
     buffer_waveform[ch][start_frame - 1 + i] = s
   end
 
   screen_dirty = true
+  grid_dirty = true
 end
 
 -- function wave_getmax(t)
@@ -370,16 +509,21 @@ end
 --   return util.clamp(max, 0.4, 1)
 -- end
 
-function render_slice()
+-- render a range for a buffer (or both).
+-- if `ch` not provided, then render both buffers.
+function render_slice(range, ch)
 
   -- 60 samples per second
-  local duration = SLICE[2] - SLICE[1]
+  local duration = range[2] - range[1]
   local n_samples = 60 * duration
 
-  for i=1,2 do
-    softcut.render_buffer(i, SLICE[1], duration, n_samples)
+  if ch then
+    softcut.render_buffer(ch, range[1], duration, n_samples)
+  else
+    for i=1,2 do
+      softcut.render_buffer(i, range[1], duration, n_samples)
+    end
   end
-
 end
 
 return m_tape

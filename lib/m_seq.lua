@@ -100,7 +100,7 @@ function m_seq.init()
   -- rec tracks only have one bank
   pattern = m_seq.pattern_init()
 
-  -- current pattern bank loaded
+  -- current pattern bank loaded (the last four indicate tape partitions)
   bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
 end
@@ -182,8 +182,10 @@ end
 -- load `track_pool` from `track_pool_cue` into current BANK
 function m_seq.load_track_pool(track)
 
-  -- kill samples from "current" pool
+  local bp  -- bank or partition, depending on track number
+
   if track < 8 then
+    -- kill samples from "current" pool
     for i = 1,#track_pool[track] do
       m_sample.note_off(track_pool[track][i])
     end
@@ -193,14 +195,31 @@ function m_seq.load_track_pool(track)
 
     -- squelch samples in track_cue
     m_sample.sample_params_to_track(track_pool_cue[track][BANK], track)
+    
+    bp = BANK
+
+  else
+    -- kill voice of current track
+    for i = 1,#track_pool[track] do
+      m_tape.stop_track(track)
+    end
+
+    -- reset slices in last track_pool
+    m_tape.slice_params_to_default(track_pool[track])
+
+    -- squelch slices in track_cue
+    m_tape.slice_params_to_track(track_pool_cue[track][PARTITION], track)
+
+    bp = PARTITION
   end
 
   -- fill track pool with cue (but don't link arrays)
   track_pool[track] = {}
-  for i,x in ipairs(track_pool_cue[track][BANK]) do track_pool[track][i] = x end
+  for i,x in ipairs(track_pool_cue[track][bp]) do track_pool[track][i] = x end
 
-  -- assign current bank for track
-  bank[track] = BANK
+  -- assign current bank/partition for track
+  bank[track] = bp
+
 end
 
 -- play the cue from the track pool, and cycle through
@@ -240,6 +259,18 @@ end
 
 -- TODO: figure this one out ...
 function random_offset(wait)
+end
+
+-- return a "slice" of a table, from `first` to `last`.
+-- this returns `{t[first], t[first + 1], ..., t[last]}`
+function table_slice(t, first, last)
+  local sub = {}
+
+  for i=first,last do
+    table.insert(sub, t[i])
+  end
+
+  return sub
 end
 
 -- span of non-zero values in table
