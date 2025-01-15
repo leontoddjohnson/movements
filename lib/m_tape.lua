@@ -329,7 +329,6 @@ function m_tape.sc_init()
 
     -- init
     softcut.enable(i, 1)
-    softcut.position(i, 0)
     softcut.phase_quant(i, 1 / REDRAW_FRAMERATE)
     positions[i] = 0
 
@@ -338,6 +337,7 @@ function m_tape.sc_init()
     softcut.loop(i, 0)
     softcut.loop_start(i, 0)
     softcut.loop_end(i, 0)
+    softcut.position(i, 0)
     softcut.fade_time(i, 0.1)
     softcut.pan(i, 0)
 
@@ -366,6 +366,8 @@ function m_tape.update_position(i,pos)
 
   -- indicate if slice contains time for a voice that is playing
   for j=1,128 do
+    voice_slice_loc[i][j] = 0  -- clear locator
+    
     if slices[j][1] <= pos and pos < slices[j][2] and voice_state[i] > 0 then
       voice_slice_loc[i][j] = 1
     else
@@ -385,10 +387,10 @@ function m_tape.play_section(track, range, loop)
   softcut.rec(voice, 0)
   
   softcut.buffer(voice, track_buffer[track])
-  softcut.position(voice, range[1])
   softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
+  softcut.position(voice, range[1])
   softcut.play(voice, 1)
 
   voice_state[voice] = 1
@@ -413,10 +415,10 @@ function m_tape.record_section(track, range, loop)
 
   softcut.buffer(voice, track_buffer[track])
   softcut.level_input_cut(track_buffer[track], voice, 1)
-  softcut.position(voice, range[1])
   softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
+  softcut.position(voice, range[1])
   softcut.rec(voice, 1)
   softcut.play(voice, 1)
 

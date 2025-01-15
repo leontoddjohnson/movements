@@ -253,8 +253,6 @@ end
 -----------------------------------------------------------------
 
 -- 1: MAIN ------------------------------------------------------
-recording = 0
-
 function m_ui.tape_1_redraw()
   m_ui.draw_nav(
     TRACK .. " • " .. 
@@ -264,7 +262,7 @@ function m_ui.tape_1_redraw()
 
   screen.move(64, 50)
 
-  if recording == 1 then
+  if voice_state[TRACK - 7] == 2 then
     screen.text_center('recording voice ' .. TRACK - 7)
   else
     screen.text_center('not recording.')
@@ -277,9 +275,8 @@ end
 
 function m_ui.tape_1_key(n,z)
   if n == 3 and z == 1 then
-    recording = recording ~ 1
 
-    if recording == 1 then
+    if voice_state[TRACK - 7] ~= 2 then
       m_tape.record_section(TRACK, SLICE)
     else
       m_tape.stop_track(TRACK)
@@ -305,7 +302,6 @@ function m_ui.tape_1_enc(n,d)
 end
 
 -- 2: WAVEFORMS ---------------------------------------------------
-recording = 0
 
 function m_ui.tape_2_redraw()
   m_ui.draw_nav(
