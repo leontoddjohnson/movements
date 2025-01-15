@@ -381,8 +381,8 @@ function m_tape.play_section(track, range, loop)
   local voice = track - 7
   local loop = loop or 0
 
-  softcut.play(voice, 0)
   softcut.rec(voice, 0)
+  softcut.play(voice, 0)
   
   softcut.buffer(voice, track_buffer[track])
   softcut.loop(voice, loop)
@@ -408,8 +408,8 @@ function m_tape.record_section(track, range, loop)
   local voice = track - 7
   local loop = loop or 0
 
-  softcut.play(voice, 0)
   softcut.rec(voice, 0)
+  softcut.play(voice, 0)
 
   softcut.buffer(voice, track_buffer[track])
   softcut.level_input_cut(track_buffer[track], voice, 1)
