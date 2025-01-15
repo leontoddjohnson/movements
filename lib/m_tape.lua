@@ -366,8 +366,6 @@ function m_tape.update_position(i,pos)
 
   -- indicate if slice contains time for a voice that is playing
   for j=1,128 do
-    voice_slice_loc[i][j] = 0  -- clear locator
-    
     if slices[j][1] <= pos and pos < slices[j][2] and voice_state[i] > 0 then
       voice_slice_loc[i][j] = 1
     else
