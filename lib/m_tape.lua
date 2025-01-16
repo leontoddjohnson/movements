@@ -385,6 +385,7 @@ function m_tape.play_section(track, range, loop)
   softcut.play(voice, 0)
   
   softcut.buffer(voice, track_buffer[track])
+  softcut.level(voice, 1)
   softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
