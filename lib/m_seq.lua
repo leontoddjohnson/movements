@@ -54,7 +54,9 @@ end
 
 function m_seq.init()
   -- options (samples or slices) to cycle through for each track.
-  -- track_pool[track] gives list of sample ids.
+  -- track_pool[track]
+  -- for SAMPLE: this gives timber sample_id
+  -- for TAPE: this gives slice_id (where `slices[slice_id]` == [start, stop])
   track_pool = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
   track_pool_i = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  -- init'd with 0s
 

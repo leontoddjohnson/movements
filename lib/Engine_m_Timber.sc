@@ -19,9 +19,11 @@ Engine_m_Timber : CroneEngine {
 	var players;
 	var synthNames;
 	var lfos;
+	var echo;
 	var mixer;
 
 	var lfoBus;
+	var echoBus;
 	var mixerBus;
 
 	var loadQueue;
@@ -91,6 +93,7 @@ Engine_m_Timber : CroneEngine {
 			downSampleTo: 48000,
 			bitDepth: 24,
       noiseLevel: 0,
+			echoLevel: 0,
 
 			filterFreq: 20000,
 			filterReso: 0,
@@ -115,6 +118,7 @@ Engine_m_Timber : CroneEngine {
 		voiceList = List.new();
 
 		lfoBus = Bus.control(context.server, 2);
+		echoBus = Bus.audio(context.server, 2);
 		mixerBus = Bus.audio(context.server, 2);
 		players = Array.newClear(4);
 
@@ -306,10 +310,10 @@ Engine_m_Timber : CroneEngine {
 
 			SynthDef(name, {
 
-				arg out, sampleRate, freq, transposeRatio, detuneRatio = 1, pitchBendRatio = 1, pitchBendSampleRatio = 1, playMode = 0, gate = 0, killGate = 1, vel = 1, pressure = 0, pressureSample = 0, amp = 1,
+				arg out, echoSend, sampleRate, freq, transposeRatio, detuneRatio = 1, pitchBendRatio = 1, pitchBendSampleRatio = 1, playMode = 0, gate = 0, killGate = 1, vel = 1, pressure = 0, pressureSample = 0, amp = 1,
 				lfos, lfo1Fade, lfo2Fade, freqModLfo1, freqModLfo2, freqModEnv, freqMultiplier,
 				ampAttack, ampDecay, ampSustain, ampRelease, modAttack, modDecay, modSustain, modRelease,
-				downSampleTo, bitDepth, noiseLevel,
+				downSampleTo, bitDepth, noiseLevel, echoLevel,
 				filterFreq, filterReso, filterType, filterTracking, filterFreqModLfo1, filterFreqModLfo2, filterFreqModEnv, filterFreqModVel, filterFreqModPressure,
 				pan, panModLfo1, panModLfo2, panModEnv, ampModLfo1, ampModLfo2;
 
@@ -388,10 +392,31 @@ Engine_m_Timber : CroneEngine {
 				signal = signal * lfo1.range(1 - ampModLfo1, 1) * lfo2.range(1 - ampModLfo2, 1) * ampEnvelope * killEnvelope * vel.linlin(0, 1, 0.1, 1);
 				signal = tanh(signal * amp.dbamp * (1 + pressure)).softclip;
 
+				// Mixer
 				Out.ar(out, signal);
+
+				// Echo
+				Out.ar(echoSend, signal * echoLevel);
+
 			}).add;
 		});
 
+		// Echo
+		echo = SynthDef(\echo, {
+				arg in, out;
+
+				var snd, wet, delayTime=1, maxDelayTime=5;
+				
+				snd = In.ar(in, 2);
+
+				// wet feedback
+				wet = snd + (LocalIn.ar(2) * -5.dbamp);
+				wet = DelayC.ar(wet, maxDelayTime, delayTime);
+				LocalOut.ar(wet);
+
+				Out.ar(out, wet);
+
+			}).play(target:context.xg, args:[\in, echoBus, \out, context.out_b], addAction: \addAfter);
 
 		// Mixer and FX
 		mixer = SynthDef(\mixer, {
@@ -920,6 +945,7 @@ Engine_m_Timber : CroneEngine {
 
 			newVoice.theSynth = Synth.new(defName: defName, args: [
 				\out, mixerBus,
+				\echoSend, echoBus,
 				\bufnum, buffer.bufnum,
 
 				\voiceId, voiceId,
@@ -966,6 +992,7 @@ Engine_m_Timber : CroneEngine {
 				\downSampleTo, sample.downSampleTo,
 				\bitDepth, sample.bitDepth,
         \noiseLevel, sample.noiseLevel,
+				\echoLevel, sample.echoLevel,
 
 				\filterFreq, sample.filterFreq,
 				\filterReso, sample.filterReso,
@@ -1337,6 +1364,11 @@ Engine_m_Timber : CroneEngine {
 			this.setArgOnSample(msg[1], \noiseLevel, msg[2]);
 		});
 
+    this.addCommand(\echoLevel, "if", {
+			arg msg;
+			this.setArgOnSample(msg[1], \echoLevel, msg[2]);
+		});
+
 		this.addCommand(\filterFreq, "if", {
 			arg msg;
 			this.setArgOnSample(msg[1], \filterFreq, msg[2]);
@@ -1440,6 +1472,7 @@ Engine_m_Timber : CroneEngine {
 		players.free;
 		voiceGroup.free;
 		lfos.free;
+		echo.free;
 		mixer.free;
 	}
 }
