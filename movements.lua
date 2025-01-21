@@ -48,6 +48,7 @@ function init()
   m_seq.init()
   m_ui.init()
   m_grid.init()
+  m_delay.init()
   m_tape.init()
 
   -- BUILD PARAMS -----------------------------------------------
@@ -70,6 +71,8 @@ function init()
 
   params:add_separator("Sequencer")
   m_seq.build_params()
+
+  m_delay.build_params()
 
   params:add_separator("Sample Track Levels")
   m_sample.build_sample_track_params()
