@@ -403,15 +403,15 @@ Engine_m_Timber : CroneEngine {
 
 		// Echo
 		echo = SynthDef(\echo, {
-				arg in, out;
+				arg in, out, echoDelayTime=1, echoFeedbackLevel=0.5;
 
-				var snd, wet, delayTime=1, maxDelayTime=5;
+				var snd, wet, maxDelayTime=10;
 				
 				snd = In.ar(in, 2);
 
 				// wet feedback
-				wet = snd + (LocalIn.ar(2) * -5.dbamp);
-				wet = DelayC.ar(wet, maxDelayTime, delayTime);
+				wet = snd + (LocalIn.ar(2) * echoFeedbackLevel);
+				wet = DelayC.ar(wet, maxDelayTime, echoDelayTime);
 				LocalOut.ar(wet);
 
 				Out.ar(out, wet);
@@ -1202,6 +1202,14 @@ Engine_m_Timber : CroneEngine {
 
 		this.addCommand(\lfo2WaveShape, "i", { arg msg;
 			lfos.set(\lfo2WaveShape, msg[1]);
+		});
+
+		this.addCommand(\echoDelayTime, "f", { arg msg;
+			echo.set(\echoDelayTime, msg[1]);
+		});
+
+		this.addCommand(\echoFeedbackLevel, "f", { arg msg;
+			echo.set(\echoFeedbackLevel, msg[1]);
 		});
 
 

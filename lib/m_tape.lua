@@ -52,7 +52,7 @@ grid_slice = {{0, 80}, {80, 160}, {160, 240}, {240, 320}}
 function m_tape.build_params()
 
 	params:add_option("tape_audio_in", "tape audio in", 
-    {'none', 'input', 'samples', 'input+samples'}, 4)
+    {'none', 'input', 'samples', 'input+samples'}, 2)
 	params:set_action("tape_audio_in", 
     function(x)
       if x == 1 then
@@ -212,10 +212,6 @@ end
 function m_tape.init()
   -- send levels
 	audio.level_cut(1)
-
-  -- these will only change when recording is armed
-	audio.level_adc_cut(1)
-	audio.level_eng_cut(1)
 
   -- set callbacks
   softcut.event_render(wave_render)

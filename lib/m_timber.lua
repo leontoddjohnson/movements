@@ -101,6 +101,8 @@ specs.MOD_ENV_RELEASE = ControlSpec.new(0.003, 10, "lin", 0, 1, "s")
 options.QUALITY = {"Nasty", "Low", "Medium", "High"}
 specs.AMP = ControlSpec.new(-48, 16, 'db', 0, 0, "dB")
 specs.NOISE = ControlSpec.new(0, 10, 'lin', 0, 0, 'x', 0.01)
+specs.DELAY_TIME = ControlSpec.new(0, 10, 'lin', 0, 1, 's')
+specs.DELAY_FEEDBACK = ControlSpec.new(0, 1, 'lin', 0, 0.5, 's', 0.01)
 
 QUALITY_SAMPLE_RATES = {8000, 16000, 32000, 48000}
 QUALITY_BIT_DEPTHS = {8, 10, 12, 24}
@@ -748,6 +750,20 @@ function Timber.add_params()
     lfos_last_edited = {id = nil, param = "lfo_2_wave_shape"}
     Timber.views_changed_callback(nil)
     Timber.lfo_2_dirty = true
+  end}
+
+  params:add{type = "control", id = "timber_delay_time", name = "Delay Time", controlspec = specs.DELAY_TIME, 
+  formatter = Formatters.format_secs, 
+  action = function(value)
+    engine.echoDelayTime(value)
+    Timber.views_changed_callback(nil)
+  end}
+
+  params:add{type = "control", id = "timber_delay_feedback", name = "Delay Feedback", controlspec = specs.DELAY_FEEDBACK, 
+  formatter = Formatters.unipolar_as_percentage, 
+  action = function(value)
+    engine.echoFeedbackLevel(value)
+    Timber.views_changed_callback(nil)
   end}
 
 end
