@@ -248,7 +248,7 @@ function m_seq.play_track_pool(track)
       m_sample.note_off(pool_[pool_i])
     end
 
-    m_sample.set_sample_step_params(pool_[next_pool_i], track, step[track])
+    m_seq.set_step_params(pool_[next_pool_i], track, step[track])
     m_sample.note_on(pool_[next_pool_i])
     track_pool_i[track] = next_pool_i
 
@@ -258,6 +258,135 @@ function m_seq.play_track_pool(track)
   end
   
 end
+
+-- update all sample parameters for a sample `id` loaded in a `track_`
+-- at some `step_`.
+function m_seq.set_step_params(id, track_, step_)
+  -- TAG: param 7
+  local timber_params = {'amp', 'pan', 'filter'}
+
+  for i = 1,#timber_params do
+    m_seq.set_step_param(id, timber_params[i], track_, 
+                              bank[track_], step_)
+  end
+
+end
+
+-- update parameter value for sample loaded in a step.
+-- `param` is in {amp, delay, pan, filter, scale, rate, prob}
+function m_seq.set_step_param(id, param, track_, bank_, step_)
+
+  -- AMP
+  if param == 'amp' then
+    amp_max = params:get('track_' .. track_ .. '_amp')  -- defined for track
+    amp_step = param_pattern.amp[track_][bank_][step_]  -- defined at step
+
+    -- squelch using track param default
+    m_seq.squelch_amp(1, amp_max, id, amp_step)
+  
+  -- PAN
+  elseif param == 'pan' then
+    track_pan = params:get('track_' .. track_ .. '_pan')
+
+    if track_pan < 0 then
+      pan_range = {-1, track_pan + 1/3}
+    elseif track_pan > 0 then
+      pan_range = {track_pan - 1/3, 1}
+    else
+      pan_range = {-1, 1}
+    end
+
+    pan_step = param_pattern.pan[track_][bank_][step_]
+    m_seq.squelch_pan({-1, 1}, pan_range, id, pan_step)
+
+  -- TAG: param 6
+  elseif param == 'filter' then
+    track_freq = params:get('track_' .. track_ .. '_filter_freq')
+    track_type = params:get('track_' .. track_ .. '_filter_type')
+    sign = track_type == 1 and 1 or -1
+
+    freq_track = sign * track_freq
+    freq_step = param_pattern.filter[track_][bank_][step_]
+    
+    cutoff = freq_track > 0 and 20000 or -20
+
+    m_seq.squelch_filter(cutoff, freq_track, id, sign * freq_step)
+
+  end
+  
+end
+
+-- SQUELCHERS ------------------------------------------------------------- --
+
+-- squelch the amp of sample `id`. `value` is optional (e.g., step value)
+-- linear mapping: [0, `input_max`] --> [0, `output_max`]
+function m_seq.squelch_amp(input_max, output_max, id, value)
+  v_sample = value or util.dbamp(params:get("amp_" .. id))  -- current value
+
+  -- squelch using new maximum
+  amp = util.linlin(0, input_max, 0, output_max, v_sample)
+  
+  -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
+  amp = util.clamp(ampdb(amp), -48, 0)
+  params:set('amp_' .. id, amp)
+end
+
+-- given an `input_range` associated with `value` (or current pan of id),
+-- return a new pan value on the same "scale" but in `output_range`
+function m_seq.squelch_pan(input_range, output_range, id, value)
+  pan_in = value or params:get("pan_" .. id)
+  
+  pan_out = util.linlin(input_range[1], input_range[2], 
+                        output_range[1], output_range[2], 
+                        pan_in)
+  
+  params:set('pan_' .. id, pan_out)
+end
+
+-- use input and output to convert current freq (e.g. `value`) accordingly.
+-- `*_cutoff` > 0 --> "Low Pass", with maximum at `*_cutoff`.
+-- `*_cutoff` < 0 --> "High Pass", with minimum at |`*_cutoff`|.
+-- the same holds true for `value` (which is *optional*).
+-- min freq = 20, max freq = 20000 (in Hz)
+function m_seq.squelch_filter(input_cutoff, output_cutoff, id, value)
+  freq_in = value and math.abs(value) or params:get("filter_freq_" .. id)
+
+  -- low pass to low pass -> simple squelch
+  if input_cutoff > 0 and output_cutoff > 0 then
+    freq_out = util.linlin(20, input_cutoff,
+                           20, output_cutoff, freq_in)
+    
+  -- high pass to high pass -> simple squelch
+  elseif input_cutoff < 0 and output_cutoff < 0 then
+    freq_out = util.linlin(-1 * input_cutoff, 20000, 
+                           -1 * output_cutoff, 20000, freq_in)
+  
+  -- simply swapping between high pass and low pass
+  elseif math.abs(input_cutoff) == math.abs(output_cutoff) then
+    freq_out = freq_in
+  
+  -- low pass to high pass -> quasi-mirror then squelch
+  elseif input_cutoff > 0 and output_cutoff < 0 then
+    freq_out = util.linlin(20, input_cutoff, 
+                           -1 * output_cutoff, 20000, freq_in)
+
+  -- high pass to low pass -> quasi-mirror then squelch
+  elseif input_cutoff < 0 and output_cutoff > 0 then
+    freq_out = util.linlin(-1 * input_cutoff, 20000,
+                           20, output_cutoff, freq_in)
+  end
+
+  params:set('filter_freq_' .. id, freq_out)
+
+  -- see options.FILTER_TYPE
+  if output_cutoff > 0 then
+    params:set('filter_type_' .. id, 1)
+  else
+    params:set('filter_type_' .. id, 2)
+  end
+
+end
+
 
 -- TODO: figure this one out ...
 function random_offset(wait)
