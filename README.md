@@ -2,7 +2,6 @@
 
 sequencer, tape recorder, and sampler.
 
+# docs
 
-## TODO
-
-- lots of stuff ...
+tbd.
