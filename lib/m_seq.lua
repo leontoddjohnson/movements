@@ -282,7 +282,8 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     amp_step = param_pattern.amp[track_][bank_][step_]  -- defined at step
 
     -- squelch using track param default
-    m_seq.squelch_amp(1, amp_max, id, amp_step)
+    amp = m_seq.squelch_amp(1, amp_max, amp_step, true)
+    params:set('amp_' .. id, amp)
   
   -- PAN
   elseif param == 'pan' then
@@ -320,15 +321,18 @@ end
 
 -- squelch the amp of sample `id`. `value` is optional (e.g., step value)
 -- linear mapping: [0, `input_max`] --> [0, `output_max`]
-function m_seq.squelch_amp(input_max, output_max, id, value)
-  v_sample = value or util.dbamp(params:get("amp_" .. id))  -- current value
+-- `db_out` is boolean. If true, return the value in decibels with `ampdb`.
+function m_seq.squelch_amp(input_max, output_max, value, db_out)
 
   -- squelch using new maximum
-  amp = util.linlin(0, input_max, 0, output_max, v_sample)
+  amp = util.linlin(0, input_max, 0, output_max, value)
   
-  -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
-  amp = util.clamp(ampdb(amp), -48, 0)
-  params:set('amp_' .. id, amp)
+  if db_out then
+    -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
+    amp = util.clamp(ampdb(amp), -48, 0)
+  end
+
+  return amp
 end
 
 -- given an `input_range` associated with `value` (or current pan of id),

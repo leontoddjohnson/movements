@@ -64,7 +64,13 @@ function m_sample.build_sample_track_params()
         -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          m_seq.squelch_amp(last_value, value, id)
+
+          -- convert db to amp, then squelch
+          db_ = params:get('amp_' .. id)
+          amp_ = util.dbamp(db_)
+          db_ = m_seq.squelch_amp(last_value, value, amp_, true)
+
+          params:set('amp_' .. id, db_)
         end
 
         track_param_level[t]['amp'] = value
