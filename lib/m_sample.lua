@@ -242,7 +242,7 @@ function m_sample.timber_init()
   Timber.views_changed_callback = m_sample.callback_set_screen_dirty
 
   -- Timber views  ----------------------------------------------
-  -- sample_setup_view = Timber.UI.SampleSetup.new(0, nil)
+  sample_setup_view = Timber.UI.SampleSetup.new(0, nil)
   waveform_view = Timber.UI.Waveform.new(0)
   filter_amp_view = Timber.UI.FilterAmp.new(0)
   amp_env_view = Timber.UI.AmpEnv.new(0)
@@ -552,6 +552,13 @@ function m_sample.sample_length(id)
                             params:get("start_frame_" .. id)) / 
                             samples_meta[id].sample_rate
   return duration
+end
+
+-- jump a sample (by `id`) some number `n_steps` of steps.
+-- this could be 4ths, 5ths, etc., based on `step_size`
+-- `step_size` == 0.5 implies a half step, 1 is a full step.
+function m_sample.scale_sample(id, n_steps, step_size)
+
 end
 
 -- convert amp [0, 1] to decibels [-inf, 0]

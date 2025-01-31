@@ -1127,6 +1127,7 @@ local function update_setup_params(self)
     "",
     "",
     "",
+    "delay_" .. self.sample_id,
     "noise_" .. self.sample_id,
     "quality_" .. self.sample_id,
     "transpose_" .. self.sample_id,
@@ -1135,7 +1136,7 @@ local function update_setup_params(self)
     scale
   }
   
-  self.names_list.entries = {"Load", "Clear", "Move", "Copy", "Copy Params", "Noise", "Quality", "Transpose", "Detune", "Scale By", "Scale"}
+  self.names_list.entries = {"Load", "Clear", "Move", "Copy", "Copy Params", "Delay", "Noise", "Quality", "Transpose", "Detune", "Scale By", "Scale"}
   self.selected_param_name = self.param_names[self.index]
   
   for _, v in ipairs(extra_param_ids) do
@@ -1156,12 +1157,12 @@ end
 
 function Timber.UI.SampleSetup.new(sample_id, index)
   
-  names_list = UI.ScrollingList.new(4, 30)
-  names_list.num_visible = 3
+  names_list = UI.ScrollingList.new(4, 22)
+  names_list.num_visible = 4
   names_list.num_above_selected = 0
   
-  params_list = UI.ScrollingList.new(120, 30)
-  params_list.num_visible = 3
+  params_list = UI.ScrollingList.new(120, 22)
+  params_list.num_visible = 4
   params_list.num_above_selected = 0
   params_list.text_align = "right"
   
@@ -1370,7 +1371,7 @@ function Timber.UI.SampleSetup:redraw()
     self.selected_param_name = self.param_names[self.index]
   end
   
-  Timber.draw_title(self.sample_id)
+  -- Timber.draw_title(self.sample_id)
   local info = ""
   
   if self.move_active then
@@ -1433,9 +1434,9 @@ function Timber.UI.SampleSetup:redraw()
         info = info .. " stream"
       end
       
-      screen.move(4, 18)
+      screen.move(4, 16)
       screen.level(3)
-      screen.text(info)
+      screen.text("(" .. info .. ")")
       screen.fill()
     end
     
