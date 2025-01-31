@@ -456,6 +456,7 @@ function m_sample.set_sample_id(id)
 
   waveform_view:set_sample_id(id)
   filter_amp_view:set_sample_id(id)
+  sample_setup_view:set_sample_id(id)
   -- amp_env_view:set_sample_id(id)
   -- mod_env_view:set_sample_id(id)
   -- lfos_view:set_sample_id(id)
