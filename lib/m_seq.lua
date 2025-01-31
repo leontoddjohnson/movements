@@ -288,17 +288,16 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
   -- PAN
   elseif param == 'pan' then
     track_pan = params:get('track_' .. track_ .. '_pan')
+    pan_step = param_pattern.pan[track_][bank_][step_]
 
-    if track_pan < 0 then
-      pan_range = {-1, track_pan + 1/3}
-    elseif track_pan > 0 then
-      pan_range = {track_pan - 1/3, 1}
+    if track_pan == 0 then
+      pan_def = {0, 1}
     else
-      pan_range = {-1, 1}
+      pan_def = {track_pan, 1/2}
     end
 
-    pan_step = param_pattern.pan[track_][bank_][step_]
-    m_seq.squelch_pan({-1, 1}, pan_range, id, pan_step)
+    pan = m_seq.squelch_pan({0, 1}, pan_def, pan_step)
+    params:set('pan_' .. id, pan)
 
   -- TAG: param 6
   elseif param == 'filter' then
@@ -335,16 +334,20 @@ function m_seq.squelch_amp(input_max, output_max, value, db_out)
   return amp
 end
 
--- given an `input_range` associated with `value` (or current pan of id),
--- return a new pan value on the same "scale" but in `output_range`
-function m_seq.squelch_pan(input_range, output_range, id, value)
-  pan_in = value or params:get("pan_" .. id)
-  
+-- `*_def` = [center, range_radius]
+-- linearly translate from `input_` neighborhood to `output_` neighborhood
+-- clamping to [-1, 1]
+function m_seq.squelch_pan(input_def, output_def, value)
+  local input_range, output_range
+
+  input_range = {input_def[1] - input_def[2], input_def[1] + input_def[2]}
+  output_range = {output_def[1] - output_def[2], output_def[1] + output_def[2]}
+
   pan_out = util.linlin(input_range[1], input_range[2], 
                         output_range[1], output_range[2], 
-                        pan_in)
+                        value)
   
-  params:set('pan_' .. id, pan_out)
+  return util.clamp(pan_out, -1, 1)
 end
 
 -- use input and output to convert current freq (e.g. `value`) accordingly.

@@ -84,22 +84,16 @@ function m_sample.build_sample_track_params()
     params:set_action('track_' .. t .. '_pan', 
       function(value)
         local last_value = track_param_level[t]['pan']
-        local ranges = {}  -- ranges for `last_value` and `value`
-
-        for i, v in ipairs({last_value, value}) do
-          if v < 0 then
-            ranges[i] = {-1, v + 1/3}
-          elseif v > 0 then
-            ranges[i] = {v - 1/3, 1}
-          else
-            ranges[i] = {-1, 1}
-          end
-        end
+        local pan_in, pan
 
         -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          m_seq.squelch_pan(ranges[1], ranges[2], id)
+          pan_in = params:get('pan_' .. id)
+          
+          pan = m_seq.squelch_pan({last_value, 1}, {value, 1}, pan_in)
+          params:set('pan_' .. id, pan)
+
         end
 
         track_param_level[t]['pan'] = value
