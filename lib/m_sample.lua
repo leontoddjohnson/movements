@@ -115,10 +115,15 @@ function m_sample.build_sample_track_params()
         -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          m_seq.squelch_filter(freq * sign_in, freq * sign_out, id)
+          freq_in = params:get('filter_freq_' .. id)
+
+          freq = m_seq.squelch_filter(freq * sign_in, freq * sign_out, freq_in)
+          params:set('filter_freq_' .. id, freq)
+          params:set('filter_type_' .. id, sign_out > 0 and 1 or 2)
         end
 
         track_param_level[t]['filter_type'] = value
+        screen_dirty = true
         grid_dirty = true
       end
     )
@@ -132,14 +137,20 @@ function m_sample.build_sample_track_params()
         last_value = track_param_level[t]['filter_freq']
         local pass = track_param_level[t]['filter_type']
         local sign = pass == 1 and 1 or -1
+        local freq
 
         -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          m_seq.squelch_filter(last_value * sign, value * sign, id)
+          freq_in = params:get('filter_freq_' .. id)
+
+          freq = m_seq.squelch_filter(last_value * sign, value * sign, freq_in)
+          params:set('filter_freq_' .. id, freq)
+          params:set('filter_type_' .. id, sign > 0 and 1 or 2)
         end
 
         track_param_level[t]['filter_freq'] = value
+        screen_dirty = true
         grid_dirty = true
       end
     )
@@ -155,6 +166,7 @@ function m_sample.build_sample_track_params()
           id = track_pool[t][i]  -- sample id
           params:set('filter_resonance_' .. id, value)
         end
+        screen_dirty = true
       end
     )
 

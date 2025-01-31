@@ -293,6 +293,7 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     if track_pan == 0 then
       pan_def = {0, 1}
     else
+      -- TODO: consider making the "1/2" here a custom pan width
       pan_def = {track_pan, 1/2}
     end
 
@@ -310,7 +311,9 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     
     cutoff = freq_track > 0 and 20000 or -20
 
-    m_seq.squelch_filter(cutoff, freq_track, id, sign * freq_step)
+    freq = m_seq.squelch_filter(cutoff, freq_track, freq_step)
+    params:set('filter_freq_' .. id, freq)
+    params:set('filter_type_' .. id, freq_track > 0 and 1 or 2)
 
   end
   
@@ -353,10 +356,10 @@ end
 -- use input and output to convert current freq (e.g. `value`) accordingly.
 -- `*_cutoff` > 0 --> "Low Pass", with maximum at `*_cutoff`.
 -- `*_cutoff` < 0 --> "High Pass", with minimum at |`*_cutoff`|.
--- the same holds true for `value` (which is *optional*).
+-- the same holds true for `value`.
 -- min freq = 20, max freq = 20000 (in Hz)
-function m_seq.squelch_filter(input_cutoff, output_cutoff, id, value)
-  freq_in = value and math.abs(value) or params:get("filter_freq_" .. id)
+function m_seq.squelch_filter(input_cutoff, output_cutoff, value)
+  freq_in = math.abs(value)
 
   -- low pass to low pass -> simple squelch
   if input_cutoff > 0 and output_cutoff > 0 then
@@ -383,15 +386,7 @@ function m_seq.squelch_filter(input_cutoff, output_cutoff, id, value)
                            20, output_cutoff, freq_in)
   end
 
-  params:set('filter_freq_' .. id, freq_out)
-
-  -- see options.FILTER_TYPE
-  if output_cutoff > 0 then
-    params:set('filter_type_' .. id, 1)
-  else
-    params:set('filter_type_' .. id, 2)
-  end
-
+  return freq_out
 end
 
 
