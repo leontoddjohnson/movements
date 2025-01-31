@@ -263,7 +263,7 @@ end
 -- at some `step_`.
 function m_seq.set_step_params(id, track_, step_)
   -- TAG: param 7
-  local timber_params = {'amp', 'pan', 'filter'}
+  local timber_params = {'amp', 'pan', 'filter', 'delay'}
 
   for i = 1,#timber_params do
     m_seq.set_step_param(id, timber_params[i], track_, 
@@ -314,6 +314,15 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     freq = m_seq.squelch_filter(cutoff, freq_track, freq_step)
     params:set('filter_freq_' .. id, freq)
     params:set('filter_type_' .. id, freq_track > 0 and 1 or 2)
+  
+  -- DELAY
+  elseif param == 'delay' then
+    delay_max = params:get('track_' .. track_ .. '_delay')
+    delay_step = param_pattern.delay[track_][bank_][step_]
+
+    -- squelch using track param default
+    delay = m_seq.squelch_amp(1, delay_max, delay_step)
+    params:set('delay_' .. id, amp)
 
   end
   

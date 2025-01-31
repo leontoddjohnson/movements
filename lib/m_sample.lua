@@ -181,6 +181,7 @@ function m_sample.build_sample_track_params()
           id = track_pool[t][i]  -- sample id
           params:set('delay_' .. id, value)
         end
+        grid_dirty = true
       end
     )
     
@@ -197,6 +198,7 @@ function m_sample.build_sample_track_params()
           id = track_pool[t][i]  -- sample id
           params:set('noise_' .. id, value)
         end
+        screen_dirty = true
       end
     )
   
@@ -472,7 +474,7 @@ function m_sample.sample_params_to_default(sample_ids)
 
     -- TAG: param 8
     local timber_params = {
-      'pan', 'filter_freq', 'filter_type', 'filter_resonance'
+      'pan', 'delay', 'filter_freq', 'filter_type', 'filter_resonance'
     }
 
     for i,p in ipairs(timber_params) do
@@ -495,7 +497,8 @@ function m_sample.sample_params_to_track(sample_ids, track)
 
     -- TAG: param 2 - make sure this works, or add new above ...
     local params_ = {
-      "pan", "filter_freq", "filter_type", "filter_resonance"
+      "pan", "filter_freq", "filter_type", "filter_resonance",
+      'delay'
     }
     for i,p in ipairs(params_) do
       p_track = params:get('track_' .. track .. '_' .. p)

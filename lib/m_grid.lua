@@ -112,6 +112,7 @@ function m_grid.build_param_levels()
   for i=1,6 do param_levels.amp[i] = util.dbamp(param_levels.amp[i]) end
   table.insert(param_levels.amp, 0)
 
+  param_levels.delay = param_levels.amp
   param_levels.length = {1/6, 2/6, 3/6, 4/6, 5/6, 1, 0}
   param_levels.prob = {1/6, 2/6, 3/6, 4/6, 5/6, 1, 0}
   param_levels.pan = {-1, -2/3, -1/3, 1/3, 2/3, 1, 0}
@@ -356,7 +357,7 @@ function m_grid.levels_redraw()
       value_ = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
 
       -- fill
-      if tab.contains({'amp'}, PARAM) then
+      if tab.contains({'amp', 'delay'}, PARAM) then
 
         for i=1,6 do
           if value_ >= param_levels[PARAM][i] then
@@ -736,7 +737,7 @@ function m_grid.draw_track_params(track_range)
 
       -- TAG: param 4
       -- fill
-      if tab.contains({'amp'}, PARAM) then
+      if tab.contains({'amp', 'delay'}, PARAM) then
         p = 'track_' .. track .. '_' .. PARAM
         if params:get(p) >= param_levels[PARAM][i] then
           g:led(i, y, g_brightness.level_met)

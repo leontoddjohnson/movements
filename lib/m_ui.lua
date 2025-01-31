@@ -171,7 +171,7 @@ function m_ui.sample_2_redraw()
     screen.text_center(params:string('track_' .. TRACK .. '_filter_type'))
   
   -- TAG: param 10 ... add here.
-  elseif tab.contains({'amp', 'pan', 'filter'}, PARAM) then
+  elseif tab.contains({'amp', 'pan', 'filter', 'delay'}, PARAM) then
     screen.text_center(params:string('track_' .. TRACK .. '_' .. PARAM))
   end
   
