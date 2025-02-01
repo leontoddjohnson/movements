@@ -10,8 +10,12 @@ function m_seq.build_params()
   p_options.PLAY_ORDER = {'forward', 'reverse', 'random'}
 
   -- Forward/reverse (in order of selection), random
-  params:add_option('sample_play_order', 'sample play order',
+  params:add_option('play_order', 'play order',
                     p_options.PLAY_ORDER, 1)
+
+  -- number of steps to transpose given scale count
+  params:add_number('scale_interval', 'scale interval',
+                    4, 5, 4)
 
   build_param_patterns()
 
@@ -228,7 +232,7 @@ end
 function m_seq.play_track_pool(track)
   pool_ = track_pool[track]
   pool_i = track_pool_i[track]
-  order_ = params:get('sample_play_order')
+  order_ = params:get('play_order')
   order_ = p_options.PLAY_ORDER[order_]
 
   if order_ == 'forward' then
@@ -324,6 +328,9 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     delay = m_seq.squelch_amp(1, delay_max, delay_step)
     params:set('delay_' .. id, amp)
 
+  elseif param == 'scale' then
+
+
   end
   
 end
@@ -398,6 +405,29 @@ function m_seq.squelch_filter(input_cutoff, output_cutoff, value)
   return freq_out
 end
 
+-- given discrete scale counts (`param_levels.scale`), squash bound.
+-- zero values are output to `output_bound`. Otherwise, ceiling of linlin.
+-- note: |`*_bound`| must be in {0, 1, 2, 3}, as per `param_levels.scale`
+function m_seq.squelch_scale(input_bound, output_bound, value)
+  local out
+  local sign = output_bound >= 0 and 1 or -1
+
+  input_bound = math.abs(input_bound)
+  output_bound = math.abs(output_bound)
+  value = math.abs(value)
+
+  if value == 0 and output_bound ~= 0 then
+    -- e.g., track value dictates un-squelching values
+    out = output_bound
+  else
+    out = util.linlin(0, input_bound, 0, output_bound, value)
+  end
+
+  out = math.ceil(out)
+
+  return sign * util.clamp(out, 0, output_bound)
+
+end
 
 -- TODO: figure this one out ...
 function random_offset(wait)

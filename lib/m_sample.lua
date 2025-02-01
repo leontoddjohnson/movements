@@ -52,7 +52,7 @@ end
 function m_sample.build_sample_track_params()
 
   for t = 1,7 do
-    params:add_group("Track " .. t, 7)  -- # of track parameters
+    params:add_group("Track " .. t, 8)  -- # of track parameters
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
@@ -184,8 +184,6 @@ function m_sample.build_sample_track_params()
         grid_dirty = true
       end
     )
-    
-    -- TAG: param 5, add params ABOVE.
 
     -- NOISE
     params:add_control('track_' .. t .. '_noise', 
@@ -201,8 +199,34 @@ function m_sample.build_sample_track_params()
         screen_dirty = true
       end
     )
+
+    -- SCALE
+    params:add_number('track_' .. t .. '_scale', 
+                      'track_' .. t .. '_scale',
+                      -3, 3, 0)
+    params:set_action('track_' .. t .. '_scale',
+      function(value)
+        local last_value = track_param_level[t]['scale']
+
+        -- squelch samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          scale_in = transpose_scale(params:get('transpose_' .. id))
+          scale = m_seq.squelch_scale(last_value, value, scale_in)
+          transpose = scale_transpose(0, scale)
+
+          params:set('transpose_' .. id, transpose)
+        end
+
+        track_param_level[t]['scale'] = value
+        screen_dirty = true
+        grid_dirty = true
+      end
+    )
   
   end
+
+  -- TAG: param 5, add params ABOVE.
 
 end
 
@@ -545,9 +569,6 @@ function m_sample.option_param_i(id, param, option, options)
   return index_of(options_, option)
 end
 
--- TAG: param 1 – add squelch above ...
----------------------------------------
-
 function m_sample.sample_length(id)
   local duration = math.abs(params:get("end_frame_" .. id) - 
                             params:get("start_frame_" .. id)) / 
@@ -555,12 +576,37 @@ function m_sample.sample_length(id)
   return duration
 end
 
--- jump a sample (by `id`) some number `n_steps` of steps.
--- this could be 4ths, 5ths, etc., based on `step_size`
--- `step_size` == 0.5 implies a half step, 1 is a full step.
-function m_sample.scale_sample(id, n_steps, step_size)
+-- transpose a `value` (of semitones) by some `scale` count (between -3 and 3)
+-- using the *scale_interval* parameter. Wrap within the same octave
+-- so the maximum transpose is 12 steps (above or below).
+function scale_transpose(value, scale)
+  -- interval can only be perfect 4th or perfect 5th (5 or 7 steps)
+  local steps = params:get('scale_interval') == 4 and 5 or 7
+  local diff = scale * steps
+
+  if scale >= 0 then
+    return util.wrap(value + diff, value, value + 11)
+  else
+    return util.wrap(value + diff, value - 11, value)
+  end
 
 end
+
+-- convert transposition count to scale given *scale_interval* parameter
+-- if transpose value falls outside possible values, return 0, and reset.
+function transpose_scale(transpose)
+
+  -- scale counts must be between -3 and 3
+  for s = -3, 3 do
+    if transpose == scale_transpose(0, s) then
+      return s
+    end
+  end
+
+  return 0
+
+end
+
 
 -- convert amp [0, 1] to decibels [-inf, 0]
 function ampdb(amp)
