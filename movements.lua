@@ -66,16 +66,16 @@ function init()
   manage_data()
 
   -- define params
+  params:add_separator("Global")
+  m_seq.build_params()
+  
   params:add_separator("Tape")
   m_tape.build_params()
-
-  params:add_separator("Sequencer")
-  m_seq.build_params()
-
   m_delay.build_params()
 
   params:add_separator("Sample Track Levels")
   m_sample.build_sample_track_params()
+
   params:add_separator("Tape Track Levels")
   m_tape.build_tape_track_params()
   set_track_defaults()

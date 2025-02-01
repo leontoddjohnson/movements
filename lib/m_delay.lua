@@ -11,8 +11,6 @@ BUFFER_SPLIT = 322
 -----------------------------------------------------------------
 
 function m_delay.build_params()
-  params:add_separator("Delay")
-
 	params:add_group("Tape Delay", 5)
   params:add{id="tape_delay_level", name="tape delay level",
 		type="control", 

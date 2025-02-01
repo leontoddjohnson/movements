@@ -112,7 +112,7 @@ function m_grid.build_param_levels()
   for i=1,6 do param_levels.amp[i] = util.dbamp(param_levels.amp[i]) end
   table.insert(param_levels.amp, 0)
 
-  param_levels.delay = param_levels.amp
+  param_levels.delay = shallow_copy(param_levels.amp)
   param_levels.length = {1/6, 2/6, 3/6, 4/6, 5/6, 1, 0}
   param_levels.prob = {1/6, 2/6, 3/6, 4/6, 5/6, 1, 0}
   param_levels.pan = {-1, -2/3, -1/3, 1/3, 2/3, 1, 0}
