@@ -13,10 +13,6 @@ function m_seq.build_params()
   params:add_option('play_order', 'play order',
                     p_options.PLAY_ORDER, 1)
 
-  -- number of steps to transpose given scale count
-  params:add_number('scale_interval', 'scale interval',
-                    4, 5, 4)
-
   build_param_patterns()
 
 end
@@ -40,12 +36,12 @@ function build_param_patterns()
   -- [track][bank][step]: in [20, 20k] defaults to 20000
   param_pattern.filter = m_seq.pattern_init(track_param_default.filter_freq)
 
-  -- [track][bank][step]: in -3, -2, -1, 0, 1, 2, 3 defaults to 0
-  -- steps (or halfsteps) from an unchanged pitch
+  -- [track][bank][step]: in 0, 1, 2, ..., 5 defaults to 2
+  -- see param_levels for more
   param_pattern.scale = m_seq.pattern_init(track_param_default.scale)
 
-  -- [track][bank][step]: in -2, -1, -1/2, 0, 1/2, 1, 2 default to 1
-  param_pattern.rate = m_seq.pattern_init(track_param_default.rate)
+  -- NO INTERVAL PATTERN (based on track)
+  param_pattern.interval = m_seq.pattern_init(track_param_default.interval)
 
   -- [track][bank][step]: in [0, 1] default to 1
   param_pattern.prob = m_seq.pattern_init(track_param_default.prob)
@@ -267,7 +263,7 @@ end
 -- at some `step_`.
 function m_seq.set_step_params(id, track_, step_)
   -- TAG: param 7
-  local timber_params = {'amp', 'pan', 'filter', 'delay'}
+  local timber_params = {'amp', 'pan', 'filter', 'delay', 'scale', 'interval'}
 
   for i = 1,#timber_params do
     m_seq.set_step_param(id, timber_params[i], track_, 
@@ -277,7 +273,7 @@ function m_seq.set_step_params(id, track_, step_)
 end
 
 -- update parameter value for sample loaded in a step.
--- `param` is in {amp, delay, pan, filter, scale, rate, prob}
+-- `param` is in {amp, delay, pan, filter, scale, interval, prob}
 function m_seq.set_step_param(id, param, track_, bank_, step_)
 
   -- AMP
@@ -328,8 +324,16 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     delay = m_seq.squelch_amp(1, delay_max, delay_step)
     params:set('delay_' .. id, amp)
 
-  elseif param == 'scale' then
+  -- SCALE (and INTERVAL)
+  elseif param == 'scale' or param == 'interval' then
+    track_scale = params:get('track_' .. track_ .. '_scale')
+    scale_step = param_pattern.scale[track_][bank_][step_]
 
+    -- input is full range, centered at 2 (no scale)
+    -- output is within two scale points of track
+    scale = m_seq.squelch_scale({2, 3}, {track_scale, 2}, scale_step)
+    transpose_out = scale_to_transpose(scale, track_)
+    params:set('transpose_' .. id, transpose_out)
 
   end
   
@@ -405,29 +409,23 @@ function m_seq.squelch_filter(input_cutoff, output_cutoff, value)
   return freq_out
 end
 
--- given discrete scale counts (`param_levels.scale`), squash bound.
--- zero values are output to `output_bound`. Otherwise, ceiling of linlin.
--- note: |`*_bound`| must be in {0, 1, 2, 3}, as per `param_levels.scale`
-function m_seq.squelch_scale(input_bound, output_bound, value)
-  local out
-  local sign = output_bound >= 0 and 1 or -1
+-- similar to pan
+-- `*_def` = [center, range_radius]
+-- linearly translate from `input_` neighborhood to `output_` neighborhood
+-- clamping to [0, 5]
+function m_seq.squelch_scale(input_def, output_def, value)
+  local input_range, output_range
 
-  input_bound = math.abs(input_bound)
-  output_bound = math.abs(output_bound)
-  value = math.abs(value)
+  input_range = {input_def[1] - input_def[2], input_def[1] + input_def[2]}
+  output_range = {output_def[1] - output_def[2], output_def[1] + output_def[2]}
 
-  if value == 0 and output_bound ~= 0 then
-    -- e.g., track value dictates un-squelching values
-    out = output_bound
-  else
-    out = util.linlin(0, input_bound, 0, output_bound, value)
-  end
+  out = util.linlin(input_range[1], input_range[2], 
+                    output_range[1], output_range[2], 
+                    value)
 
-  out = math.ceil(out)
-
-  return sign * util.clamp(out, 0, output_bound)
-
+  return util.clamp(util.round(out), 0, 5)
 end
+
 
 -- TODO: figure this one out ...
 function random_offset(wait)

@@ -169,9 +169,12 @@ function m_ui.sample_2_redraw()
     screen.text_center(params:string('track_' .. TRACK .. '_filter_freq'))
     screen.move(30, 58)
     screen.text_center(params:string('track_' .. TRACK .. '_filter_type'))
-  
+  elseif PARAM == 'scale' then
+    screen.text_center(params:string('track_' .. TRACK .. '_scale'))
+    screen.move(30, 58)
+    screen.text_center(params:string('track_' .. TRACK .. '_scale_type'))
   -- TAG: param 10 ... add here.
-  elseif tab.contains({'amp', 'pan', 'filter', 'delay'}, PARAM) then
+  elseif PARAM ~= 'prob' then
     screen.text_center(params:string('track_' .. TRACK .. '_' .. PARAM))
   end
   

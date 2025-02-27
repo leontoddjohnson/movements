@@ -44,7 +44,7 @@ g_brightness = {
   time_seconds = 2,
   clock_frac_selected = 7,
   clock_frac_deselected = 0,
-  clock_frac_highlighted = 3,
+  level_highlighted = 3,
   param_selected = 5,
   param_deselected = 1,
   play_mode_selected = 10,
@@ -87,7 +87,7 @@ function m_grid.init()
   -- param options at the bottom of config page.
   -- the last one is only assumed if all are deselected
   p_options.PARAMS = {
-    'pan', 'filter', 'delay', 'scale', 'rate', 'prob', 'amp'
+    'pan', 'filter', 'delay', 'prob', 'scale', 'interval', 'amp'
   }
 
   m_grid.build_param_levels()
@@ -122,10 +122,18 @@ function m_grid.build_param_levels()
   -- final value: filter > 0 = LP freq and filter < 0 = HP freq
   param_levels.filter = {100, 500, 1000, 5000, 10000, 20000, -1}
 
-  param_levels.scale = {-3, -2, -1, 1, 2, 3, 0}
+  -- **transposition of the note:**
+  -- 0 --> lowest value, one octave down
+  -- 1 --> transpose up from lowest value based on `param_levels.interval`
+  -- 2 --> no transposition
+  -- 3 --> transpose up based on `param_levels.interval`
+  -- 4 --> one octave up
+  -- 5 --> two octaves up
+  param_levels.scale = {0, 1, 2, 3, 4, 5, -1}
 
-  -- TODO: for buffer samples, rate < 0 translates to start/end frame reversal
-  param_levels.rate = {-2, -1, -1/2, 1/2, 1, 2, 0}
+  -- 2nd, 3rd, 4th, etc. of the scale (so, 4th value is a "perfect fifth")
+  -- these are in semitones
+  param_levels.interval = {2, 3, 5, 7, 9, 11, track_param_default.interval}
 
 end
 
@@ -368,7 +376,7 @@ function m_grid.levels_redraw()
       end
 
       -- centered value (handle fraction rounding)
-      if tab.contains({'pan'}, PARAM) then
+      if PARAM == 'pan' then
         for i = 1,6 do
           if value_ > 0 and i >= 4 then
             if value_ >= param_levels[PARAM][i] - 0.001 then
@@ -382,14 +390,21 @@ function m_grid.levels_redraw()
         end
       end
 
-      -- swapping filter
-      if PARAM == 'filter' and value_ then
+      -- swapping must match track
+      if tab.contains({'filter', 'scale'}, PARAM) and value_ then
         
         for i = 1,6 do
-          if params:get('track_' .. TRACK .. '_filter_type') == 1 then
+          -- "Low Pass" or "Forward"
+          if params:get('track_' .. TRACK .. '_' .. PARAM .. '_type') == 1 then
             if value_ >= param_levels[PARAM][i] - 0.001 then
               g:led(s, 8 - i, g_brightness.level_met)
             end
+          -- "Backward"
+          elseif PARAM == 'scale' then
+            if value_ >= param_levels[PARAM][7 - i] - 0.001 then
+              g:led(s, 8 - i, g_brightness.level_met)
+            end
+          -- "High Pass"
           else
             if value_ <= param_levels[PARAM][i] + 0.001 then
               g:led(s, 8 - i, g_brightness.level_met)
@@ -397,6 +412,19 @@ function m_grid.levels_redraw()
           end
         end
 
+      end
+
+      if PARAM == 'interval' then
+        -- track based, same for all steps (no param pattern for interval)
+        local interval = params:get('track_' .. TRACK .. '_interval')
+
+        for i = 1,6 do
+          if interval == param_levels[PARAM][i] then
+            g:led(s, 8 - i, g_brightness.level_met)
+          elseif param_levels[PARAM][i] == track_param_default.interval then
+            g:led(s, 8 - i, g_brightness.level_highlighted)
+          end
+        end
       end
 
     end
@@ -472,27 +500,29 @@ function m_grid.levels_key(x, y, z)
   end
 
   if 1 < y and y < 8 and z == 1 and pattern[TRACK][bank[TRACK]][step_] > 0 then
+    -- current parameter value at that step
+    param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
+    value = m_grid.select_param_value(PARAM, 8 - y, param_value)
 
-    if PARAM == 'filter' then
-      -- current parameter value at that step
-      param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
-      value = m_grid.select_param_value(PARAM, 8 - y, param_value)
-
-      -- not selecting the same key
-      if value > 0 then
+    if tab.contains({'filter', 'scale'}, PARAM) then
+      -- not selecting the same key, must match track
+      if value >= 0 then
         param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
       end
+    
+    -- interval setting is global for the track
+    elseif PARAM == 'interval' then
+      params:set('track_' .. TRACK .. '_interval', value)
       
     else
-      -- current parameter value at that step
-      param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
-      value = m_grid.select_param_value(PARAM, 8 - y, param_value)
       param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
+
     end
     
   end
 
   grid_dirty = true
+  screen_dirty = true
 end
 
 -----------------------------------------------------------------
@@ -526,10 +556,10 @@ function m_grid.time_redraw(track_range)
         g:led(c, y, g_brightness.clock_frac_selected)
       -- indicate 1/8, 1/4, 1, and 4 
       elseif not ALT and tab.contains({1, 5, 8, 11}, frac) then
-        g:led(c, y, g_brightness.clock_frac_highlighted)
+        g:led(c, y, g_brightness.level_highlighted)
       -- indicate 1/6, 1/3, 1, 3, and 6
       elseif ALT and tab.contains({3, 6, 8, 10, 13}, frac) then
-        g:led(c, y, g_brightness.clock_frac_highlighted)
+        g:led(c, y, g_brightness.level_highlighted)
       else
         g:led(c, y, g_brightness.clock_frac_deselected)
       end
@@ -747,30 +777,50 @@ function m_grid.draw_track_params(track_range)
       -- 0-centered value
       if tab.contains({'pan'}, PARAM) then
         p = 'track_' .. track .. '_' .. PARAM
-        if params:get(p) > 0 and i >= 4 then
-          if params:get(p) >= param_levels[PARAM][i] - 0.001 then
+        p_value = params:get(p)
+
+        if p_value > 0 and i >= 4 then
+          if p_value >= param_levels[PARAM][i] - 0.001 then
             g:led(i, y, g_brightness.level_met)
           end
-        elseif params:get(p) < 0 and i <= 3 then
-          if params:get(p) <= param_levels[PARAM][i] + 0.001 then
+        elseif p_value < 0 and i <= 3 then
+          if p_value <= param_levels[PARAM][i] + 0.001 then
             g:led(i, y, g_brightness.level_met)
           end
         end
       end
 
       -- filter swapping
-      if PARAM == 'filter' then
-        p_freq = 'track_' .. track .. '_filter_freq'
-        p_type = 'track_' .. track .. '_filter_type'
+      if tab.contains({'filter', 'scale'}, PARAM) then
+        if PARAM == 'filter' then
+          p_value = 'track_' .. track .. '_filter_freq'
+          p_type = 'track_' .. track .. '_filter_type'
+        else
+          p_value = 'track_' .. track .. '_scale'
+          p_type = 'track_' .. track .. '_scale_type'
+        end
 
         if params:get(p_type) == 1 then
-          if params:get(p_freq) >= param_levels[PARAM][i] - 0.001 then
+          if params:get(p_value) >= param_levels[PARAM][i] - 0.001 then
             g:led(i, y, g_brightness.level_met)
           end
+        -- reverse scale
+        elseif PARAM == 'scale' then
+          if params:get(p_value) >= param_levels[PARAM][7 - i] - 0.001 then
+            g:led(i, y, g_brightness.level_met)
+          end
+        -- reverse filter
         else
-          if params:get(p_freq) <= param_levels[PARAM][i] + 0.001 then
+          if params:get(p_value) <= param_levels[PARAM][i] + 0.001 then
             g:led(i, y, g_brightness.level_met)
           end
+        end
+      end
+
+      if PARAM == 'interval' then
+        interval = params:get('track_' .. track .. '_interval')
+        if interval == param_levels[PARAM][i] then
+          g:led(i, y, g_brightness.level_met)
         end
       end
 
@@ -1195,20 +1245,31 @@ end
 function m_grid.select_track_param_level(x, y, z, track_range)
   local n_tracks = track_range[2] - track_range[1] + 1
   local track = track_range[1] + y - 1
+  local p_type, p_value
 
   -- track param levels
   if x < 7 and y <= n_tracks and z == 1 then
 
-    if PARAM == 'filter' then
-      local f_type = params:get('track_' .. track .. '_filter_type')
-      local f_freq = params:get('track_' .. track .. '_filter_freq')
+    if tab.contains({'filter', 'scale'}, PARAM) then
+      if PARAM == 'filter' then
+        _type = '_filter_type'
+        _value = '_filter_freq'
+      else
+        _type = '_scale_type'
+        _value = '_scale'
+      end
 
-      value = m_grid.select_param_value(PARAM, x, f_freq)
+      p_type = params:get('track_' .. track .. _type)
+      p_value = params:get('track_' .. track .. _value)
+
+      -- reverse direction
+      if p_type == 2 and PARAM == 'scale' then x = 7 - x end
+      value = m_grid.select_param_value(PARAM, x, p_value)
 
       if value == -1 then
-        params:set('track_' .. track .. '_filter_type', f_type % 2 + 1)
+        params:set('track_' .. track .. _type, p_type % 2 + 1)
       else
-        params:set('track_' .. track .. '_filter_freq', value)
+        params:set('track_' .. track .. _value, value)
       end
       
     else

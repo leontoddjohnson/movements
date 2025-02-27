@@ -10,6 +10,9 @@ local NUM_SAMPLES = 128  -- max 256
 
 -- sample_status[sample_id] playing == 1, stopped == 0
 sample_status = {}
+
+-- indicates if sample is currently playing in reverse (1 and 0)
+sample_reversed = {}
 STATUS = {
   STOPPED = 0,
   PLAYING = 1
@@ -52,7 +55,7 @@ end
 function m_sample.build_sample_track_params()
 
   for t = 1,7 do
-    params:add_group("Track " .. t, 8)  -- # of track parameters
+    params:add_group("Track " .. t, 10)  -- # of track parameters
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
@@ -107,19 +110,10 @@ function m_sample.build_sample_track_params()
                       options.FILTER_TYPE, 1)
     params:set_action('track_' .. t .. '_filter_type',
       function(value)
-        last_value = track_param_level[t]['filter_type']
-        local freq = track_param_level[t]['filter_freq']
-        sign_in = last_value == 1 and 1 or -1
-        sign_out = value == 1 and 1 or -1
 
-        -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
-          id = track_pool[t][i]  -- sample id
-          freq_in = params:get('filter_freq_' .. id)
-
-          freq = m_seq.squelch_filter(freq * sign_in, freq * sign_out, freq_in)
-          params:set('filter_freq_' .. id, freq)
-          params:set('filter_type_' .. id, sign_out > 0 and 1 or 2)
+          id = track_pool[t][i]
+          params:set('filter_type_' .. id, value)
         end
 
         track_param_level[t]['filter_type'] = value
@@ -146,7 +140,6 @@ function m_sample.build_sample_track_params()
 
           freq = m_seq.squelch_filter(last_value * sign, value * sign, freq_in)
           params:set('filter_freq_' .. id, freq)
-          params:set('filter_type_' .. id, sign > 0 and 1 or 2)
         end
 
         track_param_level[t]['filter_freq'] = value
@@ -179,6 +172,7 @@ function m_sample.build_sample_track_params()
         -- set samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
+          -- TODO: add squelch here
           params:set('delay_' .. id, value)
         end
         grid_dirty = true
@@ -194,6 +188,7 @@ function m_sample.build_sample_track_params()
         -- set samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
+          -- TODO: add squelch here ...
           params:set('noise_' .. id, value)
         end
         screen_dirty = true
@@ -203,7 +198,7 @@ function m_sample.build_sample_track_params()
     -- SCALE
     params:add_number('track_' .. t .. '_scale', 
                       'track_' .. t .. '_scale',
-                      -3, 3, 0)
+                      0, 5, 2)
     params:set_action('track_' .. t .. '_scale',
       function(value)
         local last_value = track_param_level[t]['scale']
@@ -211,11 +206,13 @@ function m_sample.build_sample_track_params()
         -- squelch samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          scale_in = transpose_scale(params:get('transpose_' .. id))
-          scale = m_seq.squelch_scale(last_value, value, scale_in)
-          transpose = scale_transpose(0, scale)
 
-          params:set('transpose_' .. id, transpose)
+          transpose_in = params:get('transpose_' .. id)
+          scale_in = transpose_to_scale(transpose_in, t)
+          scale = m_seq.squelch_scale({last_value, 5}, {value, 5}, scale_in)
+          transpose_out = scale_to_transpose(scale, t)
+          params:set('transpose_' .. id, transpose_out)
+          
         end
 
         track_param_level[t]['scale'] = value
@@ -223,6 +220,54 @@ function m_sample.build_sample_track_params()
         grid_dirty = true
       end
     )
+
+    -- Forward or Reverse
+    params:add_option('track_' .. t .. '_scale_type', 
+                      'track_' .. t .. '_scale_type',
+                       {"Forward", "Reverse"}, 1)
+    params:set_action('track_' .. t .. '_scale_type',
+      function(value)
+
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]
+          m_sample.reverse_buffer(id)
+        end
+
+        track_param_level[t]['scale_type'] = value
+        screen_dirty = true
+        grid_dirty = true
+      end
+    )
+
+    params:add_number('track_' .. t .. '_interval',
+                      'track_' .. t .. '_interval',
+                      1, 11, 7, 
+      function(param)
+        v = param:get()
+        if v == 2 then return '2nd'
+        elseif v == 3 then return '3rd'
+        elseif v == 5 then return '4th'
+        elseif v == 7 then return '5th'
+        elseif v == 9 then return '6th'
+        elseif v == 11 then return '7th'
+        else return v .. ' st'
+        end
+      end)
+    params:set_action('track_' .. t .. '_interval',
+      function(value)
+
+        for i = 1, #track_pool[t] do
+          transpose_in = params:get('transpose_' .. id)
+          scale_in = transpose_to_scale(transpose_in, t)
+          transpose_out = scale_to_transpose(scale_in, t)
+          params:set('transpose_' .. id, transpose_out)
+        end
+
+        track_param_level[t]['interval'] = value
+        screen_dirty = true
+        grid_dirty = true
+      end
+      )
   
   end
 
@@ -424,6 +469,12 @@ function m_sample.reverse_buffer(id)
     params:set("end_frame_" .. id, start_frame)
     params:set("loop_start_frame_" .. id, loop_start_frame)
     params:set("loop_end_frame_" .. id, loop_end_frame)
+
+    if sample_reversed[id] then
+      sample_reversed[id] = nil
+    else
+      sample_reversed[id] = 1
+    end
   end
   
 end
@@ -505,6 +556,11 @@ function m_sample.sample_params_to_default(sample_ids)
     for i,p in ipairs(timber_params) do
       params:set(p .. '_' .. id, track_param_default[p])
     end
+
+    -- remove scale and set to forward
+    params:set('transpose_' .. id, 0)
+    if sample_reversed[id] then m_sample.reverse_buffer(id) end
+
   end
 
 end
@@ -512,7 +568,8 @@ end
 -- set a collection of sample ids to the track levels
 function m_sample.sample_params_to_track(sample_ids, track)
   -- do this before a sample is added to a track_pool
-  local id
+  local id, p_track
+
   for i = 1,#sample_ids do
     id = sample_ids[i]
 
@@ -525,10 +582,28 @@ function m_sample.sample_params_to_track(sample_ids, track)
       "pan", "filter_freq", "filter_type", "filter_resonance",
       'delay'
     }
+
     for i,p in ipairs(params_) do
       p_track = params:get('track_' .. track .. '_' .. p)
       params:set(p .. '_' .. id, p_track)
     end
+
+    -- get scale and direction
+    scale = params:get('track_' .. track .. '_scale')
+    scale_type = params:get('track_' .. track .. '_scale_type')
+
+    -- revert to main octave, set scale, then direction
+    transpose = scale_to_transpose(scale, track)
+    params:set('transpose_' .. id, transpose)
+
+    if sample_reversed[id] then
+      if scale_type == 1 then
+        m_sample.reverse_buffer(id)
+      end
+    elseif scale_type == 2 then
+      m_sample.reverse_buffer(id)
+    end
+
   end
 end
 
@@ -576,37 +651,38 @@ function m_sample.sample_length(id)
   return duration
 end
 
--- transpose a `value` (of semitones) by some `scale` count (between -3 and 3)
--- using the *scale_interval* parameter. Wrap within the same octave
--- so the maximum transpose is 12 steps (above or below).
-function scale_transpose(value, scale)
-  -- interval can only be perfect 4th or perfect 5th (5 or 7 steps)
-  local steps = params:get('scale_interval') == 4 and 5 or 7
-  local diff = scale * steps
+-- given a scale value from `param_levels.scale`, convert to number of
+-- semitones for a given track
+function scale_to_transpose(scale, track)
 
-  if scale >= 0 then
-    return util.wrap(value + diff, value, value + 11)
-  else
-    return util.wrap(value + diff, value - 11, value)
+  interval = params:get('track_' .. track .. '_interval')
+
+  if scale == 0 then return -12
+  elseif scale == 1 then return interval - 12
+  elseif scale == 2 then return 0
+  elseif scale == 3 then return interval
+  elseif scale == 4 then return 12
+  elseif scale == 5 then return 24  -- this *could* be another interval ...
   end
-
 end
 
--- convert transposition count to scale given *scale_interval* parameter
--- if transpose value falls outside possible values, return 0, and reset.
-function transpose_scale(transpose)
+-- given a transposition, convert to the `param_levels.scale` value, 
+-- given a track (inverse of `scale_to_transpose`)
+function transpose_to_scale(transpose_in, track)
 
-  -- scale counts must be between -3 and 3
-  for s = -3, 3 do
-    if transpose == scale_transpose(0, s) then
-      return s
-    end
+  interval = track_param_level[track]['interval']
+
+  if transpose_in == -12 then scale = 0
+  elseif transpose_in == interval - 12 then scale = 1
+  elseif transpose_in == 0 then scale = 2
+  elseif transpose_in == interval then scale = 3
+  elseif transpose_in == 12 then scale = 4
+  elseif transpose_in == 24 then scale = 5 
+  else scale = 3
   end
 
-  return 0
-
+  return scale
 end
-
 
 -- convert amp [0, 1] to decibels [-inf, 0]
 function ampdb(amp)
