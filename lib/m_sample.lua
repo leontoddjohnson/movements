@@ -55,7 +55,7 @@ end
 function m_sample.build_sample_track_params()
 
   for t = 1,7 do
-    params:add_group("Track " .. t, 10)  -- # of track parameters
+    params:add_group("Track " .. t, 11)  -- # of track parameters
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
@@ -250,8 +250,7 @@ function m_sample.build_sample_track_params()
         elseif v == 7 then return '5th'
         elseif v == 9 then return '6th'
         elseif v == 11 then return '7th'
-        else return v .. ' st'
-        end
+        else return v .. ' st' end
       end)
     params:set_action('track_' .. t .. '_interval',
       function(value)
@@ -268,6 +267,11 @@ function m_sample.build_sample_track_params()
         grid_dirty = true
       end
       )
+    
+    -- PROBABILITY
+    params:add_control('track_' .. t .. '_prob',
+                       'track_' .. t .. '_prob',
+                       controlspec.AMP, Formatters.percentage)
   
   end
 

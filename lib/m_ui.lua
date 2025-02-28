@@ -174,7 +174,7 @@ function m_ui.sample_2_redraw()
     screen.move(30, 58)
     screen.text_center(params:string('track_' .. TRACK .. '_scale_type'))
   -- TAG: param 10 ... add here.
-  elseif PARAM ~= 'prob' then
+  else
     screen.text_center(params:string('track_' .. TRACK .. '_' .. PARAM))
   end
   

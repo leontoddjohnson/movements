@@ -95,7 +95,8 @@ function set_track_defaults()
   -- TAG : param 9
   -- set default parameters
   local temp_params = {
-    'amp', 'pan', 'filter_freq', 'filter_type', 'filter_resonance'
+    'amp', 'pan', 'filter_freq', 'filter_type', 'filter_resonance',
+    'scale', 'scale_type', 'interval', 'prob'
   }
 
   for i, p in ipairs(temp_params) do
@@ -191,7 +192,6 @@ function manage_data()
       step = step,
       step_range = step_range,
       clock_range = clock_range,
-      offset = offset,
       time_type = time_type,
       pattern = pattern,
       bank = bank
@@ -218,7 +218,6 @@ function manage_data()
     step = m_data.step
     step_range = m_data.step_range
     clock_range = m_data.clock_range
-    offset = m_data.offset
     time_type = m_data.time_type
     pattern = m_data.pattern
     bank = m_data.bank

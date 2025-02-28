@@ -87,11 +87,6 @@ function m_seq.init()
     {8, 8}, {8, 8}, {8, 8}, {8, 8}
   }
 
-  -- offset fraction for each transport -0.5 < offset < 0.5 (strict)
-  -- does not apply to a step at t == 0 (when clock is run)
-  -- translates to "life". apply to every k steps, or random steps
-  offset = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
   -- time type for transport: either 'beats' or 'seconds'
   time_type = {
     'beats', 'beats', 'beats', 'beats', 'beats', 'beats', 'beats',
@@ -128,7 +123,13 @@ function m_seq.play_transport(i)
   while true do
     -- step starts at 0, then waits before playing next step
     if pattern[i][bank[i]][step[i]] > 0 and #track_pool[i] > 0 then
-      m_seq.play_track_pool(i)
+      prob_track = params:get('track_' .. i .. '_prob')
+      prob_step = param_pattern.prob[i][bank[i]][step[i]]
+      prob = m_seq.squelch_prob(1, prob_track, prob_step)
+
+      if math.random() <= prob then
+        m_seq.play_track_pool(i)
+      end
     end
 
     -- choose clock_fraction index from selected option range
@@ -136,9 +137,9 @@ function m_seq.play_transport(i)
     wait = clock_fraction[wait]
 
     if time_type[i] == 'beats' then
-      clock.sync(wait, wait * offset[i])
+      clock.sync(wait)
     else
-      clock.sleep(wait, wait * offset[i])
+      clock.sleep(wait)
     end
 
     if step_range[i][1] > 0 then
@@ -357,6 +358,14 @@ function m_seq.squelch_amp(input_max, output_max, value, db_out)
   return amp
 end
 
+-- this is just a linlin transformation between 0 and the maximum
+function m_seq.squelch_prob(input_max, output_max, value)
+
+  prob = util.linlin(0, input_max, 0, output_max, value)
+
+  return prob
+end
+
 -- `*_def` = [center, range_radius]
 -- linearly translate from `input_` neighborhood to `output_` neighborhood
 -- clamping to [-1, 1]
@@ -426,11 +435,6 @@ function m_seq.squelch_scale(input_def, output_def, value)
   return util.clamp(util.round(out), 0, 5)
 end
 
-
--- TODO: figure this one out ...
-function random_offset(wait)
-end
-
 -- return a "slice" of a table, from `first` to `last`.
 -- this returns `{t[first], t[first + 1], ..., t[last]}`
 function table_slice(t, first, last)
@@ -493,6 +497,10 @@ function n_bars(i)
   local span_ = span(pattern[i][bank[i]])[2]
   -- fix for when span_ == 0
   return math.abs(span_ - 1) // 16 + 1
+end
+
+function random_float(min, max)
+  return min + math.random() * (max - min);
 end
 
 return m_seq

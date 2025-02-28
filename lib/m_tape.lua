@@ -79,7 +79,7 @@ end
 function m_tape.build_tape_track_params()
 
   for t = 8, 11 do
-    params:add_group("Track " .. t, 6)  -- # of track parameters
+    params:add_group("Track " .. t, 10)  -- # of track parameters
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
@@ -198,7 +198,35 @@ function m_tape.build_tape_track_params()
         -- end
       end
     )
+
+    -- SCALE
+    params:add_number('track_' .. t .. '_scale', 
+                      'track_' .. t .. '_scale',
+                      0, 5, 2)
+                      
+    params:add_option('track_' .. t .. '_scale_type', 
+                      'track_' .. t .. '_scale_type',
+                       {"Forward", "Reverse"}, 1)
     
+    -- INTERVAL
+    params:add_number('track_' .. t .. '_interval',
+                       'track_' .. t .. '_interval',
+                       1, 11, 7, 
+      function(param)
+        v = param:get()
+        if v == 2 then return '2nd'
+        elseif v == 3 then return '3rd'
+        elseif v == 5 then return '4th'
+        elseif v == 7 then return '5th'
+        elseif v == 9 then return '6th'
+        elseif v == 11 then return '7th'
+        else return v .. ' st' end
+      end)
+
+    -- PROBABILITY
+    params:add_control('track_' .. t .. '_prob',
+                       'track_' .. t .. '_prob',
+                       controlspec.AMP, Formatters.percentage)
     -- TAG: param 5, add params ABOVE.
   
   end
