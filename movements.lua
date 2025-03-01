@@ -182,7 +182,6 @@ function manage_data()
 
     m_data = {
       p_options = p_options,
-      partitions = partitions,
       banks = banks,
       bank_folders = bank_folders,
       track_param_level = track_param_level,
@@ -208,7 +207,6 @@ function manage_data()
     m_data = tab.load(norns.state.data.."/"..number.."/dots.data")
 
     p_options = m_data.p_options
-    partitions = m_data.partitions
     banks = m_data.banks
     bank_folders = m_data.bank_folders
     track_param_level = m_data.track_param_level
