@@ -946,11 +946,12 @@ function m_grid.sample_config_key(x, y, z)
   if 5 < y and y < 8 and 8 < x and z == 1 then
     i = 8 * (y - 6) + (x - 8)
 
-    if ALT then
-      grid_sample_end(SAMPLE, i)
-    else
-      grid_sample_start(SAMPLE, i)
-    end
+    -- set end
+    if ALT and sample_reversed[SAMPLE] then grid_sample_start(SAMPLE, i+1)
+    elseif ALT then grid_sample_end(SAMPLE, i)
+    -- set start
+    elseif sample_reversed[SAMPLE] then grid_sample_end(SAMPLE, i-1)
+    else grid_sample_start(SAMPLE, i) end
 
   end
 
