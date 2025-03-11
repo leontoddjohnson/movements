@@ -14,7 +14,7 @@ function m_delay.build_params()
 	params:add_group("Tape Delay", 5)
   params:add{id="tape_delay_level", name="tape delay level",
 		type="control", 
-    controlspec=controlspec.new(0,1,'lin',0,0.5,""),
+    controlspec=controlspec.new(0,1,'lin',0,0,""),
     action=function(x) 
 			softcut.level(5, x) 
 			softcut.level(6, x)
@@ -50,7 +50,7 @@ function m_delay.init()
 		softcut.enable(v, 1)
 		softcut.buffer(v, ch)
 		softcut.level_input_cut(ch, v, 1)
-		softcut.level(v, 1.0)
+		softcut.level(v, 0)
 		softcut.level_slew_time(v, 0.1)
 		softcut.pan(v, v == 5 and -1 or 1)
 

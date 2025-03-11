@@ -1015,19 +1015,21 @@ function m_grid.draw_partition()
 
       slice_id = (PARTITION - 1) * 32 + (row - 1) * 8 + col
       slice_buffer = m_tape.slice_buffer(slice_id, track_buffer[TRACK])
+      slice_track = find(track_pools, slice_id)
+      slice_track = slice_track and slice_track + 7 or nil
+      same_buffer = track_buffer[TRACK] == track_buffer[slice_track]
 
       -- check if slice is loaded into at least one (tape) track
       if tab.contains(flatten(track_pools), slice_id) then
         if tab.contains(track_pool[TRACK], slice_id) then
           g:led(x, y, g_brightness.bank_sample_current_track)
-        else
+        elseif same_buffer then
           g:led(x, y, g_brightness.bank_sample_tracked)
         end
 
         -- show track that slice is loaded into
-        if KEY_HOLD[y][x] == 1 then
-          g:led(8, find(track_pools, slice_id), 
-                g_brightness.bank_sample_tracked)
+        if KEY_HOLD[y][x] == 1 and same_buffer then
+          g:led(8, slice_track - 7, g_brightness.bank_sample_tracked)
         end
       
       -- show if there is sound
@@ -1041,8 +1043,9 @@ function m_grid.draw_partition()
         g:led(x, y, g_brightness.bank_sample_cued)
       end
       
+      -- indicate if play head is in current slice
       local loc = voice_slice_loc[TRACK - 7]
-      if loc and loc[slice_id] == 1 and PLAY_MODE then
+      if loc and loc[slice_id] == 1 and slice_id == SLICE_ID and PLAY_MODE then
         g:led(x, y, g_brightness.bank_sample_playing)
       end
     end
@@ -1074,14 +1077,14 @@ function m_grid.draw_partition()
 
   -- draw playback modes
   for i = 1,4 do
-    if slices_params[SLICE_ID]['play_mode'] == g_play_modes[i] then
+    if slice_params[SLICE_ID]['play_mode'] == g_play_modes[i] then
       g:led(8 + i, 5, g_brightness.play_mode_selected)
     else
       g:led(8 + i, 5, g_brightness.play_mode_deselected)
     end
   end
 
-  -- draw grid slice range
+  -- draw grid slice range (based on the current partition)
   for i = 1,32 do
     row_ = (i - 1) // 16 + 1
     col_ = i - (row_ - 1) * 16
@@ -1157,7 +1160,7 @@ function m_grid.tape_config_key(x, y, z)
 
   -- play mode selection
   if 8 < x and x < 13 and y == 5 and z == 1 then
-    slices_params[SLICE_ID]['play_mode'] = g_play_modes[x - 8]
+    slice_params[SLICE_ID]['play_mode'] = g_play_modes[x - 8]
   end
 
   -- track selection
@@ -1188,11 +1191,9 @@ function m_grid.tape_config_key(x, y, z)
       
       -- play slice
       if PLAY_MODE then
-        if voice_state[voice] == 1 then
-          m_tape.stop_track(TRACK)
-        else
-          m_tape.play_section(TRACK, SLICE)
-        end
+        m_tape.stop_track(TRACK)
+        m_tape.set_voice_params(TRACK - 7, slice_id)
+        m_tape.play_section(TRACK, SLICE)
       
       -- assign slices to pool/cue (even if they're empty)
       elseif ALT then

@@ -36,7 +36,8 @@ track_param_default = {
   interval = 7,
   prob = 1,
   noise = 0,
-  fade_time = 0.1
+  fade_time = 0.1,
+  transpose = 0
 }
 
 -----------------------------------------------------------------

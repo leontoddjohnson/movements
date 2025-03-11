@@ -240,22 +240,25 @@ function m_seq.play_track_pool(track)
     next_pool_i = math.random(#pool_)
   end
 
+  next_id = pool_[next_pool_i]
+  m_seq.set_step_params(next_id, track, step[track])
+  
   -- SAMPLES
   if track < 8 then
     -- tracks only play one thing at a time
-    -- TODO: figure out gated situation ...
-    -- TODO: it's probably okay, but 1-shots will keep playing ...
     if pool_i > 0 and sample_status[pool_[pool_i]] == 1 then 
       m_sample.note_off(pool_[pool_i])
     end
-
-    m_seq.set_step_params(pool_[next_pool_i], track, step[track])
-    m_sample.note_on(pool_[next_pool_i])
+    
+    m_sample.note_on(next_id)
     track_pool_i[track] = next_pool_i
 
   -- SLICES
   else
-    print('play recorded slice')
+    m_tape.set_voice_params(track - 7, next_id)
+    loop_ = slice_params[next_id]['play_mode'] == "Loop"
+    m_tape.play_section(track, slices[next_id], loop_)
+    track_pool_i[track] = next_pool_i
   end
   
 end
@@ -263,12 +266,10 @@ end
 -- update all sample parameters for a sample `id` loaded in a `track_`
 -- at some `step_`.
 function m_seq.set_step_params(id, track_, step_)
-  -- TAG: param 7
-  local timber_params = {'amp', 'pan', 'filter', 'delay', 'scale', 'interval'}
+  local play_params = {'amp', 'pan', 'filter', 'delay', 'scale', 'interval'}
 
-  for i = 1,#timber_params do
-    m_seq.set_step_param(id, timber_params[i], track_, 
-                              bank[track_], step_)
+  for k, p in pairs(play_params) do
+    m_seq.set_step_param(id, p, track_, bank[track_], step_)
   end
 
 end
@@ -282,9 +283,13 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     amp_max = params:get('track_' .. track_ .. '_amp')  -- defined for track
     amp_step = param_pattern.amp[track_][bank_][step_]  -- defined at step
 
-    -- squelch using track param default
-    amp = m_seq.squelch_amp(1, amp_max, amp_step, true)
-    params:set('amp_' .. id, amp)
+    if track_ < 8 then
+      amp = m_seq.squelch_amp(1, amp_max, amp_step, true)
+      params:set('amp_' .. id, amp)  -- timber sample
+    else
+      amp = m_seq.squelch_amp(1, amp_max, amp_step, false)
+      slice_params[id]['amp'] = amp  -- softcut slice
+    end
   
   -- PAN
   elseif param == 'pan' then
@@ -299,7 +304,12 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     end
 
     pan = m_seq.squelch_pan({0, 1}, pan_def, pan_step)
-    params:set('pan_' .. id, pan)
+
+    if track_ < 8 then
+      params:set('pan_' .. id, pan)
+    else
+      slice_params[id]['pan'] = pan
+    end
 
   -- TAG: param 6
   elseif param == 'filter' then
@@ -313,8 +323,14 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     cutoff = freq_track > 0 and 20000 or -20
 
     freq = m_seq.squelch_filter(cutoff, freq_track, freq_step)
-    params:set('filter_freq_' .. id, freq)
-    params:set('filter_type_' .. id, freq_track > 0 and 1 or 2)
+
+    if track_ < 8 then
+      params:set('filter_freq_' .. id, freq)
+      params:set('filter_type_' .. id, freq_track > 0 and 1 or 2)
+    else
+      slice_params[id]['filter_freq'] = freq
+      slice_params[id]['filter_type'] = freq_track > 0 and 1 or 2
+    end
   
   -- DELAY
   elseif param == 'delay' then
@@ -323,7 +339,12 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
 
     -- squelch using track param default
     delay = m_seq.squelch_amp(1, delay_max, delay_step)
-    params:set('delay_' .. id, amp)
+
+    if track_ < 8 then
+      params:set('delay_' .. id, delay)
+    else
+      slice_params[id]['delay'] = delay
+    end
 
   -- SCALE (and INTERVAL)
   elseif param == 'scale' or param == 'interval' then
@@ -334,7 +355,12 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     -- output is within two scale points of track
     scale = m_seq.squelch_scale({2, 3}, {track_scale, 2}, scale_step)
     transpose_out = scale_to_transpose(scale, track_)
-    params:set('transpose_' .. id, transpose_out)
+
+    if track_ < 8 then
+      params:set('transpose_' .. id, transpose_out)
+    else
+      slice_params[id]['transpose'] = transpose_out
+    end
 
   end
   

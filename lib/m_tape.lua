@@ -6,15 +6,20 @@
 local m_tape = {}
 
 local Formatters = require "formatters"
+local music = require 'musicutil'
 
 -- 128 slices. these are represented in 4 partitions, where
 -- the `n`th partition starts with slice #(`n` - 1) * 32 + 1.
 -- slices[i] gives {start, stop} for that slice.
 slices = {}
 
--- all parameters for slices (including `play_mode` *strings*, etc.)
--- indexed by slice_id
-slices_params = {}
+-- all parameters for slices (including `play_mode`)
+-- indexed by slice_id. See `track_param_default` for names.
+slice_params = {}
+
+-- `slice_reversed[id]` indicates whether slice `id` is to play in reverse
+-- `nil` indicates play normally, 1 indicates reverse
+slice_reversed = {}
 
 -- voice_slice_loc[voice][slice_id] where:
 -- 1: voice head is *playing* (not recording) in that slice range, and
@@ -88,11 +93,15 @@ function m_tape.build_tape_track_params()
       function(value)
         last_value = track_param_level[t]['amp']
 
-        -- -- squelch samples in current track pool
-        -- for i = 1, #track_pool[t] do
-        --   id = track_pool[t][i]  -- sample id
-        --   m_sample.squelch_sample_amp(last_value, value, id)
-        -- end
+        -- squelch samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- sample id
+          amp_in = slice_params[id]['amp']
+          amp_out = m_seq.squelch_amp(last_value, value, amp_in)
+          slice_params[id]['amp'] = amp_out
+
+          softcut.level(t - 7, amp_out)
+        end
 
         track_param_level[t]['amp'] = value
         grid_dirty = true
@@ -207,6 +216,18 @@ function m_tape.build_tape_track_params()
     params:add_option('track_' .. t .. '_scale_type', 
                       'track_' .. t .. '_scale_type',
                        {"Forward", "Reverse"}, 1)
+    params:set_action('track_' .. t .. '_scale_type',
+      function(value)
+
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]
+          m_tape.reverse_slice(id)
+        end
+
+        screen_dirty = true
+        grid_dirty = true
+      end
+    )
     
     -- INTERVAL
     params:add_number('track_' .. t .. '_interval',
@@ -231,6 +252,31 @@ function m_tape.build_tape_track_params()
   
   end
 
+end
+
+-- set ALL **voice** params for a `slice_id` using `slice_params`.
+function m_tape.set_voice_params(voice, slice_id)
+  -- AMP
+  softcut.level(voice, slice_params[slice_id]['amp'])
+  -- DELAY (left)
+  softcut.level_cut_cut(voice, 5, slice_params[slice_id]['delay'])
+  -- DELAY (right)
+  softcut.level_cut_cut(voice, 6, slice_params[slice_id]['delay'])
+  -- PAN
+  softcut.pan(voice, slice_params[slice_id]['pan'])
+  -- FILTER FREQ
+  softcut.post_filter_fc(voice, slice_params[slice_id]['filter_freq'])
+  -- FILTER TYPE
+  if slice_params[slice_id]['filter_type'] == 1 then
+    softcut.post_filter_lp(voice, 1)
+    softcut.post_filter_hp(voice, 0)
+  else
+    softcut.post_filter_lp(voice, 0)
+    softcut.post_filter_hp(voice, 1)
+  end
+  -- SCALE (TRANSPOSE)
+  local ratio = music.interval_to_ratio(slice_params[slice_id]['transpose'])
+  softcut.rate(voice, ratio)
 end
 
 -----------------------------------------------------------------
@@ -272,12 +318,12 @@ function m_tape.init_slices()
   for s=1,128 do 
     slices[s] = {(s - 1) * 2.5, s * 2.5}
     
-    slices_params[s] = {}
+    slice_params[s] = {}
     for k,v in pairs(track_param_default) do
-      slices_params[s][k] = v
+      slice_params[s][k] = v
     end
 
-    slices_params[s]['play_mode'] = "1-Shot"  -- or "Gated"
+    slice_params[s]['play_mode'] = "1-Shot"
   end
 
 end
@@ -409,7 +455,6 @@ function m_tape.play_section(track, range, loop)
   softcut.play(voice, 0)
   
   softcut.buffer(voice, track_buffer[track])
-  softcut.level(voice, 1)
   softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
@@ -448,6 +493,23 @@ function m_tape.record_section(track, range, loop)
   voice_state[voice] = 2
 end
 
+-- reverse start and stop for a slice
+function m_tape.reverse_slice(id)
+
+  local start = slices[id][1]
+  local stop = slices[id][2]
+
+  slices[id][1] = stop
+  slices[id][2] = start
+
+  if slice_reversed[id] then
+    slice_reversed[id] = nil
+  else
+    slice_reversed[id] = 1
+  end
+  
+end
+
 -- set a collection of slice ids back to default
 function m_tape.slice_params_to_default(slice_ids)
   local id
@@ -460,7 +522,7 @@ function m_tape.slice_params_to_default(slice_ids)
     }
 
     for i,p in ipairs(params) do
-      slices_params[id][p] = track_param_default[p]
+      slice_params[id][p] = track_param_default[p]
     end
   end
 
@@ -480,7 +542,7 @@ function m_tape.slice_params_to_track(slice_ids, track)
 
     for i,p in ipairs(params_) do
       p_track = params:get('track_' .. track .. '_' .. p)
-      slices_params[id][p] = p_track
+      slice_params[id][p] = p_track
     end
   end
 end
