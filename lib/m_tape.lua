@@ -568,6 +568,13 @@ function span_thresh(t, thresh)
   return {span_l, span_r}
 end
 
+-- convert seconds to frame count, given a sample rate of 60 samples per second
+-- **for any "start" frame, add 1**.
+function m_tape.seconds_to_frame(sec)
+  local sample_rate = 60
+  return util.round(sample_rate * sec, 1)
+end
+
 -- WAVEFORM (cr: sonocircuit) -----------------------------------
 
 function wave_render(ch, start, rate, samples)

@@ -327,9 +327,9 @@ end
 
 function m_ui.tape_1_enc(n,d)
   if n == 2 then
-    SLICE[1] = util.clamp(SLICE[1] + d, 0, 80)
+    SLICE[1] = util.clamp(SLICE[1] + d * 0.5, 0, 80)
   elseif n == 3 then
-    SLICE[2] = util.clamp(SLICE[2] + d, 0, 80)
+    SLICE[2] = util.clamp(SLICE[2] + d * 0.5, 0, 80)
   end
 
   screen_dirty = true
@@ -357,9 +357,9 @@ end
 
 function m_ui.tape_2_enc(n,d)
   if n == 2 then
-    SLICE[1] = util.clamp(SLICE[1] + d, 0, 80)
+    SLICE[1] = util.clamp(SLICE[1] + d * 0.5, 0, 80)
   elseif n == 3 then
-    SLICE[2] = util.clamp(SLICE[2] + d, 0, 80)
+    SLICE[2] = util.clamp(SLICE[2] + d * 0.5, 0, 80)
   end
 
   screen_dirty = true
@@ -371,8 +371,7 @@ function m_ui.draw_partition(partition)
   -- TODO: clamp first/last partition samples within the 80 seconds allowed
 
   local y_middle = 12
-  local n_frames = 80 * 60  -- per partition. see notes on `buffer_waveform`.
-  local frame, thresh
+  local frame, thresh, start_frame, end_frame
 
   -- baseline
   screen.level(2)
@@ -382,11 +381,15 @@ function m_ui.draw_partition(partition)
   screen.line(128, y_middle + 1)
   screen.stroke()
 
+  -- selected slice
+  if SLICE then
+    start_frame = m_tape.seconds_to_frame(SLICE[1]) + 1
+    end_frame = m_tape.seconds_to_frame(SLICE[2])
+  end
+
   screen.level(12)
   for i=0,127 do
-    -- "frame" represents the beginning of each (n_frames / 128) region
-    frame = (partition - 1) * n_frames + i * (n_frames / 128)
-    frame = util.round(frame, 1) + 1
+    frame = pixel_to_frame(i + 1, partition)
 
     -- minimum amplitude threshold
     thresh = util.dbamp(params:get('rec_threshold'))
@@ -403,6 +406,13 @@ function m_ui.draw_partition(partition)
     if s ~= nil and math.abs(s) > thresh then
       screen.move(i, y_middle + 1)
       screen.line(i+1, y_middle + 1)
+    end
+
+    -- selected slice
+    dodge = track_buffer[TRACK] == 1 and -3 or 3
+    if SLICE and start_frame <= frame and frame <= end_frame then
+      screen.move(i, y_middle + dodge)
+      screen.line(i+1, y_middle + dodge)
     end
 
   end
@@ -559,6 +569,15 @@ function m_ui.draw_slider(middle_left, min, max, v, width, center)
 
   end
 
+end
+
+-- returns the frame count associated with the *beginning* of the `p`th region, 
+-- where there are 128 regions within the current partition.
+function pixel_to_frame(p, partition)
+  local n_frames = 80 * 60  -- per partition. see notes on `buffer_waveform`.
+
+  frame = (partition - 1) * n_frames + (p - 1) * (n_frames / 128)
+  return util.round(frame, 1) + 1
 end
 
 return m_ui
