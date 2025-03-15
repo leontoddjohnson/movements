@@ -321,12 +321,24 @@ function m_ui.tape_1_key(n,z)
 end
 
 function m_ui.tape_1_enc(n,d)
-  if n == 2 then
-    SLICE[1] = util.clamp(SLICE[1] + d * 0.5, 0, 80)
-  elseif n == 3 then
-    SLICE[2] = util.clamp(SLICE[2] + d * 0.5, 0, 80)
-  end
+  local partition = (SLICE_ID - 1) // 32 + 1
+  local min_ = 80 * (partition - 1)
+  local max_ = 80 * partition
 
+  if n == 2 then
+    new_start = util.clamp(SLICE[1] + d * 0.5, min_, max_)
+    if SLICE[2] - new_start >= 1 then
+      SLICE[1] = new_start
+    end
+
+  elseif n == 3 then
+    new_end = util.clamp(SLICE[2] + d * 0.5, min_, max_)
+    if new_end - SLICE[1] >= 1 then
+      SLICE[2] = new_end
+    end
+  end
+  
+  grid_dirty = true
   screen_dirty = true
 end
 

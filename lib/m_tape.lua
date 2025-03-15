@@ -52,10 +52,7 @@ armed = {}  -- 1 or 0 for whether armed[track] is armed for recording
 
 PARTITION = 1  -- currently selected record partition
 SLICE = {0, 5}  -- currently selected slice [start, stop]
-SLICE_ID = 1  -- TODO: replace `SLICE` instances with `SLICE_ID`
-
--- currently selected slice on the grid for each partition
-grid_slice = {{0, 80}, {80, 160}, {160, 240}, {240, 320}}
+SLICE_ID = 1  -- currently selected slice id (**1-indexed**)
 
 -----------------------------------------------------------------
 -- BUILD PARAMETERS

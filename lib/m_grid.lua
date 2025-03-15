@@ -1088,12 +1088,13 @@ function m_grid.draw_partition()
   for i = 1,32 do
     row_ = (i - 1) // 16 + 1
     col_ = i - (row_ - 1) * 16
+    local partition = (SLICE_ID - 1) // 32 + 1
 
-    local cell_start = (PARTITION - 1) * 80 + (i - 1) * 2.5
-    local cell_end = (PARTITION - 1) * 80 + i * 2.5
+    -- deal with rounding
+    local cell_start = (partition - 1) * 80 + (i - 1) * 2.5
+    local cell_end = (partition - 1) * 80 + i * 2.5
 
-    if grid_slice[PARTITION][1] <= cell_start 
-      and cell_end <= grid_slice[PARTITION][2] then
+    if SLICE[1] <= cell_start and cell_end <= SLICE[2] then
       g:led(col_, 5 + row_, g_brightness.sample_range_in)
     else
       g:led(col_, 5 + row_, g_brightness.sample_range_out)
@@ -1231,11 +1232,14 @@ function m_grid.tape_config_key(x, y, z)
   -- slice adjustment ...
   if 5 < y and y < 8 and z == 1 then
     i = 16 * (y - 6) + x
+    local partition = (SLICE_ID - 1) // 32 + 1
+    local new_start = (partition - 1) * 80 + 2.5 * (i - 1)
+    local new_end = (partition - 1) * 80 + 2.5 * i
 
-    if ALT then
-      grid_slice[PARTITION][2] = (PARTITION - 1) * 80 + math.ceil(2.5 * i)
-    else
-      grid_slice[PARTITION][1] = (PARTITION - 1) * 80 + math.ceil(2.5 * (i - 1))
+    if ALT and SLICE[1] < new_end then
+      SLICE[2] = new_end
+    elseif not ALT and new_start < SLICE[2] then
+      SLICE[1] = new_start
     end
 
   end
