@@ -450,6 +450,7 @@ function m_tape.update_position(i,pos)
     end
   end
 
+  -- render if finished recording range
   if await_render[i] and pos >= await_render[i][2] then
     render_slice(await_render[i], track_buffer[i + 7])
     await_render[i] = nil

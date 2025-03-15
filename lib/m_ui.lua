@@ -294,17 +294,18 @@ function m_ui.tape_1_redraw()
     util.round(SLICE[1], 0.1) .. " - " .. util.round(SLICE[2], 0.1)
   )
 
-  screen.move(64, 50)
+  screen.move(64, 62)
 
-  if voice_state[TRACK - 7] == 2 then
-    screen.text_center('recording voice ' .. TRACK - 7)
+  if await_render[TRACK - 7] then
+    screen.text_center("•")
   else
-    screen.text_center('not recording.')
+    screen.text_center('')
   end
 
   screen.stroke()
 
   m_ui.draw_partition(PARTITION)
+  m_ui.draw_waveform(SLICE)
 end
 
 function m_ui.tape_1_key(n,z)
@@ -312,14 +313,8 @@ function m_ui.tape_1_key(n,z)
 
     if voice_state[TRACK - 7] ~= 2 then
       m_tape.record_section(TRACK, SLICE)
-    else
-      m_tape.stop_track(TRACK)
     end
 
-  end
-
-  if n == 2 and z == 1 then
-    render_slice(SLICE)
   end
 
   screen_dirty = true
@@ -436,48 +431,38 @@ function m_ui.draw_partition(partition)
 
 end
 
--- function m_ui.draw_waveform()
+-- draw a waveform for a `range` **in seconds**.
+-- waveform bars show level for the *start* of each of the 60 frames.
+-- (*adapted* from cr: @markeats)
+function m_ui.draw_waveform(range)
+  screen.level(2)
 
---   -- display buffer
---   -- screen.level(6)
+  local WAVE_H = 24  -- wave height
+  local WAVE_Y = 45  -- middle x-line for wave
+  local frame, wave_x, bar_level
+  local n_frames = (range[2] - range[1]) * 60  -- 60 frames per second
+  local n_bars = (128 - 8) // 2  -- number of waveform bars to show
 
---   -- local x_pos = 0
+  -- divide the 128 horizontal pixels into every other one
+  for i = 1,n_bars do
+    frame = (range[1]) * 60 + (i - 1) * (n_frames / n_bars) + 1
+    frame = util.round(frame)
+    sample = buffer_waveform[track_buffer[TRACK]][frame]
+    wave_x = 4 + i * 2 - 0.5
 
---   -- for i, s in ipairs(waveform_samples[track_focus]) do
---   --   local height = util.round(math.abs(s) * (14 / wave_gain[track_focus]))
---   --   screen.move(util.linlin(0, 128, 4, 120, x_pos), 36 - height)
---   --   screen.line_rel(0, 2 * height)
---   --   screen.stroke()
---   --   x_pos = x_pos + 1
---   -- end
+    if sample then
+      bar_level = math.min(math.abs(sample), 1)
+      bar_level = util.linlin(0, 1, 1, (WAVE_H // 2), bar_level)
+      screen.move(wave_x, util.round(WAVE_Y - bar_level + 1))
+      screen.line(wave_x, util.round(WAVE_Y + bar_level))
+    else
+      screen.move(wave_x, WAVE_Y)
+      screen.line(wave_x, WAVE_Y + 1)
+    end
+  end
+  screen.stroke()
 
---   -- -- update buffer
---   -- if track[track_focus].rec == 1 then
---   --   render_slice()
---   -- end
-
---   -- waveform (adapted from cr: @markeats)
---   screen.level(2)
-
-  -- local WAVE_H = 20
-  -- local wave_from_center_h = WAVE_H * 0.5
-  -- local frame
-
-  -- for i = 1,60 do
-  --   frame = (SLICE[1]) * 60 + i * (n_frames / 128)
-  --   local wave_x = 4 + i * 2 - 0.5
-
-  --   if sample then
-  --     screen.move(wave_x, util.round(y_center - sample[1] * wave_from_center_h))
-  --     screen.line(wave_x, util.round(y_center - math.max(sample[2] * wave_from_center_h, 1)))
-  --   else
-  --     screen.move(wave_x, y_center - 0.5)
-  --     screen.line(wave_x, y_center + 0.5)
-  --   end
-  -- end
-  -- screen.stroke()
-
--- end
+end
 
 -- 2: TRACK PARAMS ----------------------------------------------
 
