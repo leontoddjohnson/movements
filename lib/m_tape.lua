@@ -26,8 +26,15 @@ slice_reversed = {}
 -- 0: voice head is not in that range.
 voice_slice_loc = {{}, {}, {}, {}}
 
+-- **Last update made to** the voice state. It is possible for a voice to
+-- stopped (i.e., the position is not moving) while the `voice_state` is set
+-- to 1 or 2. 
 -- voice_state[voice] stopped == 0, playing == 1, recording == 2
 voice_state = {}
+
+-- **range** for recording started, awaiting buffer render for each **voice**
+-- `await_render[voice] = [start, stop]`
+await_render = {}
 
 -- voice positions for each *voice* (1-4)
 positions = {}
@@ -443,6 +450,11 @@ function m_tape.update_position(i,pos)
     end
   end
 
+  if await_render[i] and pos >= await_render[i][2] then
+    render_slice(await_render[i], track_buffer[i + 7])
+    await_render[i] = nil
+  end
+
   grid_dirty = true
   screen_dirty = true
 end
@@ -491,6 +503,7 @@ function m_tape.record_section(track, range, loop)
   softcut.play(voice, 1)
 
   voice_state[voice] = 2
+  await_render[voice] = range
 end
 
 -- reverse start and stop for a slice

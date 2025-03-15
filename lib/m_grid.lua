@@ -20,7 +20,7 @@ g_brightness = {
   bank_sample_cued = 9,
   bank_empty = 2,
   bank_loaded = 4,
-  bank_selected = 8,
+  bank_selected = 12,
   nav_page_inactive = 2,
   nav_page_active = 5,
   mode_focus = 0,
@@ -47,7 +47,7 @@ g_brightness = {
   level_highlighted = 3,
   param_selected = 5,
   param_deselected = 1,
-  play_mode_selected = 10,
+  play_mode_selected = 6,
   play_mode_deselected = 0,
   sample_range_in = 5,
   sample_range_out = 1
@@ -733,7 +733,7 @@ function m_grid.draw_bank(bank)
   for bank_ = 1,4 do
     x, y = global_xy(origin, bank_, 1)
 
-    if KEY_HOLD[y][x] == 1 and SAMPLE and not PLAY_MODE then
+    if KEY_HOLD[y][x] == 1 and SAMPLE then
       b_, r_, c_ = id_bankrowcol(SAMPLE)
       if b_ == BANK then
         -- highlight selected sample in bank
@@ -1104,7 +1104,7 @@ function m_grid.draw_partition()
   for partition_ = 1,4 do
     x, y = global_xy(origin, partition_, 1)
 
-    if KEY_HOLD[y][x] == 1 and SLICE_ID and not PLAY_MODE then
+    if KEY_HOLD[y][x] == 1 and SLICE_ID then
       p_, r_, c_ = id_bankrowcol(SLICE_ID - 1)
       if p_ == PARTITION then
         -- highlight selected sample in bank
