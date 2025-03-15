@@ -443,7 +443,7 @@ function m_ui.draw_waveform(range)
   local n_frames = (range[2] - range[1]) * 60  -- 60 frames per second
   local n_bars = (128 - 8) // 2  -- number of waveform bars to show
 
-  -- divide the 128 horizontal pixels into every other one
+  -- draw waveform sample level for every other pixel in range
   for i = 1,n_bars do
     frame = (range[1]) * 60 + (i - 1) * (n_frames / n_bars) + 1
     frame = util.round(frame)
@@ -452,7 +452,7 @@ function m_ui.draw_waveform(range)
 
     if sample then
       bar_level = math.min(math.abs(sample), 1)
-      bar_level = util.linlin(0, 1, 1, (WAVE_H // 2), bar_level)
+      bar_level = util.linlin(0, 1, 1, WAVE_H // 2, bar_level)
       screen.move(wave_x, util.round(WAVE_Y - bar_level + 1))
       screen.line(wave_x, util.round(WAVE_Y + bar_level))
     else
@@ -461,6 +461,16 @@ function m_ui.draw_waveform(range)
     end
   end
   screen.stroke()
+
+  local pos = positions[TRACK - 7]
+
+  -- track position
+  if range[1] <= pos and pos <= range[2] then
+    voice_x = util.linlin(range[1], range[2], 4, n_bars * 2, pos)
+    screen.move(voice_x, WAVE_Y - WAVE_H // 2)
+    screen.line(voice_x, WAVE_Y + WAVE_H // 2)
+    screen.stroke()
+  end
 
 end
 
