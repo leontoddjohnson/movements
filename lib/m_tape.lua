@@ -484,16 +484,15 @@ function m_tape.stop_track(track)
   voice_state[voice] = 0
 end
 
-function m_tape.record_section(track, range, loop)
+function m_tape.record_section(track, range)
   local voice = track - 7
-  local loop = loop or 0
 
   softcut.rec(voice, 0)
   softcut.play(voice, 0)
 
   softcut.buffer(voice, track_buffer[track])
   softcut.level_input_cut(track_buffer[track], voice, 1)
-  softcut.loop(voice, loop)
+  softcut.loop(voice, 0)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
   softcut.position(voice, range[1])

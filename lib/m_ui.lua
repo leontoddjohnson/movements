@@ -309,10 +309,28 @@ function m_ui.tape_1_redraw()
 end
 
 function m_ui.tape_1_key(n,z)
-  if n == 3 and z == 1 then
+  if n == 2 and z == 1 then
+    -- record mono
+    m_tape.record_section(TRACK, SLICE)
 
-    if voice_state[TRACK - 7] ~= 2 then
+  elseif n == 3 and z == 1 then
+    -- record stereo
+    local track_side = TRACK % 2 + 1
+
+    -- invalid track side configuration
+    if track_side ~= track_buffer[TRACK] then
+      track_side = -1
+    end
+
+    -- current track is left, and next track is right
+    if track_side == 1 and track_buffer[TRACK + 1] == 2 then
       m_tape.record_section(TRACK, SLICE)
+      m_tape.record_section(TRACK + 1, SLICE)
+
+    -- current track is right, and previous track is left
+    elseif track_side == 2 and track_buffer[TRACK - 1] == 1 then
+      m_tape.record_section(TRACK, SLICE)
+      m_tape.record_section(TRACK - 1, SLICE)
     end
 
   end
