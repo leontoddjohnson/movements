@@ -1207,9 +1207,7 @@ function m_grid.tape_config_key(x, y, z)
       
       -- play slice
       if PLAY_MODE then
-        m_tape.stop_track(TRACK)
-        m_tape.set_voice_params(TRACK - 7, slice_id)
-        m_tape.play_section(TRACK, SLICE)
+        m_tape.play_slice(TRACK, SLICE_ID)
       
       -- assign slices to pool/cue (even if they're empty)
       elseif ALT then

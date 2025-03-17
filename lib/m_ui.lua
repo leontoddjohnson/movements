@@ -336,13 +336,13 @@ function m_ui.tape_1_enc(n,d)
   local max_ = 80 * partition
 
   if n == 2 then
-    new_start = util.clamp(SLICE[1] + d * 0.5, min_, max_)
+    new_start = util.clamp(SLICE[1] + d * 0.1, min_, max_)
     if SLICE[2] - new_start >= 1 then
       SLICE[1] = new_start
     end
 
   elseif n == 3 then
-    new_end = util.clamp(SLICE[2] + d * 0.5, min_, max_)
+    new_end = util.clamp(SLICE[2] + d * 0.1, min_, max_)
     if new_end - SLICE[1] >= 1 then
       SLICE[2] = new_end
     end

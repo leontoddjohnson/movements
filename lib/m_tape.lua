@@ -468,6 +468,32 @@ function m_tape.play_section(track, range, loop)
   voice_state[voice] = 1
 end
 
+-- play a `slice_id` on the voice of a `track`
+function m_tape.play_slice(track, slice_id)
+  local track_pair = m_tape.stereo_pair(track)
+  local loop = slice_params[slice_id]['play_mode'] == 'Loop'
+
+  -- if stereo pair, then `track` is left, and `track_pair` is right
+  if track_pair and track_pair > track then
+    m_tape.stop_track(track)
+    m_tape.stop_track(track_pair)
+
+    -- pan already set to hard left; set pair to hard right
+    m_tape.set_voice_params(track - 7, slice_id)
+    m_tape.set_voice_params(track - 6, slice_id)  
+    softcut.pan(track - 6, 1)
+
+    m_tape.play_section(track, slices[slice_id], loop)
+    m_tape.play_section(track_pair, slices[slice_id], loop)
+  
+  -- otherwise, set and play as usual
+  else
+    m_tape.stop_track(track)
+    m_tape.set_voice_params(track - 7, slice_id)
+    m_tape.play_section(track, slices[slice_id], loop)
+  end
+end
+
 -- TODO: set this to happen when needed?
 function m_tape.stop_track(track)
   local voice = track - 7

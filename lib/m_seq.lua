@@ -255,9 +255,7 @@ function m_seq.play_track_pool(track)
 
   -- SLICES
   else
-    m_tape.set_voice_params(track - 7, next_id)
-    loop_ = slice_params[next_id]['play_mode'] == "Loop"
-    m_tape.play_section(track, slices[next_id], loop_)
+    m_tape.play_slice(track, next_id)
     track_pool_i[track] = next_pool_i
   end
   
