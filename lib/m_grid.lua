@@ -1140,6 +1140,16 @@ function m_grid.tape_config_redraw()
     end
   end
 
+  -- track buffer indicators (bright for left)
+  for i = 1,4 do
+    local track = i + 7
+    if track_buffer[track] == 1 then
+      g:led(i, 8, g_brightness.nav_page_active)
+    else
+      g:led(i, 8, g_brightness.nav_page_inactive)
+    end
+  end
+
 end
 
 function m_grid.tape_config_key(x, y, z)
@@ -1242,6 +1252,11 @@ function m_grid.tape_config_key(x, y, z)
       SLICE[1] = new_start
     end
 
+  end
+
+  -- track buffer selection
+  if x <= 4 and y == 8 and z == 1 then
+    track_buffer[x + 7] = track_buffer[x + 7] % 2 + 1
   end
 
   grid_dirty = true
