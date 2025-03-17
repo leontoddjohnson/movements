@@ -965,10 +965,28 @@ end
 
 function m_grid.tape_seq_redraw()
   m_grid.seq_redraw({8, 11})
+
+  -- draw recording steps
+  for i = 1,16 do
+    local step = (SEQ_BAR - 1) * 16 + i
+
+    if record_pattern[step] > 0 then
+      g:led(i, 6, g_brightness.step_inactive)
+    end
+  end
 end
 
 function m_grid.tape_seq_key(x, y, z)
   m_grid.seq_key(x, y, z, {8, 11})
+
+  -- update record step
+  local step = (SEQ_BAR - 1) * 16 + x
+  if y == 6 and z == 1 then
+    record_pattern[step] = (record_pattern[step] + 1) % 2
+  end
+
+  grid_dirty = true
+  screen_dirty = true
 end
 
 -----------------------------------------------------------------

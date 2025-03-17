@@ -97,6 +97,10 @@ function m_seq.init()
   -- rec tracks only have one bank
   pattern = m_seq.pattern_init()
 
+  -- pattern of steps to **record** based on time of current track.
+  -- if `record_pattern[step] == 1`, then activate record at that step.
+  record_pattern = empty_pattern()
+
   -- current pattern bank loaded (the last four indicate tape partitions)
   bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
