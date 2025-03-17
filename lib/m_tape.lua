@@ -341,21 +341,6 @@ function m_tape.slice_buffer(slice_id, ch)
 
 end
 
--- arm a track for recording
-function m_tape.arm(track)
-  
-  -- arm ...
-
-end
-
--- disarm a track from recording
-function m_tape.disarm(track)
-  -- ...
-
-  -- stop sending audio to delay if nothing is armed
-
-end
-
 function m_tape.set_slice_id(id)
   SLICE_ID = id
   SLICE = slices[SLICE_ID]
@@ -365,27 +350,19 @@ function m_tape.set_slice_id(id)
 
 end
 
--- function m_tape.sc_stop()
---   for i=1,4 do
---     softcut.rec(i, 0)
---     softcut.play(i, 0)
---     softcut.enable(i, 0)
+-- stop all voices from 1-4
+function m_tape.sc_stop()
+  for i=1,4 do
+    softcut.rec(i, 0)
+    softcut.play(i, 0)
+    softcut.position(i, 0)
+  end
+end
 
---     -- input
---     if i < 3 then
---       softcut.position(i, 0)
---       m_dots.positions[i] = 0
-
---     -- dots
---     else
---       softcut.position(i, params:get('dots_loop_length'))
---       m_dots.positions[i] = params:get('dots_loop_length')
---     end
---   end
-
---   softcut.poll_stop_phase()
---   softcut.buffer_clear()
--- end
+-- clear buffer on channel `ch` within `range`
+function m_tape.clear_buffer(ch, range)
+  softcut.buffer_clear_region_channel(ch, range[1], range[2] - range[1], 0.1, 0)
+end
 
 function m_tape.sc_init()
   softcut.buffer_clear()

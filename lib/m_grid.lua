@@ -554,8 +554,8 @@ function m_grid.time_redraw(track_range)
       -- in selected range
       if clock_range[t][1] <= frac and frac <= clock_range[t][2] then
         g:led(c, y, g_brightness.clock_frac_selected)
-      -- indicate 1/8, 1/4, 1, and 4 
-      elseif not ALT and tab.contains({1, 5, 8, 11}, frac) then
+      -- indicate 1/8, 1/4, 1/2, 1, 2, and 4 
+      elseif not ALT and tab.contains({1, 5, 7, 8, 9, 11}, frac) then
         g:led(c, y, g_brightness.level_highlighted)
       -- indicate 1/6, 1/3, 1, 3, and 6
       elseif ALT and tab.contains({3, 6, 8, 10, 13}, frac) then
