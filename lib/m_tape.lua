@@ -103,9 +103,9 @@ function m_tape.build_tape_track_params()
           amp_in = slice_params[id]['amp']
           amp_out = m_seq.squelch_amp(last_value, value, amp_in)
           slice_params[id]['amp'] = amp_out
-
-          softcut.level(t - 7, amp_out)
         end
+
+        softcut.level(t - 7, value)
 
         track_param_level[t]['amp'] = value
         grid_dirty = true
@@ -118,23 +118,17 @@ function m_tape.build_tape_track_params()
     params:set_action('track_' .. t .. '_pan', 
       function(value)
         local last_value = track_param_level[t]['pan']
-        local ranges = {}  -- ranges for `last_value` and `value`
+        local pan_in, pan_out
 
-        for i, v in ipairs({last_value, value}) do
-          if v < 0 then
-            ranges[i] = {-1, v + 1/3}
-          elseif v > 0 then
-            ranges[i] = {v - 1/3, 1}
-          else
-            ranges[i] = {-1, 1}
-          end
+        -- squelch samples in current track pool
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- slice id
+          pan_in = slice_params[id]['pan']
+          pan_out = m_seq.squelch_pan({last_value, 1}, {value, 1}, pan_in)
+          slice_params[id]['pan'] = pan_out
         end
 
-        -- -- squelch samples in current track pool
-        -- for i = 1, #track_pool[t] do
-        --   id = track_pool[t][i]  -- sample id
-        --   m_sample.squelch_sample_pan(ranges[1], ranges[2], id)
-        -- end
+        softcut.pan(t - 7, value)
 
         track_param_level[t]['pan'] = value
         grid_dirty = true
@@ -583,6 +577,38 @@ end
 function m_tape.seconds_to_frame(sec)
   local sample_rate = 60
   return util.round(sample_rate * sec, 1)
+end
+
+-- return the stereo pair for `track`, if it exists. Otherwise, return `nil`.
+-- note: only possible pairs are 8-9 and 10-11. So, for example, 
+-- `stereo_pair(9) ==> 8` (if they are set as a pair)
+function m_tape.stereo_pair(track)
+  local track_side = track % 2 + 1
+
+  -- invalid track side configuration
+  if track_side ~= track_buffer[track] then
+    track_side = -1
+  end
+
+  -- current track is left, and next track is right
+  if track_side == 1 
+    and track_buffer[track + 1] == 2
+    and params:get('track_' .. track .. "_pan") == -1
+    and params:get('track_' .. track + 1 .. "_pan") == 1 then
+      return track + 1
+
+  -- current track is right, and previous track is left
+  elseif track_side == 2
+    and track_buffer[track - 1] == 1
+    and params:get('track_' .. track - 1 .. "_pan") == -1
+    and params:get('track_' .. track .. "_pan") == 1 then
+      return track - 1
+  
+  -- treat as mono track
+  else
+    return nil
+
+  end
 end
 
 -- WAVEFORM (cr: sonocircuit) -----------------------------------

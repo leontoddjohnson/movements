@@ -304,6 +304,9 @@ function m_ui.tape_1_redraw()
 
   screen.stroke()
 
+  -- TODO: add some indicator here K2 == record mono, K3 == record stereo
+  -- TODO: see sheets for recording on sequence page
+
   m_ui.draw_partition(PARTITION)
   m_ui.draw_waveform(SLICE)
 end
@@ -315,22 +318,11 @@ function m_ui.tape_1_key(n,z)
 
   elseif n == 3 and z == 1 then
     -- record stereo
-    local track_side = TRACK % 2 + 1
-
-    -- invalid track side configuration
-    if track_side ~= track_buffer[TRACK] then
-      track_side = -1
-    end
-
-    -- current track is left, and next track is right
-    if track_side == 1 and track_buffer[TRACK + 1] == 2 then
+    local track_pair = m_tape.stereo_pair(TRACK)
+    
+    if track_pair then
       m_tape.record_section(TRACK, SLICE)
-      m_tape.record_section(TRACK + 1, SLICE)
-
-    -- current track is right, and previous track is left
-    elseif track_side == 2 and track_buffer[TRACK - 1] == 1 then
-      m_tape.record_section(TRACK, SLICE)
-      m_tape.record_section(TRACK - 1, SLICE)
+      m_tape.record_section(track_pair, SLICE)
     end
 
   end

@@ -1021,14 +1021,19 @@ function m_grid.draw_partition()
 
       -- check if slice is loaded into at least one (tape) track
       if tab.contains(flatten(track_pools), slice_id) then
+        -- slice on current track
         if tab.contains(track_pool[TRACK], slice_id) then
           g:led(x, y, g_brightness.bank_sample_current_track)
+        -- slice on a different track, but the same buffer
         elseif same_buffer then
+          g:led(x, y, g_brightness.bank_sample_tracked)
+        -- slice on a different track and a different buffer
+        elseif slice_buffer and span_thresh(slice_buffer)[2] > 0 then
           g:led(x, y, g_brightness.bank_sample_tracked)
         end
 
         -- show track that slice is loaded into
-        if KEY_HOLD[y][x] == 1 and same_buffer then
+        if KEY_HOLD[y][x] == 1 then
           g:led(8, slice_track - 7, g_brightness.bank_sample_tracked)
         end
       
