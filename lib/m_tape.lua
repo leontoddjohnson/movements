@@ -88,7 +88,7 @@ end
 function m_tape.build_tape_track_params()
 
   for t = 8, 11 do
-    params:add_group("Track " .. t, 10)  -- # of track parameters
+    params:add_group("Track " .. t, 12)  -- # of track parameters
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
@@ -248,6 +248,28 @@ function m_tape.build_tape_track_params()
                        controlspec.AMP, Formatters.percentage)
     -- TAG: param 5, add params ABOVE.
   
+    -- PRESERVE
+    params:add_control('track_' .. t .. '_pre', 
+                       'track_' .. t .. '_pre',
+                       controlspec.AMP)
+    params:set_action('track_' .. t .. '_pre', 
+    function(value)
+        softcut.pre_level(t - 7, value)
+        screen_dirty = true
+      end
+    )
+
+    -- CROSSFADE
+    params:add_control('track_' .. t .. '_crossfade', 
+                       'track_' .. t .. '_crossfade',
+                       controlspec.new(0, 5, 'lin', 0, 0.1, "sec", 1/50))
+    params:set_action('track_' .. t .. '_crossfade', 
+    function(value)
+        softcut.fade_time(t - 7, value)
+        screen_dirty = true
+      end
+    )
+
   end
 
 end
