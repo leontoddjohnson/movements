@@ -50,7 +50,8 @@ g_brightness = {
   play_mode_selected = 6,
   play_mode_deselected = 0,
   sample_range_in = 5,
-  sample_range_out = 1
+  sample_range_out = 1,
+  progress = 5
 }
 
 -- tables with 1 or 2 page options for each nav key
@@ -972,6 +973,16 @@ function m_grid.tape_seq_redraw()
 
     if record_pattern[step] > 0 then
       g:led(i, 6, g_brightness.step_inactive)
+    end
+
+    if await_render[TRACK - 7] then
+      local start = await_render[TRACK - 7][1]
+      local stop = await_render[TRACK - 7][2]
+      local position = positions[TRACK - 7]
+
+      if (position - start) > ((stop - start) / 16) * (i - 1) then
+        g:led(i, 7, g_brightness.progress)
+      end
     end
   end
 end
