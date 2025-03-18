@@ -59,7 +59,7 @@ function m_sample.build_sample_track_params()
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
-                       controlspec.AMP, Formatters.round(0.01))
+                       specs.AMP1)
     params:set_action('track_' .. t .. '_amp', 
       function(value)
         last_value = track_param_level[t]['amp']
@@ -166,17 +166,23 @@ function m_sample.build_sample_track_params()
     -- DELAY
     params:add_control('track_' .. t .. '_delay', 
                        'track_' .. t .. '_delay',
-                       controlspec.AMP)
+                       specs.AMP0)
     params:set_action('track_' .. t .. '_delay', 
     function(value)
-        -- set samples in current track pool
-        for i = 1, #track_pool[t] do
-          id = track_pool[t][i]  -- sample id
-          -- TODO: add squelch here
-          params:set('delay_' .. id, value)
-        end
-        grid_dirty = true
+      last_value = track_param_level[t]['delay']
+
+      -- set samples in current track pool
+      for i = 1, #track_pool[t] do
+        id = track_pool[t][i]  -- sample id
+        delay_in = params:get('delay_' .. id)
+        delay_out = m_seq.squelch_amp(last_value, value, delay_in, false)
+        params:set('delay_' .. id, delay_out)
       end
+
+      track_param_level[t]['delay'] = value
+      screen_dirty = true
+      grid_dirty = true
+    end
     )
 
     -- NOISE
@@ -188,7 +194,6 @@ function m_sample.build_sample_track_params()
         -- set samples in current track pool
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]  -- sample id
-          -- TODO: add squelch here ...
           params:set('noise_' .. id, value)
         end
         screen_dirty = true
@@ -239,6 +244,7 @@ function m_sample.build_sample_track_params()
       end
     )
 
+    -- INTERVAL
     params:add_number('track_' .. t .. '_interval',
                       'track_' .. t .. '_interval',
                       1, 11, 7, 
@@ -271,11 +277,9 @@ function m_sample.build_sample_track_params()
     -- PROBABILITY
     params:add_control('track_' .. t .. '_prob',
                        'track_' .. t .. '_prob',
-                       controlspec.AMP, Formatters.percentage)
+                       specs.AMP1, Formatters.percentage)
   
   end
-
-  -- TAG: param 5, add params ABOVE.
 
 end
 
@@ -545,25 +549,30 @@ end
 -- set a collection of sample ids back to default
 function m_sample.sample_params_to_default(sample_ids)
   local id
+  local timber_params = {
+    'amp', 'transpose', 'noise',
+    'pan', 'delay', 'filter_freq', 'filter_type', 'filter_resonance'
+  }
+
   for i = 1,#sample_ids do
     id = sample_ids[i]
 
-    -- AMP
-    amp = util.clamp(ampdb(track_param_default.amp), -48, 0)
-    params:set('amp_' .. id, amp)
+    for p,v in pairs(track_param_default) do
+      if p == 'amp' then
+        -- convert to db
+        amp = util.clamp(ampdb(v), -48, 0)
+        params:set('amp_' .. id, amp)
 
-    -- TAG: param 8
-    local timber_params = {
-      'pan', 'delay', 'filter_freq', 'filter_type', 'filter_resonance'
-    }
+      elseif p == 'transpose' then
+        -- check for reversal
+        params:set('transpose_' .. id, v)
+        if sample_reversed[id] then m_sample.reverse_buffer(id) end
 
-    for i,p in ipairs(timber_params) do
-      params:set(p .. '_' .. id, track_param_default[p])
+      elseif tab.contains(timber_params, p) then
+        -- set timber parameters
+        params:set(p .. '_' .. id, v)
+      end
     end
-
-    -- remove scale and set to forward
-    params:set('transpose_' .. id, 0)
-    if sample_reversed[id] then m_sample.reverse_buffer(id) end
 
   end
 
@@ -581,10 +590,10 @@ function m_sample.sample_params_to_track(sample_ids, track)
     amp = util.clamp(ampdb(params:get('track_' .. track .. '_amp')), -48, 0)
     params:set('amp_' .. id, amp)
 
-    -- TAG: param 2 - make sure this works, or add new above ...
+    -- OTHER TIMBER PARAMS
     local params_ = {
-      "pan", "filter_freq", "filter_type", "filter_resonance",
-      'delay'
+      "pan", "filter_freq", "filter_type", "filter_resonance", 'delay',
+      'noise'
     }
 
     for i,p in ipairs(params_) do
@@ -601,9 +610,7 @@ function m_sample.sample_params_to_track(sample_ids, track)
     params:set('transpose_' .. id, transpose)
 
     if sample_reversed[id] then
-      if scale_type == 1 then
-        m_sample.reverse_buffer(id)
-      end
+      if scale_type == 1 then m_sample.reverse_buffer(id) end
     elseif scale_type == 2 then
       m_sample.reverse_buffer(id)
     end

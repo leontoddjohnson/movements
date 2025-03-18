@@ -326,7 +326,6 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
       slice_params[id]['pan'] = pan
     end
 
-  -- TAG: param 6
   elseif param == 'filter' then
     track_freq = params:get('track_' .. track_ .. '_filter_freq')
     track_type = params:get('track_' .. track_ .. '_filter_type')
@@ -383,14 +382,18 @@ end
 
 -- SQUELCHERS ------------------------------------------------------------- --
 
--- squelch the amp of sample `id`. `value` is optional (e.g., step value)
 -- linear mapping: [0, `input_max`] --> [0, `output_max`]
 -- `db_out` is boolean. If true, return the value in decibels with `ampdb`.
 function m_seq.squelch_amp(input_max, output_max, value, db_out)
 
-  -- squelch using new maximum
-  amp = util.linlin(0, input_max, 0, output_max, value)
-  
+  if value == 0 and input_max ~= 1 then
+    -- use track level if not a zero pattern step (value == 0 & input_max == 1)
+    amp = output_max
+  else
+    -- squelch using new maximum
+    amp = util.linlin(0, input_max, 0, output_max, value)
+  end
+
   if db_out then
     -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
     amp = util.clamp(ampdb(amp), -48, 0)

@@ -92,7 +92,7 @@ function m_tape.build_tape_track_params()
 
     -- AMPLITUDE
     params:add_control('track_' .. t .. '_amp', 'track_' .. t .. '_amp',
-                       controlspec.AMP, Formatters.round(0.01))
+                       specs.AMP1)
     params:set_action('track_' .. t .. '_amp', 
       function(value)
         last_value = track_param_level[t]['amp']
@@ -108,13 +108,15 @@ function m_tape.build_tape_track_params()
         softcut.level(t - 7, value)
 
         track_param_level[t]['amp'] = value
+        screen_dirty = true
         grid_dirty = true
       end
     )
 
     -- PANNING
     params:add_control('track_' .. t .. '_pan', 'track_' .. t .. '_pan', 
-                       controlspec.PAN, Formatters.round(0.01))
+                       controlspec.PAN, 
+                       Formatters.round(0.01))
     params:set_action('track_' .. t .. '_pan', 
       function(value)
         local last_value = track_param_level[t]['pan']
@@ -131,6 +133,7 @@ function m_tape.build_tape_track_params()
         softcut.pan(t - 7, value)
 
         track_param_level[t]['pan'] = value
+        screen_dirty = true
         grid_dirty = true
       end
     )
@@ -141,18 +144,18 @@ function m_tape.build_tape_track_params()
                       options.FILTER_TYPE, 1)
     params:set_action('track_' .. t .. '_filter_type',
       function(value)
-        last_value = track_param_level[t]['filter_type']
-        local freq = track_param_level[t]['filter_freq']
-        sign_in = last_value == 1 and 1 or -1
-        sign_out = value == 1 and 1 or -1
 
-        -- -- squelch samples in current track pool
-        -- for i = 1, #track_pool[t] do
-        --   id = track_pool[t][i]  -- sample id
-        --   m_sample.squelch_sample_filter(freq * sign_in, freq * sign_out, id)
-        -- end
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]
+          slice_params[id]['filter_type'] = value
+        end
+
+        softcut.post_filter_lp(t - 7, value == 1 and 1 or 0)
+        softcut.post_filter_hp(t - 7, value == 1 and 0 or 1)
+        softcut.post_filter_dry(t - 7, 0)
 
         track_param_level[t]['filter_type'] = value
+        screen_dirty = true
         grid_dirty = true
       end
     )
@@ -166,14 +169,19 @@ function m_tape.build_tape_track_params()
         last_value = track_param_level[t]['filter_freq']
         local pass = track_param_level[t]['filter_type']
         local sign = pass == 1 and 1 or -1
+        local freq
 
-        -- -- squelch samples in current track pool
-        -- for i = 1, #track_pool[t] do
-        --   id = track_pool[t][i]  -- sample id
-        --   m_sample.squelch_sample_filter(last_value * sign, value * sign, id)
-        -- end
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]  -- slice id
+          freq_in = slice_params[id]['filter_freq']
+          freq = m_seq.squelch_filter(last_value * sign, value * sign, freq_in)
+          slice_params[id]['filter_freq'] = freq
+        end
+
+        softcut.post_filter_fc(t - 7, value)
 
         track_param_level[t]['filter_freq'] = value
+        screen_dirty = true
         grid_dirty = true
       end
     )
@@ -181,28 +189,41 @@ function m_tape.build_tape_track_params()
     -- FILTER RESONANCE
     params:add_control('track_' .. t .. '_filter_resonance', 
                        'track_' .. t .. '_filter_resonance',
-                       specs.FILTER_RESONANCE)
+                       controlspec.new(0.1, 4.0, 'exp', 0.01, 2.0, ""))
     params:set_action('track_' .. t .. '_filter_resonance', 
       function(value)
-        -- -- set samples in current track pool
-        -- for i = 1, #track_pool[t] do
-        --   id = track_pool[t][i]  -- sample id
-        --   params:set('filter_resonance_' .. id, value)
-        -- end
+        for i = 1, #track_pool[t] do
+          id = track_pool[t][i]
+          slice_params[id]['filter_resonance'] = value
+        end
+
+        softcut.post_filter_rq(t - 7, value)
+
+        screen_dirty = true
       end
     )
 
     -- DELAY
     params:add_control('track_' .. t .. '_delay', 
                        'track_' .. t .. '_delay',
-                       controlspec.AMP)
+                       specs.AMP0)
     params:set_action('track_' .. t .. '_delay', 
     function(value)
-        -- -- set samples in current track pool
-        -- for i = 1, #track_pool[t] do
-        --   id = track_pool[t][i]  -- sample id
-        --   params:set('delay_' .. id, value)
-        -- end
+      last_value = track_param_level[t]['delay']
+
+      for i = 1, #track_pool[t] do
+        id = track_pool[t][i]
+        delay_in = slice_params[id]['delay']
+        delay_out = m_seq.squelch_amp(last_value, value, delay_in, false)
+        slice_params[id]['delay'] = delay_out
+      end
+
+      softcut.level_cut_cut(t - 7, 5, value)  -- left
+      softcut.level_cut_cut(t - 7, 6, value)  -- right
+
+      track_param_level[t]['delay'] = value
+      screen_dirty = true
+      grid_dirty = true
       end
     )
 
@@ -210,7 +231,31 @@ function m_tape.build_tape_track_params()
     params:add_number('track_' .. t .. '_scale', 
                       'track_' .. t .. '_scale',
                       0, 5, 2)
-                      
+    params:set_action('track_' .. t .. '_scale',
+    function(value)
+      local last_value = track_param_level[t]['scale']
+      local ratio, transpose
+
+      for i = 1, #track_pool[t] do
+        id = track_pool[t][i]
+        transpose_in = slice_params[id]['transpose']
+        scale_in = transpose_to_scale(transpose_in, t)
+        scale = m_seq.squelch_scale({last_value, 5}, {value, 5}, scale_in)
+        transpose_out = scale_to_transpose(scale, t)
+        slice_params[id]['transpose'] = transpose_out
+      end
+
+      transpose = scale_to_transpose(value, t)
+      ratio = music.interval_to_ratio(transpose)
+      softcut.rate(t - 7, ratio)
+
+      track_param_level[t]['scale'] = value
+      screen_dirty = true
+      grid_dirty = true
+    end
+    )
+    
+    -- SCALE TYPE (forward or reverse)
     params:add_option('track_' .. t .. '_scale_type', 
                       'track_' .. t .. '_scale_type',
                        {"Forward", "Reverse"}, 1)
@@ -241,21 +286,36 @@ function m_tape.build_tape_track_params()
         elseif v == 11 then return '7th'
         else return v .. ' st' end
       end)
+    params:set_action('track_' .. t .. '_interval',
+      function(value)
+
+        for i = 1, #track_pool[t] do
+          transpose_in = slice_params[id]['transpose']
+          scale_in = transpose_to_scale(transpose_in, t)
+          transpose_out = scale_to_transpose(scale_in, t)
+          slice_params[id]['transpose'] = transpose_out
+        end
+
+        track_param_level[t]['interval'] = value
+        screen_dirty = true
+        grid_dirty = true
+      end
+      )
 
     -- PROBABILITY
     params:add_control('track_' .. t .. '_prob',
                        'track_' .. t .. '_prob',
-                       controlspec.AMP, Formatters.percentage)
-    -- TAG: param 5, add params ABOVE.
+                       specs.AMP1, Formatters.percentage)
   
     -- PRESERVE
     params:add_control('track_' .. t .. '_pre', 
                        'track_' .. t .. '_pre',
-                       controlspec.AMP)
+                       specs.AMP0)
     params:set_action('track_' .. t .. '_pre', 
     function(value)
         softcut.pre_level(t - 7, value)
         screen_dirty = true
+        grid_dirty = true
       end
     )
 
@@ -286,14 +346,14 @@ function m_tape.set_voice_params(voice, slice_id)
   softcut.pan(voice, slice_params[slice_id]['pan'])
   -- FILTER FREQ
   softcut.post_filter_fc(voice, slice_params[slice_id]['filter_freq'])
+  -- FILTER RESONANCE
+  softcut.post_filter_rq(voice, slice_params[slice_id]['filter_resonance'])
   -- FILTER TYPE
-  if slice_params[slice_id]['filter_type'] == 1 then
-    softcut.post_filter_lp(voice, 1)
-    softcut.post_filter_hp(voice, 0)
-  else
-    softcut.post_filter_lp(voice, 0)
-    softcut.post_filter_hp(voice, 1)
-  end
+  local low_pass = slice_params[slice_id]['filter_type'] == 1
+  softcut.post_filter_lp(voice, low_pass and 1 or 0)
+  softcut.post_filter_hp(voice, low_pass and 0 or 1)
+  softcut.post_filter_dry(voice, 0)
+
   -- SCALE (TRANSPOSE)
   local ratio = music.interval_to_ratio(slice_params[slice_id]['transpose'])
   softcut.rate(voice, ratio)
@@ -452,7 +512,7 @@ end
 
 function m_tape.play_section(track, range, loop)
   local voice = track - 7
-  local loop = loop or 0
+  local loop = loop and 1 or 0
 
   softcut.rec(voice, 0)
   softcut.play(voice, 0)
@@ -509,6 +569,9 @@ function m_tape.record_section(track, range)
   softcut.rec(voice, 0)
   softcut.play(voice, 0)
 
+  -- temporary level while recording (updated at play time)
+  softcut.level(voice, params:get('track_' .. track .. '_pre'))
+
   softcut.buffer(voice, track_buffer[track])
   softcut.level_input_cut(track_buffer[track], voice, 1)
   softcut.loop(voice, 0)
@@ -545,34 +608,55 @@ function m_tape.slice_params_to_default(slice_ids)
   for i = 1,#slice_ids do
     id = slice_ids[i]
 
-    -- TAG: param 8
-    local params = {
-      'amp', 'pan', 'filter_freq', 'filter_type', 'filter_resonance'
-    }
+    for p,v in pairs(track_param_default) do
+      if p == 'filter_resonance' then
+        -- softcut has a different resonance measure?
+        slice_params[id][p] = 2.0
 
-    for i,p in ipairs(params) do
-      slice_params[id][p] = track_param_default[p]
+      elseif p == 'transpose' then
+        -- check for reversal
+        if slice_reversed[id] then m_tape.reverse_slice(id) end
+        slice_params[id][p] = v
+
+      elseif p ~= 'noise' then
+        slice_params[id][p] = v
+
+      end
     end
+
   end
 
 end
 
 -- set a collection of slice ids to the track levels
 function m_tape.slice_params_to_track(slice_ids, track)
-  -- do this before a slice is added to a track_pool
   local id
+
   for i = 1,#slice_ids do
     id = slice_ids[i]
 
-    -- TAG: param 2 - make sure this works, or add new above ...
     local params_ = {
-      "amp", "pan", "filter_freq", "filter_type", "filter_resonance"
+      "amp", "pan", "filter_freq", "filter_type", "filter_resonance", 'delay'
     }
 
     for i,p in ipairs(params_) do
-      p_track = params:get('track_' .. track .. '_' .. p)
-      slice_params[id][p] = p_track
+      slice_params[id][p] = params:get('track_' .. track .. '_' .. p)
     end
+
+    -- get scale and direction
+    scale = params:get('track_' .. track .. '_scale')
+    scale_type = params:get('track_' .. track .. '_scale_type')
+
+    -- revert to main octave, set scale, then direction
+    transpose = scale_to_transpose(scale, track)
+    slice_params[id]['transpose'] = transpose
+
+    if slice_reversed[id] then
+      if scale_type == 1 then m_tape.reverse_slice(id) end
+    elseif scale_type == 2 then
+      m_tape.reverse_slice(id)
+    end
+
   end
 end
 

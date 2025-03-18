@@ -23,6 +23,12 @@ PAGE_ID = 1
 -- parameter options for all non-timber parameters
 p_options = {}
 
+-- [0, 1] by 0.01 control spec with default 0
+specs.AMP0 = controlspec.new(0, 1, 'lin', 0, 0, '', 0.01)
+
+-- [0, 1] by 0.01 control spec with default 1
+specs.AMP1 = controlspec.new(0, 1, 'lin', 0, 1, '', 0.01)
+
 -- track defaults across samples and recording
 track_param_default = {
   amp = 1,
@@ -36,7 +42,8 @@ track_param_default = {
   interval = 7,
   prob = 1,
   noise = 0,
-  fade_time = 0.1,
+  pre = 0,
+  crossfade = 0.1,
   transpose = 0
 }
 
@@ -60,7 +67,12 @@ function init()
 
   for track = 1,11 do
     for k,v in pairs(track_param_default) do
-      track_param_level[track][k] = v
+      if k == 'filter_resonance' and track > 7 then
+        -- different rq measure for softcut?
+        track_param_level[track][k] = 2.0
+      else
+        track_param_level[track][k] = v
+      end
     end
   end
 
@@ -80,7 +92,6 @@ function init()
 
   params:add_separator("Tape Track Levels")
   m_tape.build_tape_track_params()
-  set_track_defaults()
 
   m_sample.build_timber_params()
   m_sample.timber_init()  -- separate init for timber after params
@@ -90,21 +101,6 @@ function init()
   screen_dirty = true
   grid_dirty = true
   clock.run(redraw_clock)
-end
-
-function set_track_defaults()
-  -- TAG : param 9
-  -- set default parameters
-  local temp_params = {
-    'amp', 'pan', 'filter_freq', 'filter_type', 'filter_resonance',
-    'scale', 'scale_type', 'interval', 'prob'
-  }
-
-  for i, p in ipairs(temp_params) do
-    for t=1,11 do
-      params:set('track_' .. t .. "_" .. p, track_param_default[p])
-    end
-  end
 end
 
 -----------------------------------------------------------------
