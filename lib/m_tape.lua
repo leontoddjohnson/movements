@@ -189,7 +189,7 @@ function m_tape.build_tape_track_params()
     -- FILTER RESONANCE
     params:add_control('track_' .. t .. '_filter_resonance', 
                        'track_' .. t .. '_filter_resonance',
-                       controlspec.new(0.1, 4.0, 'exp', 0.01, 2.0, ""))
+                       specs.FILTER_RESONANCE_SC)
     params:set_action('track_' .. t .. '_filter_resonance', 
       function(value)
         for i = 1, #track_pool[t] do
@@ -400,7 +400,12 @@ function m_tape.init_slices()
     
     slice_params[s] = {}
     for k,v in pairs(track_param_default) do
-      slice_params[s][k] = v
+      if k == 'filter_resonance' then
+        -- softcut has different tolerable resonance scale
+        slice_params[s][k] = specs.FILTER_RESONANCE_SC.default
+      else
+        slice_params[s][k] = v
+      end
     end
 
     slice_params[s]['play_mode'] = "1-Shot"
@@ -611,7 +616,7 @@ function m_tape.slice_params_to_default(slice_ids)
     for p,v in pairs(track_param_default) do
       if p == 'filter_resonance' then
         -- softcut has a different resonance measure?
-        slice_params[id][p] = 2.0
+        slice_params[id][p] = specs.FILTER_RESONANCE_SC.default
 
       elseif p == 'transpose' then
         -- check for reversal

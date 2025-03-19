@@ -29,6 +29,9 @@ specs.AMP0 = controlspec.new(0, 1, 'lin', 0, 0, '', 0.01)
 -- [0, 1] by 0.01 control spec with default 1
 specs.AMP1 = controlspec.new(0, 1, 'lin', 0, 1, '', 0.01)
 
+-- filter resonance for softcut, a bit different than the timber engine
+specs.FILTER_RESONANCE_SC = controlspec.new(0.1, 4.0, 'exp', 0.01, 2.0, "")
+
 -- track defaults across samples and recording
 track_param_default = {
   amp = 1,
@@ -36,7 +39,7 @@ track_param_default = {
   pan = 0,
   filter_freq = 20000,
   filter_type = 1,
-  filter_resonance = 0,
+  filter_resonance = 0,  -- sample only. for SC, see `FILTER_RESONANCE_SC` above
   scale = 2,
   scale_type = 1,
   interval = 7,
@@ -69,7 +72,7 @@ function init()
     for k,v in pairs(track_param_default) do
       if k == 'filter_resonance' and track > 7 then
         -- different rq measure for softcut?
-        track_param_level[track][k] = 2.0
+        track_param_level[track][k] = specs.FILTER_RESONANCE_SC.default
       else
         track_param_level[track][k] = v
       end
