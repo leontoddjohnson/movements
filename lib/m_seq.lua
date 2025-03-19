@@ -547,4 +547,19 @@ function random_float(min, max)
   return min + math.random() * (max - min);
 end
 
+-- convert a `clock_fraction` value to a fraction string
+function format_clock_fraction(v, units)
+  units = units or "beats"
+
+	for i, frac in ipairs(clock_fraction) do
+		if v == frac then
+			if v >= 1 then
+				return v .. " " .. units
+			else
+				return "1/" .. (9 - i) .. " " .. units
+			end
+		end
+	end
+end
+
 return m_seq

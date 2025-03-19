@@ -752,10 +752,19 @@ function Timber.add_params()
     Timber.lfo_2_dirty = true
   end}
 
-  params:add{type = "control", id = "timber_delay_time", name = "Delay Time", controlspec = specs.DELAY_TIME, 
-  formatter = Formatters.format_secs, 
-  action = function(value)
-    engine.echoDelayTime(value)
+  params:add{type = "number", id = "timber_delay_time", name = "Delay Time",
+  min=1,
+  max=#clock_fraction,
+  default=index_of(clock_fraction, 1),
+  formatter=function(p)
+    v = p:get()
+    v = clock_fraction[v]
+    return format_clock_fraction(v)
+  end,
+  action=function(x)
+    local frac = clock_fraction[x]
+    local secs = clock.get_beat_sec() * frac
+    engine.echoDelayTime(secs)
     Timber.views_changed_callback(nil)
   end}
 

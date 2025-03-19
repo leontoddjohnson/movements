@@ -14,21 +14,43 @@ function m_delay.build_params()
 	params:add_group("Tape Delay", 5)
   params:add{id="tape_delay_level", name="tape delay level",
 		type="control", 
-    controlspec=controlspec.new(0,1,'lin',0,0,""),
+    controlspec=specs.AMP1,
     action=function(x) 
 			softcut.level(5, x) 
 			softcut.level(6, x)
 			end}
 
 	params:add{id="tape_delay_time_l", name="tape delay time (L)",
-		type="control", 
-    controlspec=controlspec.new(0.1, 10, 'lin', 0, 0.5, "s"),
-    action=function(x) softcut.loop_end(5, BUFFER_SPLIT + x) end}
+		type="number", 
+    min=1,
+		max=#clock_fraction,
+		default=index_of(clock_fraction, 1),
+		formatter=function(p)
+			v = p:get()
+			v = clock_fraction[v]
+			return format_clock_fraction(v)
+		end,
+    action=function(x)
+			local frac = clock_fraction[x]
+			local secs = clock.get_beat_sec() * frac
+			softcut.loop_end(5, BUFFER_SPLIT + secs)
+		end}
 
 	params:add{id="tape_delay_time_r", name="tape delay time (R)",
-		type="control", 
-    controlspec=controlspec.new(0.1, 10, 'lin', 0, 0.5, "s"),
-    action=function(x) softcut.loop_end(6, BUFFER_SPLIT + x) end}
+		type="number", 
+		min=1,
+		max=#clock_fraction,
+		default=index_of(clock_fraction, 1),
+		formatter=function(p)
+			v = p:get()
+			v = clock_fraction[v]
+			return format_clock_fraction(v)
+		end,
+		action=function(x)
+			local frac = clock_fraction[x]
+			local secs = clock.get_beat_sec() * frac
+			softcut.loop_end(6, BUFFER_SPLIT + secs)
+		end}
 
   params:add{id="tape_delay_feedback_l", name="tape delay feedback (L)", 
 		type="control", 
@@ -56,7 +78,7 @@ function m_delay.init()
 
 		softcut.rate(v, 1)
 		softcut.loop_start(v, BUFFER_SPLIT)
-		softcut.loop_end(v, BUFFER_SPLIT + 0.5)
+		softcut.loop_end(v, BUFFER_SPLIT + clock.get_beat_sec())
 		softcut.loop(v, 1)
 		softcut.position(v, BUFFER_SPLIT)
 		softcut.fade_time(v, 0.1)
