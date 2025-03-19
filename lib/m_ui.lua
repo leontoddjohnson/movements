@@ -48,9 +48,17 @@ function m_ui.draw_nav(header)
   screen.move_rel(glyph_buffer * 2, 0)
 
   if display_names[DISPLAY_ID] == 'sample' then
-    screen.text(TRACK .. " • " .. 
-                BANK .. " • " .. 
-                header)
+    if TRACK > 7 then
+      -- switching functionalities
+      m_ui.set_functionality('sample')
+    end
+    screen.text(TRACK .. " • " .. BANK .. " • " .. header)
+  elseif display_names[DISPLAY_ID] == 'tape' then
+    if TRACK <= 7 then 
+      -- switching functionalities
+      m_ui.set_functionality('tape')
+    end
+    screen.text(header)
   else
     screen.text(header)
   end
@@ -286,7 +294,11 @@ end
 -- TAPE
 -----------------------------------------------------------------
 
--- 1: MAIN ------------------------------------------------------
+-- 1: TRACK ----------------------------------------------------------------- --
+
+
+
+-- 2: WAVEFORM ------------------------------------------------------
 function m_ui.tape_1_redraw()
   m_ui.draw_nav(
     TRACK .. " • " .. 
@@ -352,35 +364,8 @@ function m_ui.tape_1_enc(n,d)
   screen_dirty = true
 end
 
--- 2: WAVEFORMS ---------------------------------------------------
 
-function m_ui.tape_2_redraw()
-  m_ui.draw_nav(
-    TRACK .. " • " .. 
-    PARTITION .. " • " ..
-    util.round(SLICE[1], 0.1) .. " - " .. util.round(SLICE[2], 0.1)
-  )
-
-  m_ui.draw_partition(PARTITION)
-
-
-end
-
-function m_ui.tape_2_key(n,z)
-  
-
-  screen_dirty = true
-end
-
-function m_ui.tape_2_enc(n,d)
-  if n == 2 then
-    SLICE[1] = util.clamp(SLICE[1] + d * 0.5, 0, 80)
-  elseif n == 3 then
-    SLICE[2] = util.clamp(SLICE[2] + d * 0.5, 0, 80)
-  end
-
-  screen_dirty = true
-end
+-- UTILITY ------------------------------------------------------------------ --
 
 -- draw top lines for left and right buffers given the `partition`
 -- only present line if there is audio.
@@ -496,10 +481,6 @@ function m_ui.draw_waveform(range)
 
 end
 
--- 2: TRACK PARAMS ----------------------------------------------
-
--- TODO: second param option (analogous to noise) is overdub (pre)
-
 
 -----------------------------------------------------------------
 -- DELAY
@@ -595,6 +576,20 @@ function pixel_to_frame(p, partition)
 
   frame = (partition - 1) * n_frames + (p - 1) * (n_frames / 128)
   return util.round(frame, 1) + 1
+end
+
+-- when moving between sample and tape on ui, set sample/slice
+-- and grid accordingly.
+function m_ui.set_functionality(func)
+  if func == 'sample' then
+    G_PAGE = 'sample_config'
+    m_grid.set_track(1)
+    m_sample.set_sample_id(SAMPLE)
+  elseif func == 'tape' then
+    G_PAGE = 'tape_config'
+    m_grid.set_track(8)
+    m_tape.set_slice_id(SLICE_ID)
+  end
 end
 
 return m_ui
