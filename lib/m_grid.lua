@@ -459,19 +459,7 @@ function m_grid.levels_key(x, y, z)
 
   if y == 1 and z == 1 then
     if not PLAY_MODE then
-      empty_step_ = pattern[TRACK][bank[TRACK]][step_] == 0
-      pattern[TRACK][bank[TRACK]][step_] = empty_step_ and 1 or 0
-
-      -- reset "new" step parameters to track value
-      if empty_step_ then
-        if PARAM == 'filter' then
-          default = params:get('track_' .. TRACK .. '_filter_freq')
-        else
-          default = params:get('track_' .. TRACK .. '_' .. PARAM)
-        end
-        
-        param_pattern[PARAM][TRACK][bank[TRACK]][step_] = default
-      end
+      m_seq.toggle_pattern_step(TRACK, step_)
     else
       -- move track to that step
       step[TRACK] = step_

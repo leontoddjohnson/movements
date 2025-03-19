@@ -182,8 +182,21 @@ end
 -----------------------------------------------------------------
 -- if step == 0, send to 1. if step == 1 then send to 0.
 function m_seq.toggle_pattern_step(track, step)
-  empty_step_ = pattern[track][bank[track]][step] == 0
-  pattern[track][bank[track]][step] = empty_step_ and 1 or 0
+  local default
+  local empty_step = pattern[track][bank[track]][step] == 0
+  pattern[track][bank[track]][step] = empty_step and 1 or 0
+
+  if empty_step then
+    -- set step pattern values to track settings
+    for i,p in ipairs(p_options.PARAMS) do
+      if p == 'filter' then
+        default = params:get('track_' .. track .. '_filter_freq')
+      else
+        default = params:get('track_' .. track .. '_' .. p)
+      end
+      param_pattern[p][track][bank[track]][step] = default
+    end
+  end
 end
 
 -- load `track_pool` from `track_pool_cue` into current BANK
