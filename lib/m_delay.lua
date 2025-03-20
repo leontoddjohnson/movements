@@ -14,7 +14,7 @@ function m_delay.build_params()
 	params:add_group("Tape Delay", 5)
   params:add{id="tape_delay_level", name="tape delay level",
 		type="control", 
-    controlspec=specs.AMP1,
+    controlspec=specs.AMP0,
     action=function(x) 
 			softcut.level(5, x) 
 			softcut.level(6, x)
