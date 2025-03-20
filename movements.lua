@@ -139,11 +139,15 @@ function enc(n, d)
   if n == 1 then
     if HOLD_K1 then
       DISPLAY_ID = util.clamp(DISPLAY_ID + d, 1, #display_names)
-      PAGE_ID = 1
+      PAGE_ID = display[DISPLAY_ID].index
+      display[DISPLAY_ID]:set_index(PAGE_ID)
+      m_ui.set_functionality()
     else
       display[DISPLAY_ID]:set_index_delta(d, false)
       PAGE_ID = display[DISPLAY_ID].index
     end
+
+    grid_dirty = true
     screen_dirty = true
   end
 

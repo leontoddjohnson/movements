@@ -21,8 +21,8 @@ local UI = require "ui"
 function m_ui.init()
   display = {}
   display[1] = UI.Pages.new(1, 5)  -- sample
-  display[2] = UI.Pages.new(2, 1)  -- tape
-  display[3] = UI.Pages.new(3, 1)  -- delay
+  display[2] = UI.Pages.new(1, 3)  -- tape
+  display[3] = UI.Pages.new(1, 1)  -- delay
 
   -- display info in order
   display_names = {'sample', 'tape', 'delay'}
@@ -46,23 +46,8 @@ function m_ui.draw_nav(header)
 
   -- current display header
   screen.move_rel(glyph_buffer * 2, 0)
-
-  if display_names[DISPLAY_ID] == 'sample' then
-    if TRACK > 7 then
-      -- switching functionalities
-      m_ui.set_functionality('sample')
-    end
-    screen.text(TRACK .. " • " .. BANK .. " • " .. header)
-  elseif display_names[DISPLAY_ID] == 'tape' then
-    if TRACK <= 7 then 
-      -- switching functionalities
-      m_ui.set_functionality('tape')
-    end
-    screen.text(header)
-  else
-    screen.text(header)
-  end
-
+  screen.text(header)
+  
   screen.stroke()
 end
 
@@ -74,8 +59,11 @@ end
 
 function m_ui.sample_1_redraw()
   screen.aa(0)
-
-  m_ui.draw_nav(SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    BANK .. " • " .. 
+    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+  )
 
   list_buffer = 8
   max_samples = 5
@@ -147,51 +135,13 @@ end
 
 function m_ui.sample_2_redraw()
   screen.aa(0)
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    BANK .. " • " .. 
+    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+  )
 
-  m_ui.draw_nav(SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
-
-  screen.level(12)
-
-  -- p = params:get('track_' .. TRACK .. '_' .. PARAM)
-  -- lookup = params:lookup_param('track_' .. TRACK .. '_' .. PARAM)
-  -- min_ = lookup['controlspec']['minval']
-  -- max_ = lookup['controlspec']['maxval']
-
-  -- if PARAM == 'pan' then
-  --   center = 0
-  -- elseif tab.contains({'rate', 'scale'}, PARAM) then
-  --   center = 1
-  -- else
-  --   center = nil
-  -- end
-
-  -- m_ui.draw_slider({10, 18}, min_, max_, p, 101, center)
-  -- screen.stroke()
-
-  -- current parameter
-  screen.move(30, 36)
-  screen.text_center(PARAM)
-  screen.move(30, 50)
-
-  if PARAM == 'filter' then
-    screen.text_center(params:string('track_' .. TRACK .. '_filter_freq'))
-    screen.move(30, 58)
-    screen.text_center(params:string('track_' .. TRACK .. '_filter_type'))
-  elseif PARAM == 'scale' then
-    screen.text_center(params:string('track_' .. TRACK .. '_scale'))
-    screen.move(30, 58)
-    screen.text_center(params:string('track_' .. TRACK .. '_scale_type'))
-  -- TAG: param 10 ... add here.
-  else
-    screen.text_center(params:string('track_' .. TRACK .. '_' .. PARAM))
-  end
-  
-  -- extra parameter
-  screen.move(90, 36)
-  screen.text_center('noise')
-  screen.move(90, 50)
-  screen.text_center(params:string('track_' .. TRACK .. '_noise'))
-
+  m_ui.draw_focus_params()
 end
 
 function m_ui.sample_2_key(n,z)
@@ -199,6 +149,7 @@ function m_ui.sample_2_key(n,z)
 end
 
 function m_ui.sample_2_enc(n,d)
+  -- focus params
   if n == 2 then
     params:delta('track_' .. TRACK .. '_' .. PARAM, d)
   elseif n == 3 then
@@ -209,9 +160,11 @@ end
 
 -- 3: SAMPLE  ------------------------------------------------------
 function m_ui.sample_3_redraw()
-  local header = SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
-
-  m_ui.draw_nav(header)
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    BANK .. " • " .. 
+    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+  )
 
   waveform_view:update()
   waveform_view:redraw()
@@ -231,7 +184,11 @@ end
 
 -- 4: FILTER AMP --------------------------------------------------
 function m_ui.sample_4_redraw()
-  m_ui.draw_nav(SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    BANK .. " • " .. 
+    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+  )
 
   screen.aa(1)
   filter_amp_view:redraw()
@@ -261,7 +218,11 @@ end
 -- 5: SAMPLE SETUP ---------------------------------------------------------- --
 -- TODO: **this is temporary!!**
 function m_ui.sample_5_redraw()
-  m_ui.draw_nav(SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    BANK .. " • " .. 
+    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+  )
 
   screen.aa(0)
   sample_setup_view:redraw()
@@ -295,11 +256,120 @@ end
 -----------------------------------------------------------------
 
 -- 1: TRACK ----------------------------------------------------------------- --
-
-
-
--- 2: WAVEFORM ------------------------------------------------------
 function m_ui.tape_1_redraw()
+  local frame, start_frame, end_frame
+  local y_partition = 12  -- from `draw_partition`
+  local y_divider = 36
+
+  screen.aa(0)
+
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    PARTITION .. " • " ..
+    util.round(SLICE[1], 0.1) .. " - " .. util.round(SLICE[2], 0.1)
+  )
+
+  m_ui.draw_partition(PARTITION)
+
+  -- draw track pool slices, without overlapping
+  for j = 1,#track_pool[TRACK] do
+    id = track_pool[TRACK][j]
+    start_frame = m_tape.seconds_to_frame(slices[id][1]) + 1
+    end_frame = m_tape.seconds_to_frame(slices[id][2])
+
+    screen.level(15)
+
+    for i = 0,127 do
+      frame = pixel_to_frame(i + 1, PARTITION)
+      
+      if start_frame <= frame and frame <= end_frame then
+        screen.move(i, y_partition + 2 + j)
+        screen.line(i+1, y_partition + 2 + j)
+      end
+    end
+  end
+  screen.stroke()
+
+  -- draw middle divider line (stop before scroll bars)
+  screen.level(5)
+  for i = 0,125 do
+    if i % 2 == 0 then
+      screen.move(i, y_divider)
+      screen.line(i+1, y_divider)
+    end
+  end
+  screen.stroke()
+
+  screen.level(2)
+  -- draw track pool CUE slices, without overlapping
+  for j = 1,#track_pool_cue[TRACK][PARTITION] do
+    id = track_pool_cue[TRACK][PARTITION][j]
+    start_frame = m_tape.seconds_to_frame(slices[id][1]) + 1
+    end_frame = m_tape.seconds_to_frame(slices[id][2])
+
+    for i = 0,127 do
+      frame = pixel_to_frame(i + 1, PARTITION)
+      
+      if start_frame <= frame and frame <= end_frame then
+        screen.move(i, y_divider + 1 + j)
+        screen.line(i+1, y_divider + 1 + j)
+      end
+    end
+  end
+  screen.stroke()
+
+  screen.level(5)
+  screen.move(60, 64)
+  screen.text_center(" -- K2 to load file --")
+
+end
+
+function m_ui.tape_1_key(n,z)
+
+  -- if n == 2 and z == 1 then
+  --   m_sample:load_bank(BANK)
+  -- end
+
+end
+
+function m_ui.tape_1_enc(n,d)
+  -- 
+end
+
+-- 2: FOCUS PARAMS --------------------------------------------------
+function m_ui.tape_2_redraw()
+  screen.aa(0)
+
+  m_ui.draw_nav(
+    TRACK .. " • " .. 
+    PARTITION .. " • " ..
+    util.round(SLICE[1], 0.1) .. " - " .. util.round(SLICE[2], 0.1)
+  )
+
+  m_ui.draw_partition(PARTITION)
+  m_ui.draw_focus_params()
+
+end
+
+function m_ui.tape_2_key(n,z)
+  -- 
+end
+
+function m_ui.tape_2_enc(n,d)
+  -- focus params
+  if n == 2 then
+    params:delta('track_' .. TRACK .. '_' .. PARAM, d)
+  elseif n == 3 then
+    params:delta('track_' .. TRACK .. '_pre', d)
+  end
+  screen_dirty = true
+end
+
+
+-- 3: WAVEFORM ------------------------------------------------------
+function m_ui.tape_3_redraw()
+  screen.aa(0)
+
   m_ui.draw_nav(
     TRACK .. " • " .. 
     PARTITION .. " • " ..
@@ -323,7 +393,7 @@ function m_ui.tape_1_redraw()
   m_ui.draw_waveform(SLICE)
 end
 
-function m_ui.tape_1_key(n,z)
+function m_ui.tape_3_key(n,z)
   if n == 2 and z == 1 then
     -- record mono
     m_tape.record_section(TRACK, SLICE)
@@ -342,7 +412,7 @@ function m_ui.tape_1_key(n,z)
   screen_dirty = true
 end
 
-function m_ui.tape_1_enc(n,d)
+function m_ui.tape_3_enc(n,d)
   local partition = (SLICE_ID - 1) // 32 + 1
   local min_ = 80 * (partition - 1)
   local max_ = 80 * partition
@@ -580,15 +650,71 @@ end
 
 -- when moving between sample and tape on ui, set sample/slice
 -- and grid accordingly.
-function m_ui.set_functionality(func)
-  if func == 'sample' then
+function m_ui.set_functionality()
+  if display_names[DISPLAY_ID] == 'sample' then
     G_PAGE = 'sample_config'
     m_grid.set_track(1)
     m_sample.set_sample_id(SAMPLE)
-  elseif func == 'tape' then
+  elseif display_names[DISPLAY_ID] == 'tape' then
     G_PAGE = 'tape_config'
     m_grid.set_track(8)
     m_tape.set_slice_id(SLICE_ID)
+  end
+end
+
+-- draw the selected parameter and any "extra" parameters based on track number
+-- `y_top` is the top-most text position.
+function m_ui.draw_focus_params(y_top)
+
+  -- p = params:get('track_' .. TRACK .. '_' .. PARAM)
+  -- lookup = params:lookup_param('track_' .. TRACK .. '_' .. PARAM)
+  -- min_ = lookup['controlspec']['minval']
+  -- max_ = lookup['controlspec']['maxval']
+
+  -- if PARAM == 'pan' then
+  --   center = 0
+  -- elseif tab.contains({'rate', 'scale'}, PARAM) then
+  --   center = 1
+  -- else
+  --   center = nil
+  -- end
+
+  -- m_ui.draw_slider({10, 18}, min_, max_, p, 101, center)
+  -- screen.stroke()
+
+  y_top = y_top or 36
+
+  screen.level(12)
+
+  -- current parameter
+  screen.move(30, y_top)
+  screen.text_center(PARAM)
+  screen.move(30, y_top + 14)
+
+  if PARAM == 'filter' then
+    screen.text_center(params:string('track_' .. TRACK .. '_filter_freq'))
+    screen.move(30, y_top + 22)
+    screen.text_center(params:string('track_' .. TRACK .. '_filter_type'))
+  elseif PARAM == 'scale' then
+    screen.text_center(params:string('track_' .. TRACK .. '_scale'))
+    screen.move(30, y_top + 22)
+    screen.text_center(params:string('track_' .. TRACK .. '_scale_type'))
+  else
+    screen.text_center(params:string('track_' .. TRACK .. '_' .. PARAM))
+  end
+  
+  if TRACK <= 7 then
+    -- extra parameter
+    screen.move(90, y_top)
+    screen.text_center('noise')
+    screen.move(90, y_top + 14)
+    screen.text_center(params:string('track_' .. TRACK .. '_noise'))
+  else
+    -- extra parameter
+    screen.move(90, y_top)
+    screen.text_center('overdub')
+    screen.move(90, y_top + 14)
+    screen.text_center(params:string('track_' .. TRACK .. '_pre'))
   end
 end
 

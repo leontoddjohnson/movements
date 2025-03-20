@@ -214,16 +214,18 @@ end
 function m_grid.set_functionality()
   -- if needed, set TRACK to "first" within a functionality
   if string.match(G_PAGE, '^sample') and TRACK > 7 then 
-    m_grid.set_track(1)
     DISPLAY_ID = index_of(display_names, 'sample')
+    m_grid.set_track(1)
     m_sample.set_sample_id(SAMPLE)
-    
   elseif string.match(G_PAGE, '^tape') and TRACK < 8 then
-    PAGE_ID = 1  -- TODO: remove this when #tape_pages = #sample_pages
     DISPLAY_ID = index_of(display_names, 'tape')
     m_grid.set_track(8)
     m_tape.set_slice_id(SLICE_ID)
   end
+
+  -- set to last selected page of display
+  PAGE_ID = display[DISPLAY_ID].index
+  display[DISPLAY_ID]:set_index(PAGE_ID)
 end
 
 
