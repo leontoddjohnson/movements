@@ -21,7 +21,7 @@ local fileselect = require('fileselect')
 
 function m_ui.init()
   display = {}
-  display[1] = UI.Pages.new(1, 5)  -- sample
+  display[1] = UI.Pages.new(1, 4)  -- sample
   display[2] = UI.Pages.new(1, 3)  -- tape
   display[3] = UI.Pages.new(1, 1)  -- delay
 
@@ -192,7 +192,7 @@ function m_ui.sample_4_redraw()
   )
 
   screen.aa(1)
-  filter_amp_view:redraw()
+  amp_env_view:redraw()
 
   screen.stroke()
 end
@@ -207,50 +207,14 @@ function m_ui.sample_4_key(n,z)
     end
   end
 
-  filter_amp_view:key(n, z)
+  amp_env_view:key(n, z)
   screen_dirty = true
 end
 
 function m_ui.sample_4_enc(n,d)
-  filter_amp_view:enc(n, d)
+  amp_env_view:enc(n, d)
   screen_dirty = true
 end
-
--- 5: SAMPLE SETUP ---------------------------------------------------------- --
--- TODO: **this is temporary!!**
-function m_ui.sample_5_redraw()
-  m_ui.draw_nav(
-    TRACK .. " • " .. 
-    BANK .. " • " .. 
-    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
-  )
-
-  screen.aa(0)
-  sample_setup_view:redraw()
-
-  screen.stroke()
-end
-
-function m_ui.sample_5_key(n,z)
-  -- for fine tuning
-  if n == 1 then
-    if z == 1 then
-      Timber.shift_mode = true
-    else
-      Timber.shift_mode = false
-    end
-  end
-
-  sample_setup_view:key(n, z)
-  screen_dirty = true
-end
-
-function m_ui.sample_5_enc(n,d)
-  sample_setup_view:enc(n, d)
-  screen_dirty = true
-end
-
-
 
 -----------------------------------------------------------------
 -- TAPE

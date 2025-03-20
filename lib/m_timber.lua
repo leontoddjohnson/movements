@@ -1909,7 +1909,7 @@ end
 
 function Timber.UI.Env:redraw()
   
-  Timber.draw_title(self.sample_id)
+  -- Timber.draw_title(self.sample_id)
   
   if self.tab_id == 1 then screen.level(15) else screen.level(3) end
   screen.move(4, 27)
