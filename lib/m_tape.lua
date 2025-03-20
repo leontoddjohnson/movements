@@ -48,11 +48,18 @@ buffer_waveform = {{}, {}}
 -- `track_buffer[track]` == 1 for left, and == 2 for right
 track_buffer = {}
 
+-- table of files loaded into each buffer:
+-- `loaded_files[buffer][i] = {<filename>, <start>, <stop>}`
+-- UI will show the *latest* loaded of these.
+loaded_files = {{}, {}}
+
 armed = {}  -- 1 or 0 for whether armed[track] is armed for recording
 
-PARTITION = 1  -- currently selected record partition
+PARTITION = 1  -- current recording partition, each strictly 80 seconds long
 SLICE = {0, 5}  -- currently selected slice [start, stop]
 SLICE_ID = 1  -- currently selected slice id (**1-indexed**)
+
+MIN_SLICE_LENGTH = 1  -- currently set based on best waveform fidelity
 
 -----------------------------------------------------------------
 -- BUILD PARAMETERS
@@ -392,6 +399,62 @@ end
 -- UTILITY
 -----------------------------------------------------------------
 
+function m_tape.load_file(file_path)
+  if file_path ~= 'cancel' and file_path ~= "" then
+    local ch, n_samples, rate = audio.file_info(file_path)
+
+    if ch > 0 and tab.contains({44100, 48000}, rate) then
+      local split_at = string.match(file_path, "^.*()/")
+      local filename = string.sub(file_path, split_at + 1)
+      split_at = string.match(filename, "()%.")
+      filename = string.sub(filename, 1, split_at - 1)
+      
+      local len = n_samples / rate
+      local start = SLICE[1]
+      local dur = math.min(PARTITION * 80 - start, len)
+      local pre = params:get("track_" .. TRACK .. "_pre")
+
+      if m_tape.stereo_pair(TRACK) then
+        -- load stereo into partition
+        softcut.buffer_read_stereo(file_path, 0, start, dur, pre, 1)
+
+        render_slice({start, start + dur})
+
+        table.insert(loaded_files[1], {filename, start, start + dur})
+        table.insert(loaded_files[2], {filename, start, start + dur})
+      else
+        local buffer = track_buffer[TRACK]
+
+        if ch > 1 then
+          -- force stereo track into mono, halve each channel level
+          softcut.buffer_read_mono(file_path, 
+            0, start, dur, 1, buffer, pre, util.dbamp(-3))
+          softcut.buffer_read_mono(file_path, 
+            0, start, dur, 2, buffer, pre, util.dbamp(-3))
+
+          render_slice({start, start + dur})
+        else
+          softcut.buffer_read_mono(file_path, 
+            0, start, dur, 1, buffer, pre, 1)
+
+          render_slice({start, start + dur}, buffer)
+        end
+
+        table.insert(loaded_files[buffer], {filename, start, start + dur})
+      end
+
+    else
+      print("Invalid sample:")
+      print(
+        "ch: " .. ch .. 
+        " | n_samples: " .. n_samples .. 
+        " | rate: " .. rate)
+    end
+  end
+  screen_dirty = true
+  grid_dirty = true
+end
+
 -- default slices
 function m_tape.init_slices()
 
@@ -449,6 +512,27 @@ end
 -- clear buffer on channel `ch` within `range`
 function m_tape.clear_buffer(ch, range)
   softcut.buffer_clear_region_channel(ch, range[1], range[2] - range[1], 0.1, 0)
+
+  -- update loaded files list
+  for i,f in ipairs(loaded_files[ch]) do
+    local file_start = f[2]
+    local file_end = f[3]
+    
+    -- whole file in range
+    if range[1] <= file_start and file_end <= range[2] then
+      table.remove(loaded_files[ch], i)
+    else
+      -- cut off the beginning
+      if file_start < range[2] then
+        loaded_files[ch][i][2] = range[2]
+      end
+
+      -- cut off the end
+      if range[1] < file_end then
+        loaded_files[ch][i][3] = range[2]
+      end
+    end
+  end
 end
 
 function m_tape.sc_init()

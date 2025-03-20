@@ -13,6 +13,7 @@
 local m_ui = {}
 
 local UI = require "ui"
+local fileselect = require('fileselect')
 
 -----------------------------------------------------------------
 -- INIT
@@ -260,6 +261,7 @@ function m_ui.tape_1_redraw()
   local frame, start_frame, end_frame
   local y_partition = 12  -- from `draw_partition`
   local y_divider = 36
+  local max_filename_len = 16
 
   screen.aa(0)
 
@@ -291,13 +293,9 @@ function m_ui.tape_1_redraw()
   screen.stroke()
 
   -- draw middle divider line (stop before scroll bars)
-  screen.level(5)
-  for i = 0,125 do
-    if i % 2 == 0 then
-      screen.move(i, y_divider)
-      screen.line(i+1, y_divider)
-    end
-  end
+  screen.level(1)
+  screen.move(0, y_divider)
+  screen.line(125, y_divider)
   screen.stroke()
 
   screen.level(2)
@@ -318,22 +316,45 @@ function m_ui.tape_1_redraw()
   end
   screen.stroke()
 
-  screen.level(5)
-  screen.move(60, 64)
-  screen.text_center(" -- K2 to load file --")
+  local file_text
 
+  -- check for *latest* loaded file
+  for i,f in ipairs(loaded_files[track_buffer[TRACK]]) do
+    local file_name = f[1]
+    local file_start = f[2]
+    local file_end = f[3]
+
+    if (file_start <= SLICE[1] and SLICE[1] < file_end)
+      or (file_start < SLICE[2] and SLICE[2] <= file_end) then
+      file_text = file_name
+    end
+  end
+
+  screen.level(5)
+  screen.move(60, 60)
+
+  if file_text then
+    if string.len(file_text) > max_filename_len then
+      file_text = string.sub(file_text, 1, max_filename_len) .. " ..."
+    end
+    screen.text_center(" -- " .. file_text .. " --")
+  else
+    screen.text_center(" -- K2 to load file --")
+  end
+  
 end
 
 function m_ui.tape_1_key(n,z)
 
-  -- if n == 2 and z == 1 then
-  --   m_sample:load_bank(BANK)
-  -- end
+  if n == 2 and z == 1 then
+    fileselect.enter(_path.audio, m_tape.load_file, "audio")
+  end
 
 end
 
 function m_ui.tape_1_enc(n,d)
-  -- 
+  -- revert to slice page updates
+  m_ui.tape_3_enc(n,d)
 end
 
 -- 2: FOCUS PARAMS --------------------------------------------------
@@ -419,13 +440,13 @@ function m_ui.tape_3_enc(n,d)
 
   if n == 2 then
     new_start = util.clamp(SLICE[1] + d * 0.1, min_, max_)
-    if SLICE[2] - new_start >= 1 then
+    if SLICE[2] - new_start >= MIN_SLICE_LENGTH then
       SLICE[1] = new_start
     end
 
   elseif n == 3 then
     new_end = util.clamp(SLICE[2] + d * 0.1, min_, max_)
-    if new_end - SLICE[1] >= 1 then
+    if new_end - SLICE[1] >= MIN_SLICE_LENGTH then
       SLICE[2] = new_end
     end
   end
