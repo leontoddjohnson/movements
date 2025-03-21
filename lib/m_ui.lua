@@ -15,6 +15,8 @@ local m_ui = {}
 local UI = require "ui"
 local fileselect = require('fileselect')
 
+ACTIVE_ROW = 1
+
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
@@ -23,7 +25,7 @@ function m_ui.init()
   display = {}
   display[1] = UI.Pages.new(1, 4)  -- sample
   display[2] = UI.Pages.new(1, 3)  -- tape
-  display[3] = UI.Pages.new(1, 1)  -- delay
+  display[3] = UI.Pages.new(1, 2)  -- delay
 
   -- display info in order
   display_names = {'sample', 'tape', 'delay'}
@@ -553,13 +555,13 @@ function m_ui.delay_1_redraw()
   screen.level(8)
   -- simple feedback
   screen.move(30, y_top)
-  screen.text_center('feedback')
+  screen.text_center('<--')
   screen.move(30, y_top + 15)
   screen.text_center(params:string('timber_delay_feedback'))
 
   -- simple time
   screen.move(90, y_top)
-  screen.text_center('delay time')
+  screen.text_center('•••')
   screen.move(90, y_top + 15)
   screen.text_center(params:string('timber_delay_time'))
 
@@ -581,8 +583,88 @@ function m_ui.delay_1_enc(n,d)
   grid_dirty = true
 end
 
--- 1: TAPE ------------------------------------------------------
+-- 2: TAPE ------------------------------------------------------
+function m_ui.delay_2_redraw()
+  screen.aa(0)
 
+  m_ui.draw_nav("Tape Delay")
+
+  local y_top = 25
+  local y_buffer = 12
+  local x_left = 45
+  local x_right = 100
+  
+  screen.level(8)
+
+  -- titles
+  screen.move(x_left, y_top)
+  screen.text_center("left")
+  screen.move(x_right, y_top)
+  screen.text_center("right")
+
+  local level_1 = ACTIVE_ROW == 1 and 10 or 1
+  local level_2 = ACTIVE_ROW == 2 and 10 or 1
+  local level_bottom = HOLD_K1 and 10 or 1
+
+  -- Row 1
+  screen.level(level_1)
+
+  screen.move(12, y_top + y_buffer)
+  screen.text_right("<--")
+  screen.move(x_left, y_top + y_buffer)
+  screen.text_center(params:string('tape_delay_feedback_l'))
+  screen.move(x_right, y_top + y_buffer)
+  screen.text_center(params:string('tape_delay_feedback_r'))
+  
+  -- Row 2
+  screen.level(level_2)
+
+  screen.move(12, y_top + y_buffer * 2)
+  screen.text_right("•••")
+  screen.move(x_left, y_top + y_buffer * 2)
+  screen.text_center(params:string('tape_delay_time_l'))
+  screen.move(x_right, y_top + y_buffer * 2)
+  screen.text_center(params:string('tape_delay_time_r'))
+
+  -- Bottom
+  screen.level(level_bottom)
+
+  screen.move(64, 62)
+  screen.text_center("< " .. params:string('tape_delay_level') .. ">")
+
+  screen.stroke()
+end
+
+function m_ui.delay_2_key(n,z)
+  if n > 1 and z == 1 then
+    ACTIVE_ROW = ACTIVE_ROW % 2 + 1
+  end
+
+  screen_dirty = true
+end
+
+function m_ui.delay_2_enc(n,d)
+  if HOLD_K1 then
+    if n > 1 then
+      params:delta('tape_delay_level', d)
+    end
+  elseif ACTIVE_ROW == 1 then
+    if n == 2 then
+      params:delta('tape_delay_feedback_l', d)
+    elseif n == 3 then
+      params:delta('tape_delay_feedback_r', d)
+    end
+  elseif ACTIVE_ROW == 2 then
+    if n == 2 then
+      params:delta('tape_delay_time_l', d)
+    elseif n == 3 then
+      params:delta('tape_delay_time_r', d)
+    end
+  end
+
+  screen_dirty = true
+  grid_dirty = true
+end
 
 -----------------------------------------------------------------
 -- UTILITY
