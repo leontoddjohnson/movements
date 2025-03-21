@@ -363,6 +363,8 @@ function m_tape.set_voice_params(voice, slice_id)
 
   -- SCALE (TRANSPOSE)
   local ratio = music.interval_to_ratio(slice_params[slice_id]['transpose'])
+  if slice_reversed[slice_id] then ratio = -ratio end
+
   softcut.rate(voice, ratio)
 end
 
@@ -584,7 +586,7 @@ function m_tape.update_position(i,pos)
   for j=1,128 do
     if slices[j][1] <= pos and pos < slices[j][2] and voice_state[i] > 0 then
       voice_slice_loc[i][j] = 1
-    else
+    elseif voice_slice_loc[i] then
       voice_slice_loc[i][j] = 0
     end
   end
@@ -599,19 +601,29 @@ function m_tape.update_position(i,pos)
   screen_dirty = true
 end
 
-function m_tape.play_section(track, range, loop)
+function m_tape.play_section(track, range, loop, reverse)
   local voice = track - 7
   local loop = loop and 1 or 0
+  local pos
 
   softcut.rec(voice, 0)
   softcut.play(voice, 0)
-  
   softcut.buffer(voice, track_buffer[track])
   softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
-  softcut.position(voice, range[1])
   softcut.play(voice, 1)
+
+  -- race condition recommendation by @dndrks
+  -- rate set in `set_voice_params` (always set before this function)
+  if reverse then pos = range[2] else pos = range[1] end
+
+  clock.run(
+    function()
+      clock.sleep(0.001)
+      softcut.position(voice, pos)
+    end
+  )
 
   voice_state[voice] = 1
 end
@@ -620,6 +632,7 @@ end
 function m_tape.play_slice(track, slice_id)
   local track_pair = m_tape.stereo_pair(track)
   local loop = slice_params[slice_id]['play_mode'] == 'Loop'
+  local reversed = slice_reversed[slice_id]
 
   -- if stereo pair, then `track` is left, and `track_pair` is right
   if track_pair and track_pair > track then
@@ -631,14 +644,14 @@ function m_tape.play_slice(track, slice_id)
     m_tape.set_voice_params(track - 6, slice_id)  
     softcut.pan(track - 6, 1)
 
-    m_tape.play_section(track, slices[slice_id], loop)
-    m_tape.play_section(track_pair, slices[slice_id], loop)
+    m_tape.play_section(track, slices[slice_id], loop, reversed)
+    m_tape.play_section(track_pair, slices[slice_id], loop, reversed)
   
   -- otherwise, set and play as usual
   else
     m_tape.stop_track(track)
     m_tape.set_voice_params(track - 7, slice_id)
-    m_tape.play_section(track, slices[slice_id], loop)
+    m_tape.play_section(track, slices[slice_id], loop, reversed)
   end
 end
 
@@ -676,12 +689,6 @@ end
 
 -- reverse start and stop for a slice
 function m_tape.reverse_slice(id)
-
-  local start = slices[id][1]
-  local stop = slices[id][2]
-
-  slices[id][1] = stop
-  slices[id][2] = start
 
   if slice_reversed[id] then
     slice_reversed[id] = nil
