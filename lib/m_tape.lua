@@ -823,12 +823,6 @@ function wave_render(ch, start, rate, samples)
   -- keep 1-index
   local start_frame = util.round(start / rate, 1) + 1
 
-  print("rendering buffer " .. ch)
-  print("rate: ".. rate)
-  print("n_samples: ".. #samples)
-  print("start (s): " .. start)
-  print("start frame: " .. start_frame)
-
   for i,s in ipairs(samples) do
     buffer_waveform[ch][start_frame - 1 + i] = s
   end
