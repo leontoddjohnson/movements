@@ -46,6 +46,7 @@ function m_ui.draw_nav(header)
   end
 
   -- current display header
+  screen.level(2)
   screen.move_rel(glyph_buffer * 2, 0)
   screen.text(header)
   
@@ -541,30 +542,47 @@ end
 -- DELAY
 -----------------------------------------------------------------
 
--- 1: MAIN ------------------------------------------------------
+-- 1: SAMPLE ------------------------------------------------------
 function m_ui.delay_1_redraw()
-  m_ui.draw_nav("delay 1")
-  screen.move(64, 32)
-  screen.text_center('delay!')
+  screen.aa(0)
 
-  if rec_toggle == 1 then
-    screen.move(64, 50)
-    screen.text_center('oh yeaaah!')
-  end
+  m_ui.draw_nav("Sample Delay")
+
+  local y_top = 36
+  
+  screen.level(8)
+  -- simple feedback
+  screen.move(30, y_top)
+  screen.text_center('feedback')
+  screen.move(30, y_top + 15)
+  screen.text_center(params:string('timber_delay_feedback'))
+
+  -- simple time
+  screen.move(90, y_top)
+  screen.text_center('delay time')
+  screen.move(90, y_top + 15)
+  screen.text_center(params:string('timber_delay_time'))
 
   screen.stroke()
 end
 
 function m_ui.delay_1_key(n,z)
-  if n == 3 and z == 1 then
-    rec_toggle = rec_toggle ~ 1
-    screen_dirty = true
-  end
+  -- 
 end
 
 function m_ui.delay_1_enc(n,d)
-  print('recording encoder')
+  if n == 2 then
+    params:delta('timber_delay_feedback', d)
+  elseif n == 3 then
+    params:delta('timber_delay_time', d)
+  end
+
+  screen_dirty = true
+  grid_dirty = true
 end
+
+-- 1: TAPE ------------------------------------------------------
+
 
 -----------------------------------------------------------------
 -- UTILITY

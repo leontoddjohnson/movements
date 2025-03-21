@@ -3,6 +3,8 @@
 
 local m_delay = {}
 
+local Formatters = require "formatters"
+
 -- starting place on buffer for delay. the rest is for tape.
 BUFFER_SPLIT = 322
 
@@ -54,12 +56,14 @@ function m_delay.build_params()
 
   params:add{id="tape_delay_feedback_l", name="tape delay feedback (L)", 
 		type="control", 
-    controlspec=controlspec.new(0,1.0,'lin',0,0.5,""),
+    controlspec=specs.DELAY_FEEDBACK,
+		formatter=Formatters.unipolar_as_percentage,
     action=function(x) softcut.pre_level(5, x) end}
 
 	params:add{id="tape_delay_feedback_r", name="tape delay feedback (R)", 
 		type="control", 
-    controlspec=controlspec.new(0,1.0,'lin',0,0.5,""),
+    controlspec=specs.DELAY_FEEDBACK,
+		formatter=Formatters.unipolar_as_percentage,
     action=function(x) softcut.pre_level(6, x) end}
 
 end
