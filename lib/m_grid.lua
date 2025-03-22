@@ -1114,9 +1114,8 @@ function m_grid.draw_partition()
     col_ = i - (row_ - 1) * 16
     local partition = (SLICE_ID - 1) // 32 + 1
 
-    -- deal with rounding
     local cell_start = (partition - 1) * 80 + (i - 1) * 2.5
-    local cell_end = (partition - 1) * 80 + i * 2.5
+    local cell_end = cell_start + MIN_SLICE_LENGTH
 
     if SLICE[1] <= cell_start and cell_end <= SLICE[2] then
       g:led(col_, 5 + row_, g_brightness.sample_range_in)
