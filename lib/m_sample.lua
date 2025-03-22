@@ -296,7 +296,7 @@ function m_sample.timber_init()
     
     -- Set loop default based on sample length or name
     if Timber.samples_meta[id].manual_load and Timber.samples_meta[id].streaming == 0 and Timber.samples_meta[id].num_frames / Timber.samples_meta[id].sample_rate < 1 and string.find(string.lower(params:get("sample_" .. id)), "loop") == nil then
-      params:set("play_mode_" .. id, 3) -- One shot
+      params:set("play_mode_" .. id, 4)  -- One shot
     end
     
     grid_dirty = true

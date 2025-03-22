@@ -181,14 +181,16 @@ function manage_data()
 
   -- save
   params.action_write = function(filename,name,number)
-    print("finished writing '"..filename.."' as '"..name.."'", number)
-    os.execute("mkdir -p "..norns.state.data.."/"..number.."/")
+    local fpath = norns.state.data.."/"..number
+
+    os.execute("mkdir -p " .. fpath .. "/")
 
     m_data = {
       p_options = p_options,
+      track_param_level = track_param_level,
+      sample_reversed = sample_reversed,
       banks = banks,
       bank_folders = bank_folders,
-      track_param_level = track_param_level,
       param_pattern = param_pattern,
       track_pool = track_pool,
       track_pool_cue = track_pool_cue,
@@ -197,23 +199,34 @@ function manage_data()
       clock_range = clock_range,
       time_type = time_type,
       pattern = pattern,
-      bank = bank
+      record_pattern = record_pattern,
+      bank = bank,
+      buffer_waveform = buffer_waveform,
+      slice_params = slice_params,
+      slice_reversed = slice_reversed,
+      track_buffer = track_buffer,
+      loaded_files = loaded_files,
+      samples_meta = samples_meta
     }
 
-    tab.save(m_data, norns.state.data.."/"..number.."/dots.data")
+    tab.save(m_data, fpath .. "/movements.data")
+    softcut.buffer_write_stereo(fpath .. "/audio.wav", 0, -1)
+
+    print("finished writing '"..filename.."' as '"..name.."'", number)
 
   end
 
   -- load
   params.action_read = function(filename,silent,number)
-    print("finished reading '"..filename.."'", number)
+    local fpath = norns.state.data.."/"..number
 
-    m_data = tab.load(norns.state.data.."/"..number.."/dots.data")
+    m_data = tab.load(fpath .. "/movements.data")
 
     p_options = m_data.p_options
+    track_param_level = m_data.track_param_level
+    sample_reversed = m_data.sample_reversed
     banks = m_data.banks
     bank_folders = m_data.bank_folders
-    track_param_level = m_data.track_param_level
     param_pattern = m_data.param_pattern
     track_pool = m_data.track_pool
     track_pool_cue = m_data.track_pool_cue
@@ -222,14 +235,27 @@ function manage_data()
     clock_range = m_data.clock_range
     time_type = m_data.time_type
     pattern = m_data.pattern
+    record_pattern = m_data.record_pattern
     bank = m_data.bank
+    buffer_waveform = m_data.buffer_waveform
+    slice_params = m_data.slice_params
+    slice_reversed = m_data.slice_reversed
+    track_buffer = m_data.track_buffer
+    loaded_files = m_data.loaded_files
+    samples_meta = m_data.samples_meta
+
+    softcut.buffer_read_stereo(fpath .. "/audio.wav", 0, 0, -1, 0, 1)
+
+    print("finished reading '"..filename.."'", number)
     
   end
 
   -- delete
   params.action_delete = function(filename,name,number)
+    local fpath = norns.state.data.."/"..number
+
+    norns.system_cmd("rm -r ".. fpath .."/")
     print("finished deleting '"..filename, number)
-    norns.system_cmd("rm -r "..norns.state.data.."/"..number.."/")
   end
 
 end

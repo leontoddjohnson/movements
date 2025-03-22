@@ -53,8 +53,6 @@ track_buffer = {}
 -- UI will show the *latest* loaded of these.
 loaded_files = {{}, {}}
 
-armed = {}  -- 1 or 0 for whether armed[track] is armed for recording
-
 PARTITION = 1  -- current recording partition, each strictly 80 seconds long
 SLICE = {0, 5}  -- currently selected slice [start, stop]
 SLICE_ID = 1  -- currently selected slice id (**1-indexed**)
@@ -379,14 +377,8 @@ function m_tape.init()
   -- set callbacks
   softcut.event_render(wave_render)
 
-  -- waveform setup
-  waveform_samples = {}
-  wave_gain = {}
-
   -- only tape tracks 8-11
   for i = 8, 11 do
-    waveform_samples[i] = {}
-    wave_gain[i] = {}
     track_buffer[i] = i % 2 + 1  -- track 8 is "L"
   end
 
@@ -618,6 +610,7 @@ function m_tape.play_section(track, range, loop, reverse)
   softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
+  softcut.position(voice, range[1])
   softcut.play(voice, 1)
 
   -- race condition recommendation by @dndrks
