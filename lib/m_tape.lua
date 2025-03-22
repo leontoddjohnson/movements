@@ -513,26 +513,32 @@ end
 
 -- clear buffer on channel `ch` within `range`
 function m_tape.clear_buffer(ch, range)
-  softcut.buffer_clear_region_channel(ch, range[1], range[2] - range[1], 0.1, 0)
+  softcut.buffer_clear_region_channel(ch, range[1], range[2] - range[1], 0, 0)
 
   -- update loaded files list
   for i,f in ipairs(loaded_files[ch]) do
     local file_start = f[2]
     local file_end = f[3]
+    local new_f
     
     -- whole file in range
     if range[1] <= file_start and file_end <= range[2] then
       table.remove(loaded_files[ch], i)
-    else
-      -- cut off the beginning
-      if file_start < range[2] then
-        loaded_files[ch][i][2] = range[2]
-      end
 
-      -- cut off the end
-      if range[1] < file_end then
-        loaded_files[ch][i][3] = range[2]
-      end
+    -- cut off the beginning
+    elseif range[1] < file_start and file_start < range[2] then
+      loaded_files[ch][i][2] = range[2]
+
+    -- cut off the end
+    elseif range[1] < file_end and file_end < range[2] then
+      loaded_files[ch][i][3] = range[1]
+
+    -- cut out the middle
+    elseif file_start < range[1] and range[2] < file_end then
+      new_f = {loaded_files[ch][i][1], range[2], loaded_files[ch][i][3]}
+
+      loaded_files[ch][i][3] = range[1]
+      table.insert(loaded_files[ch], i + 1, new_f)
     end
   end
 end
@@ -667,12 +673,18 @@ end
 
 function m_tape.record_section(track, range)
   local voice = track - 7
+  local pre = params:get('track_' .. track .. '_pre')
 
   softcut.rec(voice, 0)
   softcut.play(voice, 0)
 
+  -- if overwriting, clear buffer and update `loaded_files`
+  if pre == 0 then
+    m_tape.clear_buffer(track_buffer[track], range)
+  end
+
   -- temporary level while recording (updated at play time)
-  softcut.level(voice, params:get('track_' .. track .. '_pre'))
+  softcut.level(voice, pre)
 
   softcut.buffer(voice, track_buffer[track])
   softcut.level_input_cut(track_buffer[track], voice, 1)

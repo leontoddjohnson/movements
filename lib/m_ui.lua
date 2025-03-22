@@ -317,6 +317,11 @@ function m_ui.tape_1_key(n,z)
     fileselect.enter(_path.audio, m_tape.load_file, "audio")
   end
 
+  if HOLD_K1 and n == 3 and z == 1 then
+    m_tape.clear_buffer(track_buffer[TRACK], SLICE)
+    render_slice(SLICE, track_buffer[TRACK])
+  end
+
 end
 
 function m_ui.tape_1_enc(n,d)
