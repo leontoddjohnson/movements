@@ -639,7 +639,7 @@ function m_tape.play_slice(track, slice_id)
     m_tape.stop_track(track)
     m_tape.stop_track(track_pair)
 
-    -- pan already set to hard left; set pair to hard right
+    -- `slice_id` corresponds to `track` (hard left); set pair to hard right
     m_tape.set_voice_params(track - 7, slice_id)
     m_tape.set_voice_params(track - 6, slice_id)  
     softcut.pan(track - 6, 1)

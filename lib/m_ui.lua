@@ -24,7 +24,7 @@ ACTIVE_ROW = 1
 function m_ui.init()
   display = {}
   display[1] = UI.Pages.new(1, 4)  -- sample
-  display[2] = UI.Pages.new(1, 3)  -- tape
+  display[2] = UI.Pages.new(3, 3)  -- tape  (default to slice page)
   display[3] = UI.Pages.new(1, 2)  -- delay
 
   -- display info in order
