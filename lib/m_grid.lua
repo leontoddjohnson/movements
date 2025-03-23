@@ -10,6 +10,7 @@ local m_grid = {}
 
 g = grid.connect()  -- requires 8x16 grid
 
+-- TODO: create 5 standard levels to assign to these
 g_brightness = {
   bank_sample_empty = 0,
   bank_sample_loaded = 2,
