@@ -424,8 +424,6 @@ function m_grid.levels_redraw()
         for i = 1,6 do
           if interval == param_levels[PARAM][i] then
             g:led(s, 8 - i, g_brightness.level_met)
-          elseif param_levels[PARAM][i] == track_param_default.interval then
-            g:led(s, 8 - i, g_brightness.level_highlighted)
           end
         end
       end
