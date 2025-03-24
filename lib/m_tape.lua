@@ -295,6 +295,7 @@ function m_tape.build_tape_track_params()
       function(value)
 
         for i = 1, #track_pool[t] do
+          id = track_pool[t][i]
           transpose_in = slice_params[id]['transpose']
           scale_in = transpose_to_scale(transpose_in, t)
           transpose_out = scale_to_transpose(scale_in, t)
