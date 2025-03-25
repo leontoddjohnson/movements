@@ -262,6 +262,7 @@ function m_sample.build_sample_track_params()
       function(value)
 
         for i = 1, #track_pool[t] do
+          id = track_pool[t][i]
           transpose_in = params:get('transpose_' .. id)
           scale_in = transpose_to_scale(transpose_in, t)
           transpose_out = scale_to_transpose(scale_in, t)
@@ -664,9 +665,9 @@ end
 
 -- given a scale value from `param_levels.scale`, convert to number of
 -- semitones for a given track
-function scale_to_transpose(scale, track)
+function scale_to_transpose(scale, track, interval)
 
-  interval = params:get('track_' .. track .. '_interval')
+  interval = interval or params:get('track_' .. track .. '_interval')
 
   if scale == 0 then return -12
   elseif scale == 1 then return interval - 12
@@ -679,9 +680,9 @@ end
 
 -- given a transposition, convert to the `param_levels.scale` value, 
 -- given a track (inverse of `scale_to_transpose`)
-function transpose_to_scale(transpose_in, track)
+function transpose_to_scale(transpose_in, track, interval)
 
-  interval = track_param_level[track]['interval']
+  interval = interval or params:get('track_' .. track .. '_interval')
 
   if transpose_in == -12 then scale = 0
   elseif transpose_in == interval - 12 then scale = 1

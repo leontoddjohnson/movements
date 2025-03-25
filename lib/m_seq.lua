@@ -10,8 +10,20 @@ function m_seq.build_params()
   p_options.PLAY_ORDER = {'forward', 'reverse', 'random'}
 
   -- Forward/reverse (in order of selection), random
-  params:add_option('play_order', 'play order',
-                    p_options.PLAY_ORDER, 1)
+  params:add_option('play_order', 'play order', p_options.PLAY_ORDER, 1)
+
+  -- scale type for interval
+  params:add_option('scale_type', 'scale type', {'major', 'minor'}, 1)
+  params:set_action('scale_type', 
+  function (v)
+    if v == 1 then
+      param_levels.interval = {2, 4, 5, 7, 9, 11, 0}
+    elseif v == 2 then
+      -- natural minor
+      param_levels.interval = {2, 3, 5, 7, 8, 10, 0}
+    end
+  end
+  )
 
   build_param_patterns()
 
@@ -40,8 +52,8 @@ function build_param_patterns()
   -- see param_levels for more
   param_pattern.scale = m_seq.pattern_init(track_param_default.scale)
 
-  -- NO INTERVAL PATTERN (based on track)
-  param_pattern.interval = m_seq.pattern_init(track_param_default.interval)
+  -- [track][bank][step]: see `param_levels.interval` for options, init to `nil`
+  param_pattern.interval = m_seq.pattern_init(nil)
 
   -- [track][bank][step]: in [0, 1] default to 1
   param_pattern.prob = m_seq.pattern_init(track_param_default.prob)
@@ -95,11 +107,11 @@ function m_seq.init()
 
   -- pat[track][bank][step] = 1 or 0 (mult by param value). 
   -- rec tracks only have one bank
-  pattern = m_seq.pattern_init()
+  pattern = m_seq.pattern_init(0)
 
   -- pattern of steps to **record** based on time of current track.
   -- if `record_pattern[step] == 1`, then activate record at that step.
-  record_pattern = empty_pattern()
+  record_pattern = empty_pattern(0)
 
   -- current pattern bank loaded (the last four indicate tape partitions)
   bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
@@ -198,6 +210,8 @@ function m_seq.toggle_pattern_step(track, step)
     for i,p in ipairs(p_options.PARAMS) do
       if p == 'filter' then
         default = params:get('track_' .. track .. '_filter_freq')
+      elseif p == 'interval' then
+        default = nil  -- initialize to using track value only
       else
         default = params:get('track_' .. track .. '_' .. p)
       end
@@ -385,10 +399,13 @@ function m_seq.set_step_param(id, param, track_, bank_, step_)
     track_scale = params:get('track_' .. track_ .. '_scale')
     scale_step = param_pattern.scale[track_][bank_][step_]
 
+    -- this is nil if using track value
+    interval = param_pattern.interval[track_][bank_][step_]
+
     -- input is full range, centered at 2 (no scale)
     -- output is within two scale points of track
     scale = m_seq.squelch_scale({2, 3}, {track_scale, 2}, scale_step)
-    transpose_out = scale_to_transpose(scale, track_)
+    transpose_out = scale_to_transpose(scale, track_, interval)
 
     if track_ < 8 then
       params:set('transpose_' .. id, transpose_out)
@@ -529,11 +546,11 @@ function span(t)
   return {span_l, span_r}
 end
 
--- one "empty" pattern: 8 bars * 16 steps containing value `v` (or 0)
+-- one "empty" pattern: 8 bars * 16 steps containing value `v`
 function empty_pattern(v)
   local pattern_ = {}
   for i = 1,16*8 do
-    pattern_[i] = v or 0
+    pattern_[i] = v
   end
   return pattern_
 end

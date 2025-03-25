@@ -133,9 +133,9 @@ function m_grid.build_param_levels()
   -- 5 --> two octaves up
   param_levels.scale = {0, 1, 2, 3, 4, 5, -1}
 
-  -- 2nd, 3rd, 4th, etc. of the scale (so, 4th value is a "perfect fifth")
+  -- 2nd, 3rd, 4th, etc. of major scale (so, 4th value is a "perfect fifth")
   -- these are in semitones
-  param_levels.interval = {2, 3, 5, 7, 9, 11, track_param_default.interval}
+  param_levels.interval = {2, 4, 5, 7, 9, 11, 0}
 
 end
 
@@ -419,11 +419,10 @@ function m_grid.levels_redraw()
       end
 
       if PARAM == 'interval' then
-        -- track based, same for all steps (no param pattern for interval)
-        local interval = params:get('track_' .. TRACK .. '_interval')
-
+        -- pattern value only shown if intentionally set
+        -- if there is no change, `value_ = nil`, and uses track level
         for i = 1,6 do
-          if interval == param_levels[PARAM][i] then
+          if value_ and value_ == param_levels[PARAM][i] then
             g:led(s, 8 - i, g_brightness.level_met)
           end
         end
@@ -492,6 +491,7 @@ function m_grid.levels_key(x, y, z)
   if 1 < y and y < 8 and z == 1 and pattern[TRACK][bank[TRACK]][step_] > 0 then
     -- current parameter value at that step
     param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
+    -- returns default value (7th in list) if re-selecting current value
     value = m_grid.select_param_value(PARAM, 8 - y, param_value)
 
     if tab.contains({'filter', 'scale'}, PARAM) then
@@ -500,9 +500,10 @@ function m_grid.levels_key(x, y, z)
         param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
       end
     
-    -- interval setting is global for the track
-    elseif PARAM == 'interval' then
-      params:set('track_' .. TRACK .. '_interval', value)
+    elseif PARAM == 'interval' and value == 0 then
+      -- if re-selecting current value, then set to `nil`.
+      -- this will force that step back to taking track level changes
+      param_pattern[PARAM][TRACK][bank[TRACK]][step_] = nil
       
     else
       param_pattern[PARAM][TRACK][bank[TRACK]][step_] = value
@@ -1313,6 +1314,14 @@ function m_grid.select_track_param_level(x, y, z, track_range)
         params:set('track_' .. track .. _value, value)
       end
       
+    elseif PARAM == 'interval' then
+      param_value = params:get('track_' .. track .. '_' .. PARAM)
+      value = m_grid.select_param_value(PARAM, x, param_value)
+      
+      -- in this case, selecting the same value reverts to default
+      if value == 0 then value = track_param_default.interval end
+      params:set('track_' .. track .. '_' .. PARAM, value)
+
     else
       param_value = params:get('track_' .. track .. '_' .. PARAM)
       value = m_grid.select_param_value(PARAM, x, param_value)
@@ -1468,8 +1477,9 @@ end
 function m_grid.select_param_value(param, i, current_value)
 
   -- if selecting already set value (rounding fractions), make "zero" value
-  if (param_levels[param][i] - 0.001 <= current_value) and
-     (current_value <= param_levels[param][i] + 0.001) then
+  if current_value
+    and (param_levels[param][i] - 0.001 <= current_value)
+    and (current_value <= param_levels[param][i] + 0.001) then
     
     return param_levels[param][7]
   
