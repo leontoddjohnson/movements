@@ -254,6 +254,10 @@ function m_tape.build_tape_track_params()
       ratio = music.interval_to_ratio(transpose)
       softcut.rate(t - 7, ratio)
 
+      -- check for stereo pair
+      local pair = m_tape.stereo_pair(t)
+      if pair and pair > t then softcut.rate(pair - 7, ratio) end
+
       track_param_level[t]['scale'] = value
       screen_dirty = true
       grid_dirty = true
@@ -283,12 +287,12 @@ function m_tape.build_tape_track_params()
                        1, 11, 7, 
       function(param)
         v = param:get()
-        if v == 2 then return '2nd'
-        elseif v == 3 then return '3rd'
-        elseif v == 5 then return '4th'
-        elseif v == 7 then return '5th'
-        elseif v == 9 then return '6th'
-        elseif v == 11 then return '7th'
+        if v == param_levels.interval[1] then return '2nd'
+        elseif v == param_levels.interval[2] then return '3rd'
+        elseif v == param_levels.interval[3] then return '4th'
+        elseif v == param_levels.interval[4] then return '5th'
+        elseif v == param_levels.interval[5] then return '6th'
+        elseif v == param_levels.interval[6] then return '7th'
         else return v .. ' st' end
       end)
     params:set_action('track_' .. t .. '_interval',
@@ -297,6 +301,7 @@ function m_tape.build_tape_track_params()
         for i = 1, #track_pool[t] do
           id = track_pool[t][i]
           transpose_in = slice_params[id]['transpose']
+          -- new interval is used in the next two functions
           scale_in = transpose_to_scale(transpose_in, t)
           transpose_out = scale_to_transpose(scale_in, t)
           slice_params[id]['transpose'] = transpose_out
