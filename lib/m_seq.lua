@@ -294,7 +294,7 @@ function m_seq.play_track_pool(track)
   -- SLICES
   else
     -- record on current slice if record_pattern indicates matching step
-    if record_pattern[step[track]] > 0 and next_id then
+    if (record_pattern[step[track]] > 0) and (track == TRACK) and next_id then
       m_tape.record_section(track, slices[next_id])
 
       -- also record stereo if current track is stereo-pair-LEFT
