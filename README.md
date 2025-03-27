@@ -1,7 +1,5 @@
 # movements
 
-sequencer, tape recorder, and sampler.
+time allows for movement
 
-# docs
-
-tbd.
+[docs](https://leontoddjohnson.online/docs/coding/movements/)
