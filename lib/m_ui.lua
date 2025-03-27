@@ -15,6 +15,13 @@ local m_ui = {}
 local UI = require "ui"
 local fileselect = require('fileselect')
 
+-- starting position for `track_pool` and `track_pool_cue` on
+-- sample track pool display
+sample_pool_start = {0, 0}
+
+-- maximum number of samples to show on sample track pool display
+max_samples = 4
+
 ACTIVE_ROW = 1
 
 -----------------------------------------------------------------
@@ -69,46 +76,84 @@ function m_ui.sample_1_redraw()
     SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
   )
 
-  list_buffer = 8
-  max_samples = 5
-  text_width = 10
+  local list_buffer = 8
+  local text_width = 13
+  local text_top = 13
+  local text, id, top_i, n_show
 
-  local text = nil
-
-  screen.move(60, 10)
+  screen.level(6)
+  screen.move(60, text_top - 2)
   screen.line(60, 50)
   screen.stroke()
 
-  -- track_cue
+  -- TRACK CUE
+  -- remove scroll if needed
+  if #track_pool_cue[TRACK][BANK] <= max_samples 
+    and sample_pool_start[1] > 0 then
+    sample_pool_start[1] = 0
+  end
+
+  -- get scroll point and number of IDs to show
   screen.level(5)
-  for i=1, math.min(#track_pool_cue[TRACK][BANK], max_samples) do
-    screen.move(62, 10 + list_buffer * i)
-    text = params:string('sample_' .. track_pool_cue[TRACK][BANK][i])
+  top_i = sample_pool_start[1]
+  n_show = math.min(#track_pool_cue[TRACK][BANK] - top_i, max_samples)
+
+  for i = 1, n_show do
+    screen.move(62, text_top + list_buffer * i)
+
+    id = top_i + i
+    text = params:string('sample_' .. track_pool_cue[TRACK][BANK][id])
+
     if string.len(text) > text_width then
-      text = string.sub(text, 1, text_width) .. " ..."
+      text = string.sub(text, 1, text_width)
     end
+
     screen.text(text)
   end
 
-  if #track_pool_cue[TRACK][BANK] > max_samples then
-    screen.move(84, 54)
-    screen.text_center(" . . . ")
+  if top_i > 0 then
+    screen.move(84, text_top)
+    screen.text_center("...")
   end
   
-  -- track_pool
+  if #track_pool_cue[TRACK][BANK] - max_samples > top_i then
+    screen.move(84, 50)
+    screen.text_center("...")
+  end
+  
+  -- TRACK POOL
+  -- remove scroll if needed
+  if #track_pool[TRACK] <= max_samples 
+    and sample_pool_start[2] > 0 then
+    sample_pool_start[2] = 0
+  end
+
+  -- get scroll point and number of IDs to show
   screen.level(15)
-  for i=1, math.min(#track_pool[TRACK], max_samples) do
-    screen.move(1, 10 + list_buffer * i)
-    text = params:string('sample_' .. track_pool[TRACK][i])
+  top_i = sample_pool_start[2]
+  n_show = math.min(#track_pool[TRACK] - top_i, max_samples)
+
+  for i = 1, n_show do
+    screen.move(1, text_top + list_buffer * i)
+
+    id = top_i + i
+    text = params:string('sample_' .. track_pool[TRACK][id])
+
     if string.len(text) > text_width then
-      text = string.sub(text, 1, text_width) .. " ..."
+      text = string.sub(text, 1, text_width)
     end
+
     screen.text(text)
   end
 
-  if #track_pool[TRACK] > max_samples then
-    screen.move(30, 54)
-    screen.text_center(" . . . ")
+  if top_i > 0 then
+    screen.move(30, text_top)
+    screen.text_center("...")
+  end
+  
+  if #track_pool[TRACK] - max_samples > top_i then
+    screen.move(30, 50)
+    screen.text_center("...")
   end
 
   -- indicate bank folder for this track
@@ -118,7 +163,7 @@ function m_ui.sample_1_redraw()
   bank_text = folder ~= nil and folder or bank_text
 
   screen.level(5)
-  screen.move(60, 61)
+  screen.move(60, 62)
   screen.text_center(" -- " .. bank_text .. " --")
 
 end
@@ -132,7 +177,20 @@ function m_ui.sample_1_key(n,z)
 end
 
 function m_ui.sample_1_enc(n,d)
-  -- 
+  local start, stop
+
+  if n == 2 then
+    start = sample_pool_start[2]
+    stop = math.max(#track_pool[TRACK] - max_samples, 0)
+    sample_pool_start[2] = util.clamp(start + d, 0, stop)
+    
+  elseif n == 3 then
+    start = sample_pool_start[1]
+    stop = math.max(#track_pool_cue[TRACK][BANK] - max_samples, 0)
+    sample_pool_start[1] = util.clamp(start + d, 0, stop)
+  end
+
+  screen_dirty = true
 end
 
 -- 2: TRACK PARAMS --------------------------------------------
