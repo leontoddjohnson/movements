@@ -31,7 +31,7 @@ ACTIVE_ROW = 1
 function m_ui.init()
   display = {}
   display[1] = UI.Pages.new(1, 4)  -- sample
-  display[2] = UI.Pages.new(3, 3)  -- tape  (default to slice page)
+  display[2] = UI.Pages.new(1, 3)  -- tape
   display[3] = UI.Pages.new(1, 2)  -- delay
 
   -- display info in order
@@ -310,8 +310,8 @@ function m_ui.tape_1_redraw()
       frame = pixel_to_frame(i + 1, PARTITION)
       
       if start_frame <= frame and frame <= end_frame then
-        screen.move(i, y_partition + 2 + j)
-        screen.line(i+1, y_partition + 2 + j)
+        screen.move(i, y_partition + 4 + j)
+        screen.line(i+1, y_partition + 4 + j)
       end
     end
   end
@@ -356,7 +356,7 @@ function m_ui.tape_1_redraw()
   end
 
   screen.level(5)
-  screen.move(60, 60)
+  screen.move(60, 62)
 
   if file_text then
     if string.len(file_text) > max_filename_len then
