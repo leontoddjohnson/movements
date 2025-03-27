@@ -92,6 +92,8 @@ end
 
 function m_tape.build_tape_track_params()
 
+  specs.FADE = controlspec.new(0, 5, 'lin', 0, 0.1, "sec", 1/50)
+
   for t = 8, 11 do
     params:add_group("Track " .. t, 12)  -- # of track parameters
 
@@ -333,7 +335,7 @@ function m_tape.build_tape_track_params()
     -- CROSSFADE
     params:add_control('track_' .. t .. '_crossfade', 
                        'track_' .. t .. '_crossfade',
-                       controlspec.new(0, 5, 'lin', 0, 0.1, "sec", 1/50))
+                       specs.FADE)
     params:set_action('track_' .. t .. '_crossfade', 
     function(value)
         softcut.fade_time(t - 7, value)
@@ -500,12 +502,11 @@ function m_tape.set_slice_id(id)
 
 end
 
--- stop all voices from 1-4
+-- mute all voices from 1-4
 function m_tape.sc_stop()
   for i=1,4 do
     softcut.rec(i, 0)
-    softcut.play(i, 0)
-    softcut.position(i, 0)
+    softcut.level(i, 0)
   end
 end
 
@@ -555,6 +556,7 @@ function m_tape.sc_init()
     positions[i] = 0
 
     softcut.buffer(i, track_buffer[track])
+    softcut.level_slew_time(i, 0.1)
     softcut.rate(i, 1)
     softcut.loop(i, 0)
     softcut.loop_start(i, 0)
@@ -567,7 +569,7 @@ function m_tape.sc_init()
     softcut.pre_level(i, 0)
     softcut.level_input_cut(track_buffer[track], i, 1)
     softcut.level(i, 1)
-    softcut.play(i, 0)
+    softcut.play(i, 1)
     softcut.rec(i, 0)
     voice_state[i] = 0
   end
@@ -610,14 +612,10 @@ function m_tape.play_section(track, range, loop, reverse)
   local loop = loop and 1 or 0
   local pos
 
-  softcut.rec(voice, 0)
-  softcut.play(voice, 0)
   softcut.buffer(voice, track_buffer[track])
   softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
-  softcut.position(voice, range[1])
-  softcut.play(voice, 1)
 
   -- race condition recommendation by @dndrks
   -- rate set in `set_voice_params` (always set before this function)
@@ -664,8 +662,8 @@ end
 function m_tape.stop_track(track)
   local voice = track - 7
 
-  softcut.play(voice, 0)
   softcut.rec(voice, 0)
+  softcut.level(voice, 0)
 
   voice_state[voice] = 0
 end
@@ -675,7 +673,6 @@ function m_tape.record_section(track, range)
   local pre = params:get('track_' .. track .. '_pre')
 
   softcut.rec(voice, 0)
-  softcut.play(voice, 0)
 
   -- if overwriting, clear buffer and update `loaded_files`
   if pre == 0 then
@@ -692,7 +689,6 @@ function m_tape.record_section(track, range)
   softcut.loop_end(voice, range[2])
   softcut.position(voice, range[1])
   softcut.rec(voice, 1)
-  softcut.play(voice, 1)
 
   voice_state[voice] = 2
   await_render[voice] = range
