@@ -205,8 +205,7 @@ function manage_data()
       slice_params = slice_params,
       slice_reversed = slice_reversed,
       track_buffer = track_buffer,
-      loaded_files = loaded_files,
-      samples_meta = samples_meta
+      loaded_files = loaded_files
     }
 
     tab.save(m_data, fpath .. "/movements.data")
@@ -242,7 +241,6 @@ function manage_data()
     slice_reversed = m_data.slice_reversed
     track_buffer = m_data.track_buffer
     loaded_files = m_data.loaded_files
-    samples_meta = m_data.samples_meta
 
     softcut.buffer_read_stereo(fpath .. "/audio.wav", 0, 0, -1, 0, 1)
 
