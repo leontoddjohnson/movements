@@ -110,7 +110,7 @@ function m_grid.build_param_levels()
 
   -- For amp, ignore peek ... #s are converted to [0, 1].
   -- *Timber Engine needs these converted to db*
-  param_levels.amp = {-24, -18, -12, -6, -3, 0}
+  param_levels.amp = {-28, -18, -12, -6, -3, 0}
   for i=1,6 do param_levels.amp[i] = util.dbamp(param_levels.amp[i]) end
   table.insert(param_levels.amp, 0)
 

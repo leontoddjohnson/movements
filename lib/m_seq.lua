@@ -35,7 +35,7 @@ function build_param_patterns()
   param_pattern = {}
 
   -- [track][bank][step]: in [0, 1], (default 1)
-  -- *needs to be converted to decibels between -48 and 0*
+  -- *needs to be converted to decibels between specs.AMP.minval and 0*
   param_pattern.amp = m_seq.pattern_init(track_param_default.amp)
 
   -- [track][bank][step]: in [0, 1], (default 0)
@@ -436,8 +436,8 @@ function m_seq.squelch_amp(input_max, output_max, value, db_out)
   end
 
   if db_out then
-    -- sample amp can be between -48 and 16 (Timber), we keep to 0 max
-    amp = util.clamp(ampdb(amp), -48, 0)
+    -- sample amp can be between specs.AMP.minval and 16 (Timber), keep to 0 max
+    amp = util.clamp(ampdb(amp), specs.AMP.minval, 0)
   end
 
   return amp

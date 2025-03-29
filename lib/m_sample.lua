@@ -562,7 +562,7 @@ function m_sample.sample_params_to_default(sample_ids)
     for p,v in pairs(track_param_default) do
       if p == 'amp' then
         -- convert to db
-        amp = util.clamp(ampdb(v), -48, 0)
+        amp = util.clamp(ampdb(v), specs.AMP.minval, 0)
         params:set('amp_' .. id, amp)
 
       elseif p == 'transpose' then
@@ -589,7 +589,8 @@ function m_sample.sample_params_to_track(sample_ids, track)
     id = sample_ids[i]
 
     -- AMP
-    amp = util.clamp(ampdb(params:get('track_' .. track .. '_amp')), -48, 0)
+    p_track = params:get('track_' .. track .. '_amp')
+    amp = util.clamp(ampdb(p_track), specs.AMP.minval, 0)
     params:set('amp_' .. id, amp)
 
     -- OTHER TIMBER PARAMS
