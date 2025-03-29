@@ -163,13 +163,13 @@ function m_seq.play_transport(i)
     else
       -- increase step until the 16th step of the last bar
       step[i] = util.wrap(step[i] + 1, 1, n_bars(i) * 16)
-      
-      -- update grid to follow transport of current track if in play mode
-      if PLAY_MODE 
-        and TRACK == i 
-        and (step[i] <= (SEQ_BAR - 1) * 16 or step[i] > SEQ_BAR * 16) then
-        SEQ_BAR = (step[i] - 1) // 16 + 1
-      end
+    end
+
+    -- update grid to follow transport of current track if in play mode
+    if PLAY_MODE 
+    and TRACK == i 
+    and (step[i] <= (SEQ_BAR - 1) * 16 or step[i] > SEQ_BAR * 16) then
+      SEQ_BAR = (step[i] - 1) // 16 + 1
     end
 
     grid_dirty = true
