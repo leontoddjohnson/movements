@@ -430,6 +430,7 @@ function m_ui.tape_3_redraw()
 
   screen.move(64, 62)
 
+  -- indicate recording
   if await_render[TRACK - 7] then
     screen.text_center("•")
   else
@@ -438,6 +439,13 @@ function m_ui.tape_3_redraw()
 
   screen.stroke()
 
+  -- slice info
+  screen.move(4, 24)
+  screen.level(3)
+  local len = util.round(SLICE[2] - SLICE[1], 0.1)
+  screen.text(len .. " s " .. slice_params[SLICE_ID]['play_mode'])
+
+  -- waveform info
   m_ui.draw_partition(PARTITION)
   m_ui.draw_waveform(SLICE)
 end
@@ -576,7 +584,7 @@ end
 function m_ui.draw_waveform(range)
   screen.level(2)
 
-  local WAVE_H = 24  -- wave height
+  local WAVE_H = 30  -- wave height
   local WAVE_Y = 45  -- middle x-line for wave
   local frame, wave_x, bar_level
   local n_frames = (range[2] - range[1]) * 60  -- 60 frames per second
