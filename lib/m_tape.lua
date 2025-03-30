@@ -28,8 +28,9 @@ voice_slice_loc = {{}, {}, {}, {}}
 
 -- **Last update made to** the voice state. It is possible for a voice to
 -- stopped (i.e., the position is not moving) while the `voice_state` is set
--- to 1 or 2. 
--- voice_state[voice] stopped == 0, playing == 1, recording == 2
+-- to 1. This happens at the end of a clip.
+-- voice_state[voice] where
+-- stopped == 0, playing == 1, recording (no loop) == 2, recording (no loop) == 3
 voice_state = {}
 
 -- **range** for recording started, awaiting buffer render for each **voice**
@@ -601,7 +602,11 @@ function m_tape.update_position(i,pos)
   -- render if finished recording range
   if await_render[i] and pos >= await_render[i][2] then
     render_slice(await_render[i], track_buffer[i + 7])
-    await_render[i] = nil
+    -- stop checking for render if 1-shot recording
+    if voice_state[i] == 2 then
+      await_render[i] = nil
+      voice_state[i] = 0
+    end
   end
 
   grid_dirty = true
@@ -659,18 +664,19 @@ function m_tape.play_slice(track, slice_id)
   end
 end
 
--- TODO: set this to happen when needed?
 function m_tape.stop_track(track)
   local voice = track - 7
 
   softcut.rec(voice, 0)
+  softcut.loop(voice, 0)
   softcut.level(voice, 0)
 
   voice_state[voice] = 0
 end
 
-function m_tape.record_section(track, range)
+function m_tape.record_section(track, range, loop)
   local voice = track - 7
+  local loop = loop and 1 or 0
   local pre = params:get('track_' .. track .. '_pre')
 
   softcut.rec(voice, 0)
@@ -685,14 +691,20 @@ function m_tape.record_section(track, range)
 
   softcut.buffer(voice, track_buffer[track])
   softcut.level_input_cut(track_buffer[track], voice, 1)
-  softcut.loop(voice, 0)
+  softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
   softcut.position(voice, range[1])
   softcut.rec(voice, 1)
 
-  voice_state[voice] = 2
+  if loop == 1 then
+    voice_state[voice] = 3
+  else
+    voice_state[voice] = 2
+  end
+
   await_render[voice] = range
+
 end
 
 -- reverse start and stop for a slice

@@ -1043,6 +1043,13 @@ function m_grid.draw_partition()
         -- slice on current track
         if tab.contains(track_pool[TRACK], slice_id) then
           g:led(x, y, g_brightness.bank_sample_current_track)
+          
+          -- indicate if play head is in slice
+          local loc = voice_slice_loc[TRACK - 7]
+          if loc and loc[slice_id] == 1 and PLAY_MODE then
+            g:led(x, y, g_brightness.bank_sample_playing)
+          end
+
         -- slice on a different track, but the same buffer
         elseif same_buffer then
           g:led(x, y, g_brightness.bank_sample_tracked)
@@ -1065,12 +1072,6 @@ function m_grid.draw_partition()
       if tab.contains(track_pool_cue[TRACK][PARTITION], slice_id) and 
         not tab.contains(track_pool[TRACK], slice_id) then
         g:led(x, y, g_brightness.bank_sample_cued)
-      end
-      
-      -- indicate if play head is in current slice
-      local loc = voice_slice_loc[TRACK - 7]
-      if loc and loc[slice_id] == 1 and slice_id == SLICE_ID and PLAY_MODE then
-        g:led(x, y, g_brightness.bank_sample_playing)
       end
     end
   end

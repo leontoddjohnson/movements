@@ -296,7 +296,8 @@ function m_seq.play_track_pool(track)
     track_pool_i[track] = next_pool_i
 
   -- SLICES
-  else
+  -- if not already recording, then play or record next slice
+  elseif voice_state[track - 7] < 2 then
     -- record on current slice if record_pattern indicates matching step
     if (record_pattern[step[track]] > 0) and (track == TRACK) and next_id then
       m_tape.record_section(track, slices[next_id])
@@ -306,6 +307,9 @@ function m_seq.play_track_pool(track)
       if track_pair and track_pair > track then
         m_tape.record_section(track_pair, slices[next_id])
       end
+
+      -- remove recording step after recording is initiated
+      record_pattern[step[track]] = 0
 
     else
       m_tape.play_slice(track, next_id)
