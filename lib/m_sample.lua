@@ -378,6 +378,7 @@ end
 
 
 function m_sample:load_bank(bank)
+  file_select_active = true
   Timber.FileSelect.enter(_path.audio, function(file)
     file_select_active = false
     if file ~= "cancel" then

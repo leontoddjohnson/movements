@@ -50,6 +50,8 @@ track_param_default = {
   transpose = 0
 }
 
+file_select_active = false
+
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
@@ -160,7 +162,7 @@ function redraw_clock()
   while true do
     clock.sleep(1/REDRAW_FRAMERATE)
     
-    if screen_dirty then
+    if screen_dirty and not file_select_active then
       redraw()
       screen_dirty = false
     end

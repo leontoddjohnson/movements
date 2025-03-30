@@ -402,6 +402,7 @@ end
 -----------------------------------------------------------------
 
 function m_tape.load_file(file_path)
+  file_select_active = false
   if file_path ~= 'cancel' and file_path ~= "" then
     local ch, n_samples, rate = audio.file_info(file_path)
 

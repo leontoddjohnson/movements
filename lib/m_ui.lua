@@ -372,6 +372,7 @@ end
 function m_ui.tape_1_key(n,z)
 
   if n == 2 and z == 1 then
+    file_select_active = true
     fileselect.enter(_path.audio, m_tape.load_file, "audio")
   end
 
