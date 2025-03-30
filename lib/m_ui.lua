@@ -437,19 +437,16 @@ function m_ui.tape_3_redraw()
 
   screen.stroke()
 
-  -- TODO: add some indicator here K2 == record mono, K3 == record stereo
-  -- TODO: see sheets for recording on sequence page
-
   m_ui.draw_partition(PARTITION)
   m_ui.draw_waveform(SLICE)
 end
 
 function m_ui.tape_3_key(n,z)
-  local loop = slice_params[SLICE_ID]['play_mode'] == 'Loop' and 1 or 0
+  local loop = slice_params[SLICE_ID]['play_mode'] == 'Loop'
   local track_pair = m_tape.stereo_pair(TRACK)
 
-  -- stop recording (and playing) and render waveform
-  if n > 1 and z == 1 and voice_state[TRACK - 7] > 1 then
+  -- stop playing or recording and render waveform
+  if n > 1 and z == 1 and voice_state[TRACK - 7] > 0 then
     m_tape.stop_track(TRACK)
     render_slice(SLICE, track_buffer[TRACK])
     await_render[TRACK - 7] = nil

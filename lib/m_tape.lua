@@ -663,11 +663,11 @@ function m_tape.play_slice(track, slice_id)
   end
 end
 
--- TODO: set this to happen when needed?
 function m_tape.stop_track(track)
   local voice = track - 7
 
   softcut.rec(voice, 0)
+  softcut.loop(voice, 0)
   softcut.level(voice, 0)
 
   voice_state[voice] = 0
@@ -696,7 +696,7 @@ function m_tape.record_section(track, range, loop)
   softcut.position(voice, range[1])
   softcut.rec(voice, 1)
 
-  if loop then
+  if loop == 1 then
     voice_state[voice] = 3
   else
     voice_state[voice] = 2
