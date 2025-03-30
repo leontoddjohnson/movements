@@ -439,9 +439,10 @@ function m_ui.tape_3_redraw()
   screen.stroke()
 
   -- slice info
-  screen.move(4, 18)
+  screen.move(4, 24)
   screen.level(3)
-  screen.text(slice_params[SLICE_ID]['play_mode'])
+  local len = util.round(SLICE[2] - SLICE[1], 0.1)
+  screen.text(len .. " s " .. slice_params[SLICE_ID]['play_mode'])
 
   -- waveform info
   m_ui.draw_partition(PARTITION)
