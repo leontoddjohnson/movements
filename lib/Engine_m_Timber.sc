@@ -403,7 +403,7 @@ Engine_m_Timber : CroneEngine {
 
 		// Echo
 		echo = SynthDef(\echo, {
-				arg in, out, echoDelayTime=1, echoFeedbackLevel=0.5;
+				arg in, out, echoDelayTime=1, echoFeedbackLevel=0.5, echoReturnLevel=0;
 
 				var snd, wet, maxDelayTime=10;
 				
@@ -414,7 +414,7 @@ Engine_m_Timber : CroneEngine {
 				wet = DelayC.ar(wet, maxDelayTime, echoDelayTime);
 				LocalOut.ar(wet);
 
-				Out.ar(out, wet);
+				Out.ar(out, wet * echoReturnLevel);
 
 			}).play(target:context.xg, args:[\in, echoBus, \out, context.out_b], addAction: \addAfter);
 
@@ -1212,6 +1212,9 @@ Engine_m_Timber : CroneEngine {
 			echo.set(\echoFeedbackLevel, msg[1]);
 		});
 
+		this.addCommand(\echoReturnLevel, "f", { arg msg;
+			echo.set(\echoReturnLevel, msg[1]);
+		});
 
 		// Sample commands
 

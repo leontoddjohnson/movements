@@ -633,6 +633,7 @@ function m_ui.delay_1_redraw()
   m_ui.draw_nav("Sample Delay")
 
   local y_top = 36
+  local level_bottom = HOLD_K1 and 10 or 1
   
   screen.level(8)
   -- simple feedback
@@ -648,6 +649,14 @@ function m_ui.delay_1_redraw()
   screen.text_center(params:string('timber_delay_time'))
 
   screen.stroke()
+
+  -- Bottom
+  screen.level(level_bottom)
+
+  screen.move(64, 62)
+  screen.text_center("< " .. params:string('timber_delay_level') .. ">")
+
+  screen.stroke()
 end
 
 function m_ui.delay_1_key(n,z)
@@ -655,7 +664,11 @@ function m_ui.delay_1_key(n,z)
 end
 
 function m_ui.delay_1_enc(n,d)
-  if n == 2 then
+  if HOLD_K1 then
+    if n > 1 then
+      params:delta('timber_delay_level', d)
+    end
+  elseif n == 2 then
     params:delta('timber_delay_feedback', d)
   elseif n == 3 then
     params:delta('timber_delay_time', d)

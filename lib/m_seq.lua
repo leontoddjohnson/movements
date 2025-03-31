@@ -212,10 +212,7 @@ function m_seq.toggle_pattern_step(track, step)
         default = params:get('track_' .. track .. '_filter_freq')
       elseif p == 'interval' then
         -- initialize to using track value only
-        default = nil  
-      elseif p == 'delay' then
-        -- track value default is zero; avoid having to set each step
-        default = 1
+        default = nil
       else
         default = params:get('track_' .. track .. '_' .. p)
       end

@@ -775,6 +775,13 @@ function Timber.add_params()
     Timber.views_changed_callback(nil)
   end}
 
+  params:add{type = "control", id = "timber_delay_level", name = "Delay Level", 
+  controlspec = specs.AMP0, 
+  action = function(value)
+    engine.echoReturnLevel(value)
+    Timber.views_changed_callback(nil)
+  end}
+
 end
 
 function Timber.add_sample_params(id, include_beat_params, extra_params)
