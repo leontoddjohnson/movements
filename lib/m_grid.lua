@@ -1119,9 +1119,22 @@ function m_grid.draw_partition()
     local partition = (SLICE_ID - 1) // 32 + 1
 
     local cell_start = (partition - 1) * 80 + (i - 1) * 2.5
-    local cell_end = cell_start + MIN_SLICE_LENGTH
+    local cell_end = cell_start + 2.5
+    local slice_in_cell
 
-    if SLICE[1] <= cell_start and cell_end <= SLICE[2] then
+    if cell_start <= SLICE[1] and SLICE[1] < cell_end then
+      slice_in_cell = math.min(cell_end, SLICE[2])
+      slice_in_cell = slice_in_cell - cell_start
+    elseif cell_start < SLICE[2] and SLICE[2] <= cell_end then
+      slice_in_cell = math.max(cell_start, SLICE[1])
+      slice_in_cell = cell_end - slice_in_cell
+    elseif SLICE[1] < cell_start and cell_end < SLICE[2] then
+      slice_in_cell = 2.5
+    else
+      slice_in_cell = 0
+    end
+
+    if slice_in_cell >= MIN_SLICE_LENGTH / 2 then
       g:led(col_, 5 + row_, g_brightness.sample_range_in)
     else
       g:led(col_, 5 + row_, g_brightness.sample_range_out)
@@ -1271,9 +1284,9 @@ function m_grid.tape_config_key(x, y, z)
     local new_start = (partition - 1) * 80 + 2.5 * (i - 1)
     local new_end = (partition - 1) * 80 + 2.5 * i
 
-    if ALT and SLICE[1] < new_end then
+    if ALT and MIN_SLICE_LENGTH <= new_end - SLICE[1]then
       SLICE[2] = new_end
-    elseif not ALT and new_start < SLICE[2] then
+    elseif not ALT and MIN_SLICE_LENGTH <= SLICE[2] - new_start then
       SLICE[1] = new_start
     end
 
