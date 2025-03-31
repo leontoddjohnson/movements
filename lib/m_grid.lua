@@ -187,7 +187,10 @@ function m_grid.nav_key(x, y, z)
       end
       G_PAGE = g_pages[x - 8][i]
       
-      m_grid.set_functionality()
+      -- don't force away from delay display
+      if display_names[DISPLAY_ID] ~= 'delay' then
+        m_grid.set_functionality()
+      end
 
     end
   
