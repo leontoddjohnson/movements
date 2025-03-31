@@ -418,18 +418,18 @@ function m_tape.load_file(file_path)
       local dur = math.min(PARTITION * 80 - start, len)
       local pre = params:get("track_" .. TRACK .. "_pre")
 
-      if m_tape.stereo_pair(TRACK) then
-        -- load stereo into partition
-        softcut.buffer_read_stereo(file_path, 0, start, dur, pre, 1)
+      local buffer = track_buffer[TRACK]
 
-        render_slice({start, start + dur})
+      if ch > 1 then
+        if m_tape.stereo_pair(TRACK) then
+          -- load stereo into partition
+          softcut.buffer_read_stereo(file_path, 0, start, dur, pre, 1)
 
-        table.insert(loaded_files[1], {filename, start, start + dur})
-        table.insert(loaded_files[2], {filename, start, start + dur})
-      else
-        local buffer = track_buffer[TRACK]
+          render_slice({start, start + dur})
 
-        if ch > 1 then
+          table.insert(loaded_files[1], {filename, start, start + dur})
+          table.insert(loaded_files[2], {filename, start, start + dur})
+        else
           -- force stereo track into mono, halve each channel level
           softcut.buffer_read_mono(file_path, 
             0, start, dur, 1, buffer, pre, util.dbamp(-3))
@@ -437,13 +437,13 @@ function m_tape.load_file(file_path)
             0, start, dur, 2, buffer, pre, util.dbamp(-3))
 
           render_slice({start, start + dur})
-        else
-          softcut.buffer_read_mono(file_path, 
-            0, start, dur, 1, buffer, pre, 1)
-
-          render_slice({start, start + dur}, buffer)
+          table.insert(loaded_files[buffer], {filename, start, start + dur})
         end
+      else
+        softcut.buffer_read_mono(file_path, 
+          0, start, dur, 1, buffer, pre, 1)
 
+        render_slice({start, start + dur}, buffer)
         table.insert(loaded_files[buffer], {filename, start, start + dur})
       end
 
