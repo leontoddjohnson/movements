@@ -29,7 +29,7 @@ function m_seq.build_params()
 
 end
 
--- make "empty" patterns with default parameters for reach step
+-- make "empty" patterns with default parameters for each step
 function build_param_patterns()
 
   param_pattern = {}
@@ -38,9 +38,9 @@ function build_param_patterns()
   -- *needs to be converted to decibels between specs.AMP.minval and 0*
   param_pattern.amp = m_seq.pattern_init(track_param_default.amp)
 
-  -- [track][bank][step]: in [0, 1], (default 0)
+  -- [track][bank][step]: in [0, 1], (default is 0, but set pattern to 1)
   -- amount to send to engine/softcut delay
-  param_pattern.delay = m_seq.pattern_init(track_param_default.delay)
+  param_pattern.delay = m_seq.pattern_init(1)
 
   -- [track][bank][step]: in [-1, 1] defaults to 0
   param_pattern.pan = m_seq.pattern_init(track_param_default.pan)
@@ -206,15 +206,20 @@ function m_seq.toggle_pattern_step(track, step)
   pattern[track][bank[track]][step] = empty_step and 1 or 0
 
   if empty_step then
-    -- set step pattern values to track settings
+    -- set default parameter values for new step
     for i,p in ipairs(p_options.PARAMS) do
       if p == 'filter' then
-        default = params:get('track_' .. track .. '_filter_freq')
+        -- set to most extreme frequency based on low pass/high pass
+        local filter_type = params:get('track_' .. track .. '_filter_type')
+        default = filter_type == 1 and 20000 or 20
+      elseif p == 'delay' then
+        -- set to 1; default for track is 0, so it will be squelched at first
+        default = 1
       elseif p == 'interval' then
         -- initialize to using track value only
         default = nil
       else
-        default = params:get('track_' .. track .. '_' .. p)
+        default = track_param_default[p]
       end
       param_pattern[p][track][bank[track]][step] = default
     end
