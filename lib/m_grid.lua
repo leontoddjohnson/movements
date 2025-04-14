@@ -81,6 +81,9 @@ TRACK = 1    -- selected track
 BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
 PARAM = 'amp'
 
+TRACK_s = 1  -- current/last sample track selected
+TRACK_t = 8  -- current/last tape track selected
+
 -----------------------------------------------------------------
 -- INIT
 -----------------------------------------------------------------
@@ -216,14 +219,14 @@ end
 -- when moving between sample and tape on grid, set sample/slice
 -- and display (on UI) accordingly.
 function m_grid.set_functionality()
-  -- if needed, set TRACK to "first" within a functionality
+  -- if needed, set TRACK to last set within a functionality
   if string.match(G_PAGE, '^sample') and TRACK > 7 then 
     DISPLAY_ID = index_of(display_names, 'sample')
-    m_grid.set_track(1)
+    m_grid.set_track(TRACK_s)
     m_sample.set_sample_id(SAMPLE)
   elseif string.match(G_PAGE, '^tape') and TRACK < 8 then
     DISPLAY_ID = index_of(display_names, 'tape')
-    m_grid.set_track(8)
+    m_grid.set_track(TRACK_t)
     m_tape.set_slice_id(SLICE_ID)
   end
 
@@ -1509,10 +1512,12 @@ end
 -- manage actions needed when selecting a track
 function m_grid.set_track(track)
 
-  -- if tape track, watch positions
+  -- save "current" tracks; (un)watch softcut positions
   if track > 7 then
+    TRACK_t = track
     m_tape.watch_positions()
   else
+    TRACK_s = track
     m_tape.ignore_positions()
   end
 
