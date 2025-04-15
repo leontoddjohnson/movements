@@ -1530,10 +1530,10 @@ function draw_sequence_bars(x_start, y, track_range)
   local last_bar = 1
   local track_last_bar = 1
 
-  -- only show max range for selected track in play mode
-  if PLAY_MODE then track_range = {TRACK, TRACK} end
+  -- in focus mode, only consider the current track for sequence bars
+  if not PLAY_MODE then track_range = {TRACK, TRACK} end
 
-  -- otherwise, show it for all tracks
+  -- otherwise, consider all tracks in functionality range
   for t = track_range[1],track_range[2] do
     track_last_bar = n_bars(t)
     last_bar = track_last_bar > last_bar and track_last_bar or last_bar
