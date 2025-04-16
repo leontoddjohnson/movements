@@ -73,7 +73,7 @@ function m_ui.sample_1_redraw()
   m_ui.draw_nav(
     TRACK .. " • " .. 
     BANK .. " • " .. 
-    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+    (SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
   )
 
   local list_buffer = 8
@@ -200,7 +200,7 @@ function m_ui.sample_2_redraw()
   m_ui.draw_nav(
     TRACK .. " • " .. 
     BANK .. " • " .. 
-    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+    (SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
   )
 
   m_ui.draw_focus_params()
@@ -225,7 +225,7 @@ function m_ui.sample_3_redraw()
   m_ui.draw_nav(
     TRACK .. " • " .. 
     BANK .. " • " .. 
-    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+    (SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
   )
 
   waveform_view:update()
@@ -249,7 +249,7 @@ function m_ui.sample_4_redraw()
   m_ui.draw_nav(
     TRACK .. " • " .. 
     BANK .. " • " .. 
-    SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-"
+    (SAMPLE ~= nil and params:string('sample_' .. SAMPLE) or "-")
   )
 
   screen.aa(1)

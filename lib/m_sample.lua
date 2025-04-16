@@ -358,6 +358,37 @@ function play_mode_is_hold(id)
   end
 end
 
+-- clear all samples associated with `bank` that are loaded into any
+-- track pools or track pool cues.
+function m_sample.clear_bank_pools(bank)
+
+  -- range of ids in the bank [min, max + 1] (exclusive on the end)
+  local bank_id_range = {32 * (bank - 1), 32 * bank}
+
+  -- only attributed to sample tracks (namely those using this `bank`)
+  for track = 1,7 do
+    -- check track pool (note, `track_pool` can only have samples from one bank)
+    if #track_pool[track] > 0 
+      and bank_id_range[1] <= track_pool[track][1]
+      and track_pool[track][1] < bank_id_range[2] then
+        -- set parameters back to default
+        m_sample.sample_params_to_default(track_pool[track])
+        -- clear track pool
+        track_pool[track] = {}
+        track_pool_i[track] = 0
+      end
+
+    -- check track pool cue
+    if #track_pool_cue[track][bank] > 0 then
+      -- set parameters back to default
+      m_sample.sample_params_to_default(track_pool_cue[track][bank])
+      -- clear track pool cue
+      track_pool_cue[track][bank] = {}
+    end
+  end
+  
+end
+
 -- convert *string* "<rowcol>" syntax to 0-indexed id for timber
 -- going L->R, Top->Bottom down 4 4x8 matrices, 0-indexed
 function rowcol_id(rowcol, bank)
@@ -382,6 +413,7 @@ function m_sample:load_bank(bank)
   Timber.FileSelect.enter(_path.audio, function(file)
     file_select_active = false
     if file ~= "cancel" then
+      m_sample.clear_bank_pools(bank)
       self.load_folder(file, bank)
     end
   end)
