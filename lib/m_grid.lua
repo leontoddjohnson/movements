@@ -327,10 +327,11 @@ function m_grid.set_step_range(x, y, z, track)
   if z == 1 then
     KEY_HOLD[y][x] = 1
     hold_span = span(KEY_HOLD[y])
-    -- selecting whole range removes "mini range"
-    if hold_span[2] - hold_span[1] == 15 then
-      step_range[track] = {0, 0}
-      step_range_updated = {bar_0 + 1, bar_0 + 16}
+    -- selecting same range removes it
+    if bar_0 + hold_span[1] == step_range[track][1]
+      and bar_0 + hold_span[2] == step_range[track][2] then
+        step_range_updated = step_range[track]
+        step_range[track] = {0, 0}
     elseif hold_span[2] > hold_span[1] then
       step_range[track][1] = bar_0 + hold_span[1]
       step_range[track][2] = bar_0 + hold_span[2]
