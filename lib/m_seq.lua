@@ -190,7 +190,7 @@ function m_seq.stop_transport(i)
   end
 
   if i > 7 then
-    -- ... stop softcut for track i
+    m_tape.stop_track(i)
   end
   
 end
