@@ -500,7 +500,8 @@ function m_grid.levels_key(x, y, z)
     param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
 
     -- reverse direction for reverse scale type
-    if PARAM == 'scale' and params:get('track_' .. track .. "_scale_type") == 2 then 
+    if PARAM == 'scale' 
+      and params:get('track_' .. TRACK .. "_scale_type") == 2 then 
       y = 9 - y
     end
 
