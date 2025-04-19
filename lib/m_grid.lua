@@ -581,10 +581,28 @@ function m_grid.time_key(x, y, z, track_range)
   if y <= n_tracks then
     -- play/stop
     if x == 1 and z == 1 then
+      -- if already playing, stop
       if transport[track] then
-        m_seq.stop_transport(track)
+        if ALT then
+          -- stop all valid transports
+          for t=track_range[1], track_range[2] do
+            if transport[t] then m_seq.stop_transport(t) end
+          end
+        else
+          -- stop selected transport
+          m_seq.stop_transport(track)
+        end
+      -- if not playing, start
       else
-        m_seq.start_transport(track)
+        if ALT then
+          -- start all valid transports
+          for t=track_range[1], track_range[2] do
+            if not transport[t] then m_seq.start_transport(t) end
+          end
+        else
+          -- start selected transport
+          m_seq.start_transport(track)
+        end
       end
     end
 
