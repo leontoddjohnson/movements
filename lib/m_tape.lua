@@ -30,7 +30,7 @@ voice_slice_loc = {{}, {}, {}, {}}
 -- stopped (i.e., the position is not moving) while the `voice_state` is set
 -- to 1. This happens at the end of a clip.
 -- voice_state[voice] where
--- stopped == 0, playing == 1, recording (no loop) == 2, recording (no loop) == 3
+-- stopped == 0, playing == 1, recording (no loop) == 2, recording (loop) == 3
 voice_state = {}
 
 -- **range** for recording started, awaiting buffer render for each **voice**
