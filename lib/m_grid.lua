@@ -498,6 +498,12 @@ function m_grid.levels_key(x, y, z)
   if 1 < y and y < 8 and z == 1 and pattern[TRACK][bank[TRACK]][step_] > 0 then
     -- current parameter value at that step
     param_value = param_pattern[PARAM][TRACK][bank[TRACK]][step_]
+
+    -- reverse direction for reverse scale type
+    if PARAM == 'scale' and params:get('track_' .. track .. "_scale_type") == 2 then 
+      y = 9 - y
+    end
+
     -- returns default value (7th in list) if re-selecting current value
     value = m_grid.select_param_value(PARAM, 8 - y, param_value)
 
