@@ -8,9 +8,9 @@ local m_tape = {}
 local Formatters = require "formatters"
 local music = require 'musicutil'
 
--- 128 slices. these are represented in 4 partitions, where
+-- 128 slices. These are represented in 4 partitions, where
 -- the `n`th partition starts with slice #(`n` - 1) * 32 + 1.
--- slices[i] gives {start, stop} for that slice.
+-- `slices[i]` gives {start, stop} for that slice in seconds.
 slices = {}
 
 -- all parameters for slices (including `play_mode`)
@@ -40,10 +40,21 @@ await_render = {}
 -- voice positions for each *voice* (1-4)
 positions = {}
 
--- up to 19200 samples (min slice = 1s, 60 samples per waveform)
--- only loads when a slice is recorded from [a, a+dur]
--- stores frames/samples for the whole 320s buffer (up to delay)
+-- `buffer_waveform[ch][frame]` is the level at that frame for that channel.
+-- I *believe* the sign (+/-) indicates phase, so amplitude above or below 0.
+-- **The buffer is rendered at 60 frames per second.**
+-- Each channel has 19,200 samples, i.e., the first 320s (up to delay portion)
+-- 19200 = 60 samples/sec * 2.5 sec/slice * 32 slice/partition * 4 partitions
 buffer_waveform = {{}, {}}
+
+-- `partition_view[partition] == 1` if there is audio in that partition.
+-- Otherwise, this is `nil`. This is updated in `m_tape.update_partition_view`.
+partition_view = {}
+
+-- `buffer_slice_view[ch][slice_id] == 1` if there is audio in that slice
+-- on that buffer channel `ch`. Otherwise, this is `nil`. Updated with
+-- `m_tape.update_slice_view`.
+buffer_slice_view = {{}, {}}
 
 -- buffers assigned for each track
 -- `track_buffer[track]` == 1 for left, and == 2 for right
@@ -87,7 +98,11 @@ function m_tape.build_params()
 
   params:add_control('rec_threshold', 'rec threshold',
     controlspec.DB,
-    function(p) return util.round(p:get(), 0.1) .. ' db' end)
+    function(p) 
+      m_tape.reset_buffer_view()
+      grid_dirty = true
+      return util.round(p:get(), 0.1) .. ' db' 
+    end)
 
 end
 
@@ -480,21 +495,6 @@ function m_tape.init_slices()
 
 end
 
--- return buffer waveform samples for a `slice_id`, on buffer `ch`
-function m_tape.slice_buffer(slice_id, ch)
-  local slice = slices[slice_id]
-
-  local start_frame = util.round(60 * slice[1], 1) + 1  -- 60 frames per second
-  local end_frame = util.round(60 * slice[2], 1)
-
-  left_buffer = table_slice(buffer_waveform[1], start_frame, end_frame)
-  right_buffer = table_slice(buffer_waveform[2], start_frame, end_frame)
-
-  slice_buffer = {left_buffer, right_buffer}
-  return slice_buffer[ch]
-
-end
-
 function m_tape.set_slice_id(id)
   SLICE_ID = id
   SLICE = slices[SLICE_ID]
@@ -776,25 +776,81 @@ function m_tape.slice_params_to_track(slice_ids, track)
   end
 end
 
--- span of values that are greater in magnitude than some threshold
--- **default `thresh` = params:get('rec_threshold')**
--- span[0] indexes the first sufficient value (or 0 for none)
--- span[1] indexes the last sufficient value (or 0 for none)
-function span_thresh(t, thresh)
-  local span_l = 0
-  local span_r = 0
 
-  thresh = thresh or util.dbamp(params:get('rec_threshold'))
+-- If there is audio on *either* buffer channel in `partition`, then this will 
+-- update `partition_view` accordingly.
+function m_tape.update_partition_view(partition)
+  local start_frame = (partition - 1) * 80 * 60 + 1
+  local stop_frame = partition * 80 * 60
+  local ch = 1
 
-  for i=1,#t do
-    if math.abs(t[i]) > thresh and span_l == 0 then
-      span_l = i
+  partition_view[partition] = nil
+
+  while ch <= 2 do
+    if m_tape.buffer_contains_audio(ch, start_frame, stop_frame) then
+      partition_view[partition] = 1      
     end
+    ch = ch + 1
+  end
+end
 
-    span_r = math.abs(t[i]) > thresh and i or span_r
+-- If there is audio in the slice with id `slice_id`, then this will 
+-- update `buffer_slice_view` accordingly. If `ch` is given, this will
+-- only update that channel. Otherwise, update **both** channels.
+function m_tape.update_slice_view(slice_id, ch)
+  local channels = ch and {ch} or {1, 2}
+  local slice = slices[slice_id]
+
+  -- 60 frames per second ...
+  local start_frame = util.round(60 * slice[1], 1) + 1
+  local stop_frame = util.round(60 * slice[2], 1)
+
+  for i,channel in ipairs(channels) do
+    if m_tape.buffer_contains_audio(channel, start_frame, stop_frame) then
+      buffer_slice_view[channel][slice_id] = 1
+    else
+      buffer_slice_view[channel][slice_id] = nil
+    end
+  end
+end
+
+-- Reset `partition_view` and `buffer_slice_view`.
+-- If `ch` is given, this will only update that channel of `buffer_slice_view`,
+-- otherwise, this will reset and update both channels.
+function m_tape.reset_buffer_view(ch)
+  partition_view = {}
+
+  if ch and ch == 1 then
+    buffer_slice_view[1] = {}
+  elseif ch and ch == 2 then
+    buffer_slice_view[2] = {}
+  else
+    buffer_slice_view = {{}, {}}
   end
 
-  return {span_l, span_r}
+  for p=1,4 do
+    m_tape.update_partition_view(p)
+  end
+
+  for id=1,128 do
+    m_tape.update_slice_view(id, ch)
+  end
+end
+
+-- Return 1 if there is a level between `start_frame` and `stop_frame`
+-- greater than the `rec_threshold` set in PARAMS. This references
+-- the current `buffer_waveform` channel `ch`.
+function m_tape.buffer_contains_audio(ch, start_frame, stop_frame)
+  local i = start_frame
+  local thresh = util.dbamp(params:get('rec_threshold'))
+  local abs = math.abs
+  
+  while i <= stop_frame do
+    if buffer_waveform[ch][i] and abs(buffer_waveform[ch][i]) > thresh then
+      return 1
+    end
+    i = i + 1
+  end
 end
 
 -- convert seconds to frame count, given a sample rate of 60 samples per second
@@ -846,6 +902,9 @@ function wave_render(ch, start, rate, samples)
   for i,s in ipairs(samples) do
     buffer_waveform[ch][start_frame - 1 + i] = s
   end
+
+  -- clear current "view" of what portions of the buffer contain audio
+  m_tape.reset_buffer_view(ch)
 
   screen_dirty = true
   grid_dirty = true

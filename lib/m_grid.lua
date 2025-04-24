@@ -1051,7 +1051,7 @@ end
 -----------------------------------------------------------------
 function m_grid.draw_partition()
   local origin = {9, 1}
-  local slice_id, slice_buffer
+  local slice_id
   
   -- tape track pools
   local track_pools = table_slice(track_pool, 8, 11)
@@ -1065,7 +1065,6 @@ function m_grid.draw_partition()
       g:led(x, y, g_brightness.bank_sample_empty)
 
       slice_id = (PARTITION - 1) * 32 + (row - 1) * 8 + col
-      slice_buffer = m_tape.slice_buffer(slice_id, track_buffer[TRACK])
       slice_track = find(track_pools, slice_id)
       slice_track = slice_track and slice_track + 7 or nil
       same_buffer = track_buffer[TRACK] == track_buffer[slice_track]
@@ -1086,7 +1085,7 @@ function m_grid.draw_partition()
         elseif same_buffer then
           g:led(x, y, g_brightness.bank_sample_tracked)
         -- slice on a different track and a different buffer
-        elseif slice_buffer and span_thresh(slice_buffer)[2] > 0 then
+        elseif buffer_slice_view[track_buffer[TRACK]][slice_id] then
           g:led(x, y, g_brightness.bank_sample_tracked)
         end
 
@@ -1096,7 +1095,7 @@ function m_grid.draw_partition()
         end
       
       -- show if there is sound
-      elseif slice_buffer and span_thresh(slice_buffer)[2] > 0 then
+      elseif buffer_slice_view[track_buffer[TRACK]][slice_id] then
         g:led(x, y, g_brightness.bank_sample_loaded)
       end
 
@@ -1110,21 +1109,13 @@ function m_grid.draw_partition()
 
   -- draw partition indicators
   origin = {13, 5}
-  local buffer_l, buffer_r
 
   for partition_ = 1,4 do
     x, y = global_xy(origin, partition_, 1)
 
-    buffer_l = table_slice(buffer_waveform[1], 
-      (partition_ - 1) * 80 * 60 + 1, partition_ * 80 * 60)
-
-    buffer_r = table_slice(buffer_waveform[2], 
-      (partition_ - 1) * 80 * 60 + 1, partition_ * 80 * 60)
-
     if PARTITION == partition_ then
       g:led(x, y, g_brightness.bank_selected)
-    elseif (buffer_l and span_thresh(buffer_l)[2] > 0) 
-      or (buffer_r and span_thresh(buffer_r)[2] > 0) then
+    elseif partition_view[partition_] then
       g:led(x, y, g_brightness.bank_loaded)
     else
       g:led(x, y, g_brightness.bank_empty)
@@ -1318,6 +1309,8 @@ function m_grid.tape_config_key(x, y, z)
     elseif not ALT and MIN_SLICE_LENGTH <= SLICE[2] - new_start then
       SLICE[1] = new_start
     end
+
+    m_tape.update_slice_view(SLICE_ID)
 
   end
 

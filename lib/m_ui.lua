@@ -499,6 +499,8 @@ function m_ui.tape_3_enc(n,d)
       SLICE[2] = new_end
     end
   end
+
+  m_tape.update_slice_view(SLICE_ID)
   
   grid_dirty = true
   screen_dirty = true
