@@ -98,10 +98,11 @@ function m_tape.build_params()
 
   params:add_control('rec_threshold', 'rec threshold',
     controlspec.DB,
-    function(p) 
+    function(p) return util.round(p:get(), 0.1) .. ' db' end)
+  params:set_action('rec_threshold',
+    function(v)
       m_tape.reset_buffer_view()
       grid_dirty = true
-      return util.round(p:get(), 0.1) .. ' db' 
     end)
 
 end
