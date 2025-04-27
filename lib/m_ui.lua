@@ -512,10 +512,8 @@ end
 -- draw top lines for left and right buffers given the `partition`
 -- only present line if there is audio.
 function m_ui.draw_partition(partition)
-  -- TODO: clamp first/last partition samples within the 80 seconds allowed
-
   local y_middle = 12
-  local frame, thresh, start_frame, end_frame
+  local frame, start_frame, end_frame
 
   -- baseline
   screen.level(2)
@@ -534,20 +532,16 @@ function m_ui.draw_partition(partition)
   screen.level(12)
   for i=0,127 do
     frame = pixel_to_frame(i + 1, partition)
-
-    -- minimum amplitude threshold
-    thresh = util.dbamp(params:get('rec_threshold'))
+    pixel = (partition - 1) * 128 + i + 1
 
     -- left buffer
-    s = buffer_waveform[1][frame]
-    if s ~= nil and math.abs(s) > thresh then
+    if buffer_view[1][pixel] then
       screen.move(i, y_middle - 1)
       screen.line(i+1, y_middle - 1)
     end
 
     -- right buffer
-    s = buffer_waveform[2][frame]
-    if s ~= nil and math.abs(s) > thresh then
+    if buffer_view[2][pixel] then
       screen.move(i, y_middle + 1)
       screen.line(i+1, y_middle + 1)
     end

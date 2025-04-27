@@ -47,6 +47,12 @@ positions = {}
 -- 19200 = 60 samples/sec * 2.5 sec/slice * 32 slice/partition * 4 partitions
 buffer_waveform = {{}, {}}
 
+-- `buffer_view[ch][pixel] == 1` if there is audio in that portion, else `nil`.
+-- Each pixel represents one 128th of a partition, so the first 128 portions are
+-- in the first partition. `buffer_view[1][148]` indicates if there is audio
+-- in the 20th portion of the first channel of the buffer.
+buffer_view = {{}, {}}
+
 -- `partition_view[partition] == 1` if there is audio in that partition.
 -- Otherwise, this is `nil`. This is updated in `m_tape.update_partition_view`.
 partition_view = {}
@@ -102,6 +108,7 @@ function m_tape.build_params()
   params:set_action('rec_threshold',
     function(v)
       m_tape.reset_buffer_view()
+      screen_dirty = true
       grid_dirty = true
     end)
 
@@ -778,18 +785,31 @@ function m_tape.slice_params_to_track(slice_ids, track)
 end
 
 
--- If there is audio on *either* buffer channel in `partition`, then this will 
--- update `partition_view` accordingly.
+-- If there is audio in any portion of the `partition`, then this will 
+-- update `partition_view` and `buffer_view` accordingly.
 function m_tape.update_partition_view(partition)
-  local start_frame = (partition - 1) * 80 * 60 + 1
-  local stop_frame = partition * 80 * 60
+  local start_frame, stop_frame
+
+  -- define pixel bounds for the partition UI
+  local start_pixel = (partition - 1) * 128 + 1
+  local stop_pixel = partition * 128
+  local frames_per_pixel = (80 * 60) / 128  -- 1 partition
   local ch = 1
+
+  local floor = math.floor
+  local ceil = math.ceil
 
   partition_view[partition] = nil
 
   while ch <= 2 do
-    if m_tape.buffer_contains_audio(ch, start_frame, stop_frame) then
-      partition_view[partition] = 1      
+    -- check for audio within each pixel for the partition UI
+    for pixel = start_pixel, stop_pixel do
+      start_frame = floor((pixel - 1) * frames_per_pixel + 1)
+      stop_frame = ceil(pixel * frames_per_pixel)
+      if m_tape.buffer_contains_audio(ch, start_frame, stop_frame) then
+        buffer_view[ch][pixel] = 1
+        partition_view[partition] = 1
+      end
     end
     ch = ch + 1
   end
@@ -815,7 +835,7 @@ function m_tape.update_slice_view(slice_id, ch)
   end
 end
 
--- Reset `partition_view` and `buffer_slice_view`.
+-- Reset `partition_view`, `buffer_view`, and `buffer_slice_view`.
 -- If `ch` is given, this will only update that channel of `buffer_slice_view`,
 -- otherwise, this will reset and update both channels.
 function m_tape.reset_buffer_view(ch)
@@ -823,10 +843,13 @@ function m_tape.reset_buffer_view(ch)
 
   if ch and ch == 1 then
     buffer_slice_view[1] = {}
+    buffer_view[1] = {}
   elseif ch and ch == 2 then
     buffer_slice_view[2] = {}
+    buffer_view[2] = {}
   else
     buffer_slice_view = {{}, {}}
+    buffer_view = {{}, {}}
   end
 
   for p=1,4 do
