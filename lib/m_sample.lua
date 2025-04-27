@@ -445,7 +445,7 @@ function m_sample.load_folder(file, bank)
       local lower_v = v:lower()
         
       -- find rowcol* if "<rowcol>*..." naming convention (* = space|-|_)
-      local rowcol = string.match(lower_v, "^%d%d[%s-_]")
+      local rowcol = string.match(lower_v, "^[1-4][1-8][%s-_]")
       
       if rowcol ~= nil then
         -- remove the split character
@@ -459,13 +459,13 @@ function m_sample.load_folder(file, bank)
       end
 
       if string.match(lower_v, ".wav$") or string.match(lower_v, ".aif$") or string.match(lower_v, ".aiff$") or string.match(lower_v, ".ogg$") then
-        Timber.load_sample(sample_id, folder .. v)
         bank_, row, col = id_bankrowcol(sample_id)
 
         if bank ~= bank_ then
-          error("bank calculation is incorrect")
+          error("bank calculation is incorrect for " .. lower_v)
         end
 
+        Timber.load_sample(sample_id, folder .. v)
         banks[bank][row][col] = sample_id
         sample_id = sample_id + 1
 
