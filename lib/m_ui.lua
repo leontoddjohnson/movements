@@ -835,18 +835,6 @@ function m_ui.set_functionality()
     G_PAGE = 'tape_config'
     m_grid.set_track(TRACK_t)
     m_tape.set_slice_id(SLICE_ID)
-  elseif display_names[DISPLAY_ID] == 'delay' then
-    -- sample delay
-    if display[DISPLAY_ID].index == 1 then
-      G_PAGE = 'sample_config'
-      m_grid.set_track(TRACK_s)
-      m_sample.set_sample_id(SAMPLE)
-    -- tape delay
-    elseif display[DISPLAY_ID].index == 2 then
-      G_PAGE = 'tape_config'
-      m_grid.set_track(TRACK_t)
-      m_tape.set_slice_id(SLICE_ID)
-    end
   end
 end
 
