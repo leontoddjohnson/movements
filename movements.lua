@@ -245,8 +245,9 @@ function manage_data()
     loaded_files = m_data.loaded_files
 
     softcut.buffer_read_stereo(fpath .. "/audio.wav", 0, 0, -1, 0, 1)
-
     print("finished reading '"..filename.."'", number)
+
+    m_tape.reset_buffer_view()
     
   end
 
