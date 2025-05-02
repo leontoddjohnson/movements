@@ -786,6 +786,11 @@ function m_grid.draw_track_params(track_range)
   for y = 1,n_tracks do
     track = track_range[1] + y - 1
 
+    -- indicate track if randomizing patterns
+    if ALT and KEY_HOLD[y][7] > 0 then
+      g:led(7, y, g_brightness.bank_selected)
+    end
+
     for i=1,6 do
 
       -- TAG: param 4
@@ -886,8 +891,19 @@ function m_grid.sample_config_key(x, y, z)
 
   -- play mode selection
   if 8 < x and x < 13 and y == 5 and z == 1 then
-    i = m_sample.play_mode_i(SAMPLE, g_play_modes[x - 8])
-    params:set('play_mode_' .. SAMPLE, i)
+    -- if ALT, adjust all samples in track_pool_cue, else just the selected one
+    local samples = ALT and track_pool_cue[TRACK][BANK] or {SAMPLE}
+    for j, s in ipairs(samples) do
+      i = m_sample.play_mode_i(s, g_play_modes[x - 8])
+      params:set('play_mode_' .. s, i)
+    end
+  end
+
+  -- randomize parameter pattern
+  if ALT and x == 7 and y < 8 then
+    if z == 1 then
+      m_grid.randomize_param_pattern(TRACK, BANK, PARAM)
+    end
   end
 
   -- track selection
@@ -1231,7 +1247,17 @@ function m_grid.tape_config_key(x, y, z)
 
   -- play mode selection
   if 8 < x and x < 13 and y == 5 and z == 1 then
-    slice_params[SLICE_ID]['play_mode'] = g_play_modes[x - 8]
+    local slices = ALT and track_pool_cue[TRACK][PARTITION] or {SLICE_ID}
+    for j, s in ipairs(slices) do
+      slice_params[s]['play_mode'] = g_play_modes[x - 8]
+    end
+  end
+
+  -- randomize parameter pattern
+  if ALT and x == 7 and y < 5 then
+    if z == 1 then
+      m_grid.randomize_param_pattern(TRACK, PARTITION, PARAM)
+    end
   end
 
   -- track selection
@@ -1507,6 +1533,21 @@ for i = 1,16*8 do
       param_pattern[p][TRACK][to_bank][i] = paste_param
     end
   
+  end
+end
+
+-- choose random parameter values for each active step of a track
+-- parameter pattern; applies to a single bank.
+function m_grid.randomize_param_pattern(track, bank, param)
+  local rand = math.random
+
+  for i = 1,16*8 do
+    -- only update active steps
+    if pattern[track][bank][i] > 0 then
+      local value = rand(1, 6)
+      value = param_levels[param][value]
+      param_pattern[param][track][bank][i] = value
+    end
   end
 end
 

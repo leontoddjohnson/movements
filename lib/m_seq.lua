@@ -105,8 +105,8 @@ function m_seq.init()
     'beats', 'beats', 'beats', 'beats'
   }
 
-  -- pat[track][bank][step] = 1 or 0 (mult by param value). 
-  -- rec tracks only have one bank
+  -- the pattern of active steps to trigger for each track sequence.
+  -- pattern[track][bank][step] = 1 or 0 (active step or not)
   pattern = m_seq.pattern_init(0)
 
   -- pattern of steps to **record** based on time of current track.
