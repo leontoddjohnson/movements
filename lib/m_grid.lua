@@ -787,7 +787,7 @@ function m_grid.draw_track_params(track_range)
     track = track_range[1] + y - 1
 
     -- indicate track if randomizing patterns
-    if ALT and KEY_HOLD[y][7] > 0 then
+    if ALT and KEY_HOLD[y][7] > 0 and TRACK == track then
       g:led(7, y, g_brightness.bank_selected)
     end
 
@@ -901,7 +901,7 @@ function m_grid.sample_config_key(x, y, z)
 
   -- randomize parameter pattern
   if ALT and x == 7 and y < 8 then
-    if z == 1 then
+    if z == 1 and y == TRACK then
       m_grid.randomize_param_pattern(TRACK, BANK, PARAM)
     end
   end
@@ -1255,7 +1255,7 @@ function m_grid.tape_config_key(x, y, z)
 
   -- randomize parameter pattern
   if ALT and x == 7 and y < 5 then
-    if z == 1 then
+    if z == 1 and y + 7 == TRACK then
       m_grid.randomize_param_pattern(TRACK, PARTITION, PARAM)
     end
   end
