@@ -51,7 +51,7 @@ g_brightness = {
   play_mode_selected = 6,
   play_mode_deselected = 0,
   sample_range_in = 5,
-  sample_range_out = 2,
+  sample_range_out = 1,
   progress = 5
 }
 
