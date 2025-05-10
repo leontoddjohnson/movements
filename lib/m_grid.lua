@@ -23,7 +23,7 @@ g_brightness = {
   bank_loaded = 4,
   bank_selected = 12,
   nav_page_inactive = 2,
-  nav_page_active = 5,
+  nav_page_active = 7,
   mode_focus = 0,
   mode_play = 10,
   alt_off = 0,
@@ -47,11 +47,11 @@ g_brightness = {
   clock_frac_deselected = 0,
   level_highlighted = 3,
   param_selected = 5,
-  param_deselected = 1,
+  param_deselected = 2,
   play_mode_selected = 6,
   play_mode_deselected = 0,
   sample_range_in = 5,
-  sample_range_out = 1,
+  sample_range_out = 2,
   progress = 5
 }
 
