@@ -694,8 +694,9 @@ function m_tape.record_section(track, range, loop)
     m_tape.clear_buffer(track_buffer[track], range)
   end
 
-  -- temporary level while recording (updated at play time)
+  -- temporary level and rate while recording (updated at play time)
   softcut.level(voice, pre)
+  softcut.rate(voice, 1)
 
   softcut.buffer(voice, track_buffer[track])
   softcut.level_input_cut(track_buffer[track], voice, 1)

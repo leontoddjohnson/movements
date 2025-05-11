@@ -286,7 +286,7 @@ function m_ui.tape_1_redraw()
   local frame, start_frame, end_frame
   local y_partition = 12  -- from `draw_partition`
   local y_divider = 36
-  local max_filename_len = 16
+  local max_filename_len = 15
 
   screen.aa(0)
 
