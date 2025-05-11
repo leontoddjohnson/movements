@@ -294,6 +294,8 @@ function m_seq.play_track_pool(track)
       m_sample.note_off(pool_[pool_i])
     end
     
+    if PLAY_MODE and track == TRACK then m_sample.set_sample_id(next_id) end
+
     m_sample.note_on(next_id)
     track_pool_i[track] = next_pool_i
 
@@ -316,6 +318,8 @@ function m_seq.play_track_pool(track)
     else
       m_tape.play_slice(track, next_id)
     end
+
+    if PLAY_MODE and track == TRACK then m_tape.set_slice_id(next_id) end
 
     track_pool_i[track] = next_pool_i
   end

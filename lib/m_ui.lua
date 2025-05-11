@@ -77,7 +77,7 @@ function m_ui.sample_1_redraw()
   )
 
   local list_buffer = 8
-  local text_width = 13
+  local text_width = 12
   local text_top = 13
   local text, id, top_i, n_show
 
@@ -454,27 +454,31 @@ function m_ui.tape_3_key(n,z)
   local loop = slice_params[SLICE_ID]['play_mode'] == 'Loop'
   local track_pair = m_tape.stereo_pair(TRACK)
 
-  -- stop playing or recording and render waveform
-  if n > 1 and z == 1 and voice_state[TRACK - 7] > 0 then
-    m_tape.stop_track(TRACK)
-    render_slice(SLICE, track_buffer[TRACK])
-    await_render[TRACK - 7] = nil
+  -- only use these keys if sequence is not playing
+  if not transport[TRACK] then
+    -- stop playing or recording and render waveform
+    if n > 1 and z == 1 and voice_state[TRACK - 7] > 0 then
+      m_tape.stop_track(TRACK)
+      render_slice(SLICE, track_buffer[TRACK])
+      await_render[TRACK - 7] = nil
 
-    if track_pair then
-      m_tape.stop_track(track_pair)
-      render_slice(SLICE, track_buffer[track_pair])
-      await_render[track_pair - 7] = nil
-    end
+      if track_pair then
+        m_tape.stop_track(track_pair)
+        render_slice(SLICE, track_buffer[track_pair])
+        await_render[track_pair - 7] = nil
+      end
 
-  elseif n == 2 and z == 1 then
-    -- record mono
-    m_tape.record_section(TRACK, SLICE, loop)
-
-  elseif n == 3 and z == 1 then
-    -- record stereo
-    if track_pair then
+    elseif n == 2 and z == 1 then
+      -- record mono
       m_tape.record_section(TRACK, SLICE, loop)
-      m_tape.record_section(track_pair, SLICE, loop)
+
+    elseif n == 3 and z == 1 then
+      -- record stereo
+      if track_pair then
+        m_tape.record_section(TRACK, SLICE, loop)
+        m_tape.record_section(track_pair, SLICE, loop)
+      end
+
     end
 
   end
