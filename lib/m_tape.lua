@@ -625,9 +625,13 @@ function m_tape.update_position(i,pos)
     -- render if finished recording range
     if end_range[1] <= pos and pos <= end_range[2] then
       render_slice(await_render[i], track_buffer[i + 7])
-      await_render[i] = nil
-      softcut.rec(i, 0)  -- stop recording
-      voice_state[i] = 0
+
+      -- if not loop: stop waiting for next render and stop recording
+      if voice_state[i] < 3 then
+        await_render[i] = nil
+        softcut.rec(i, 0)
+        voice_state[i] = 0
+      end
     end
   end
 
