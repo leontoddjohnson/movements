@@ -483,7 +483,6 @@ function m_sample.note_on(sample_id, vel)
   if sample_id ~= nil and (params:get('sample_' .. sample_id) ~= "-") 
       and (sum(sample_status) < 7) then
 
-    print("note_on: " .. sample_id)
     vel = vel or 1
     engine.noteOn(sample_id, MusicUtil.note_num_to_freq(60), vel, sample_id)
     sample_status[sample_id] = 1
@@ -523,7 +522,6 @@ function m_sample.reverse_buffer(id)
 end
 
 function m_sample.note_off(sample_id)
-  if sample_id then print("note_off: " .. sample_id) end
   engine.noteOff(sample_id)
   if sample_id ~= nil then
     sample_status[sample_id] = 0

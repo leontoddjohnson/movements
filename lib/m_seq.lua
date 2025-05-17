@@ -7,7 +7,7 @@ m_seq = {}
 -----------------------------------------------------------------
 
 function m_seq.build_params()
-  p_options.PLAY_ORDER = {'forward', 'reverse', 'random'}
+  p_options.PLAY_ORDER = {'forward', 'backward', 'random'}
 
   -- Forward/reverse (in order of selection), random
   params:add_option('play_order', 'play order', p_options.PLAY_ORDER, 1)
@@ -135,6 +135,7 @@ end
 
 function m_seq.play_transport(i)
   local wait = nil
+  local prob_track, prob_step, prob
 
   while true do
     -- step starts at 0, then waits before playing next step
@@ -182,8 +183,8 @@ function m_seq.stop_transport(i)
   transport[i] = nil
 
   -- stop anything still playing
-  pool_ = track_pool[i]
-  pool_i = track_pool_i[i]
+  local pool_ = track_pool[i]
+  local pool_i = track_pool_i[i]
 
   if i < 8 then
     m_sample.note_off(pool_[pool_i])
@@ -271,10 +272,11 @@ end
 
 -- play the cue from the track pool, and cycle through
 function m_seq.play_track_pool(track)
-  pool_ = track_pool[track]
-  pool_i = track_pool_i[track]
-  order_ = params:get('play_order')
-  order_ = p_options.PLAY_ORDER[order_]
+  local pool_ = track_pool[track]
+  local pool_i = track_pool_i[track]
+  local order_ = params:get('play_order')
+  local order_ = p_options.PLAY_ORDER[order_]
+  local next_pool_i
 
   if order_ == 'forward' then
     next_pool_i = util.wrap(pool_i + 1, 1, #pool_)
@@ -284,8 +286,7 @@ function m_seq.play_track_pool(track)
     next_pool_i = math.random(#pool_)
   end
 
-  next_id = pool_[next_pool_i]
-  m_seq.set_step_params(next_id, track, step[track])
+  local next_id = pool_[next_pool_i]
   
   -- SAMPLES
   if track < 8 then
@@ -296,6 +297,7 @@ function m_seq.play_track_pool(track)
     
     if PLAY_MODE and track == TRACK then m_sample.set_sample_id(next_id) end
 
+    m_seq.set_step_params(next_id, track, step[track])
     m_sample.note_on(next_id)
     track_pool_i[track] = next_pool_i
 
@@ -316,6 +318,7 @@ function m_seq.play_track_pool(track)
       record_pattern[step[track]] = 0
 
     else
+      m_seq.set_step_params(next_id, track, step[track])
       m_tape.play_slice(track, next_id)
     end
 

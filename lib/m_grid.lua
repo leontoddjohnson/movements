@@ -1005,20 +1005,22 @@ end
 function m_grid.tape_seq_redraw()
   m_grid.seq_redraw({8, 11})
 
-  -- draw recording steps
   for i = 1,16 do
     local step = (SEQ_BAR - 1) * 16 + i
 
+    -- draw recording steps
     if record_pattern[step] > 0 then
       g:led(i, 6, g_brightness.step_inactive)
     end
 
+    -- draw recording progress
     if await_render[TRACK - 7] then
       local start = await_render[TRACK - 7][1]
       local stop = await_render[TRACK - 7][2]
       local position = positions[TRACK - 7]
 
-      if (position - start) > ((stop - start) / 16) * (i - 1) then
+      if start <= position and position <= stop
+        and (position - start) > ((stop - start) / 16) * (i - 1) then
         g:led(i, 7, g_brightness.progress)
       end
     end

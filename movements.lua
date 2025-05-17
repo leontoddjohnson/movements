@@ -188,7 +188,6 @@ function manage_data()
     os.execute("mkdir -p " .. fpath .. "/")
 
     m_data = {
-      p_options = p_options,
       track_param_level = track_param_level,
       sample_reversed = sample_reversed,
       banks = banks,
@@ -223,7 +222,6 @@ function manage_data()
 
     m_data = tab.load(fpath .. "/movements.data")
 
-    p_options = m_data.p_options
     track_param_level = m_data.track_param_level
     sample_reversed = m_data.sample_reversed
     banks = m_data.banks

@@ -521,8 +521,10 @@ function m_tape.sc_stop()
 end
 
 -- clear buffer on channel `ch` within `range`
-function m_tape.clear_buffer(ch, range)
-  softcut.buffer_clear_region_channel(ch, range[1], range[2] - range[1], 0, 0)
+function m_tape.clear_buffer(ch, range, files_only)
+  if not files_only then
+    softcut.buffer_clear_region_channel(ch, range[1], range[2] - range[1], 0, 0)
+  end
 
   -- update loaded files list
   for i,f in ipairs(loaded_files[ch]) do
@@ -607,12 +609,24 @@ function m_tape.update_position(i,pos)
     end
   end
 
-  -- render if finished recording range
-  if await_render[i] and pos >= await_render[i][2] then
-    render_slice(await_render[i], track_buffer[i + 7])
-    -- stop checking for render if 1-shot recording
-    if voice_state[i] == 2 then
+  -- render slice if awaiting it
+  if await_render[i] then
+    -- fix position if needed
+    if pos < await_render[i][1] or await_render[i][2] < pos then
+      softcut.position(i, await_render[i][1])
+    end
+
+    -- indicate "end" of recording range
+    local end_range = {
+      await_render[i][2] - 1/(REDRAW_FRAMERATE - 1),
+      await_render[i][2]
+    }
+    
+    -- render if finished recording range
+    if end_range[1] <= pos and pos <= end_range[2] then
+      render_slice(await_render[i], track_buffer[i + 7])
       await_render[i] = nil
+      softcut.rec(i, 0)  -- stop recording
       voice_state[i] = 0
     end
   end
@@ -687,32 +701,37 @@ function m_tape.record_section(track, range, loop)
   local loop = loop and 1 or 0
   local pre = params:get('track_' .. track .. '_pre')
 
-  softcut.rec(voice, 0)
-
-  -- if overwriting, clear buffer and update `loaded_files`
+  -- if overwriting, update `loaded_files`
   if pre == 0 then
-    m_tape.clear_buffer(track_buffer[track], range)
+    m_tape.clear_buffer(track_buffer[track], range, true)
   end
 
   -- temporary level and rate while recording (updated at play time)
   softcut.level(voice, pre)
   softcut.rate(voice, 1)
+  softcut.rec(voice, 1)
 
   softcut.buffer(voice, track_buffer[track])
   softcut.level_input_cut(track_buffer[track], voice, 1)
   softcut.loop(voice, loop)
   softcut.loop_start(voice, range[1])
   softcut.loop_end(voice, range[2])
-  softcut.position(voice, range[1])
-  softcut.rec(voice, 1)
+
+  -- race condition recommendation by @dndrks
+  clock.run(
+    function()
+      clock.sleep(0.001)
+      softcut.position(voice, range[1])
+      clock.sleep(0.001)
+      await_render[voice] = range
+    end
+  )
 
   if loop == 1 then
     voice_state[voice] = 3
   else
     voice_state[voice] = 2
   end
-
-  await_render[voice] = range
 
 end
 
