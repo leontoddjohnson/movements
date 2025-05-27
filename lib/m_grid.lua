@@ -76,6 +76,10 @@ ALT = false
 -- 1 == held and 0 == not held
 KEY_HOLD = {}
 
+-- `HOLD_PLAY_TRIGGER == i` then track `i` is preparing to cue other tracks.
+-- otherwise, is nil
+HOLD_PLAY_TRIGGER = nil
+
 SEQ_BAR = 1  -- current sequence bar
 TRACK = 1    -- selected track
 BUFFER = 1   -- recording buffer selected (1 -> L, 2 -> R)
@@ -541,6 +545,8 @@ function m_grid.time_redraw(track_range)
     -- play/stop column
     if transport[t] then
       g:led(1, y, g_brightness.track_playing)
+    elseif play_trigger[t] then
+      g:led(1, y, g_brightness.level_highlighted)
     else
       g:led(1, y, g_brightness.track_stopped)
     end
@@ -550,6 +556,12 @@ function m_grid.time_redraw(track_range)
       g:led(2, y, g_brightness.time_beats)
     else
       g:led(2, y, g_brightness.time_seconds)
+    end
+
+    -- play trigger column, show tracks cued
+    if HOLD_PLAY_TRIGGER and play_trigger[t] 
+      and HOLD_PLAY_TRIGGER == play_trigger[t] then
+      g:led(3, y, g_brightness.level_highlighted)
     end
 
     -- time rows
@@ -592,7 +604,21 @@ function m_grid.time_key(x, y, z, track_range)
           -- stop selected transport
           m_seq.stop_transport(track)
         end
-      -- if not playing, start
+      
+      -- remove play trigger if assigned
+      elseif play_trigger[track] then
+        play_trigger[track] = nil
+
+      -- set play trigger if applicable
+      elseif HOLD_PLAY_TRIGGER 
+        and clock_range[HOLD_PLAY_TRIGGER][1] == 
+          clock_range[HOLD_PLAY_TRIGGER][2]
+        and clock_range[track][1] == clock_range[track][2]
+        and clock_range[track][1] == clock_range[HOLD_PLAY_TRIGGER][1]
+        and time_type[track] == time_type[HOLD_PLAY_TRIGGER] then
+        play_trigger[track] = HOLD_PLAY_TRIGGER
+
+      -- if not playing or triggered, start
       else
         if ALT then
           -- start all valid transports
@@ -612,6 +638,16 @@ function m_grid.time_key(x, y, z, track_range)
         time_type[track] = 'seconds'
       else
         time_type[track] = 'beats'
+      end
+    end
+
+    -- manage play trigger hold
+    if x == 3 then
+      -- define it if not already selected
+      if z == 1 and HOLD_PLAY_TRIGGER == nil then
+        HOLD_PLAY_TRIGGER = track
+      elseif z == 0 and HOLD_PLAY_TRIGGER == track then
+        HOLD_PLAY_TRIGGER = nil
       end
     end
 

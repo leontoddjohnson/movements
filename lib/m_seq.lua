@@ -116,6 +116,10 @@ function m_seq.init()
   -- current pattern bank loaded (the last four indicate tape partitions)
   bank = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
+  -- `play_trigger[i] == j`: track `i` plays at step 1 once track `j` does
+  -- otherwise, is nil.
+  play_trigger = {}
+
 end
 
 
@@ -127,6 +131,7 @@ end
 -- transport 8-11 = rec
 function m_seq.start_transport(i)
   if span(pattern[i][bank[i]])[2] > 0 then
+    play_trigger[i] = nil  -- remove any trigger
     transport[i] = clock.run(m_seq.play_transport, i)
   else
     print("Pattern ".. i .. " is empty.")
@@ -136,9 +141,10 @@ end
 function m_seq.play_transport(i)
   local wait = nil
   local prob_track, prob_step, prob
+  local play_cue = nil
 
   while true do
-    -- step starts at 0, then waits before playing next step
+    -- step plays, then waits before playing next step
     if pattern[i][bank[i]][step[i]] > 0 and #track_pool[i] > 0 then
       prob_track = params:get('track_' .. i .. '_prob')
       prob_step = param_pattern.prob[i][bank[i]][step[i]]
@@ -171,6 +177,16 @@ function m_seq.play_transport(i)
     and TRACK == i 
     and (step[i] <= (SEQ_BAR - 1) * 16 or step[i] > SEQ_BAR * 16) then
       SEQ_BAR = (step[i] - 1) // 16 + 1
+    end
+
+    -- play track cue once back at 1
+    if step[i] == 1 then
+      for j=1,11 do
+        if play_trigger[j] == i then
+          step[j] = 1
+          m_seq.start_transport(j)
+        end
+      end
     end
 
     grid_dirty = true
