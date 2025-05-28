@@ -611,6 +611,7 @@ function m_grid.time_key(x, y, z, track_range)
 
       -- set play trigger if applicable
       elseif HOLD_PLAY_TRIGGER 
+        and HOLD_PLAY_TRIGGER ~= track
         and clock_range[HOLD_PLAY_TRIGGER][1] == 
           clock_range[HOLD_PLAY_TRIGGER][2]
         and clock_range[track][1] == clock_range[track][2]
@@ -618,8 +619,8 @@ function m_grid.time_key(x, y, z, track_range)
         and time_type[track] == time_type[HOLD_PLAY_TRIGGER] then
         play_trigger[track] = HOLD_PLAY_TRIGGER
 
-      -- if not playing or triggered, start
-      else
+      -- if not playing or triggered (or trying to trigger), start
+      elseif not HOLD_PLAY_TRIGGER then
         if ALT then
           -- start all valid transports
           for t=track_range[1], track_range[2] do

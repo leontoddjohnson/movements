@@ -141,7 +141,6 @@ end
 function m_seq.play_transport(i)
   local wait = nil
   local prob_track, prob_step, prob
-  local play_cue = nil
 
   while true do
     -- step plays, then waits before playing next step
