@@ -613,10 +613,7 @@ function m_grid.time_key(x, y, z, track_range)
       elseif HOLD_PLAY_TRIGGER 
         and HOLD_PLAY_TRIGGER ~= track
         and clock_range[HOLD_PLAY_TRIGGER][1] == 
-          clock_range[HOLD_PLAY_TRIGGER][2]
-        and clock_range[track][1] == clock_range[track][2]
-        and clock_range[track][1] == clock_range[HOLD_PLAY_TRIGGER][1]
-        and time_type[track] == time_type[HOLD_PLAY_TRIGGER] then
+          clock_range[HOLD_PLAY_TRIGGER][2] then
         play_trigger[track] = HOLD_PLAY_TRIGGER
 
       -- if not playing or triggered (or trying to trigger), start
