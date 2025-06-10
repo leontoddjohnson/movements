@@ -120,6 +120,13 @@ function m_seq.init()
   -- otherwise, is nil.
   play_trigger = {}
 
+  -- `play_cue.bank == {i, j}`: sample tracks switch to bank `i` when track `j` 
+  -- reaches step 1. Analogously for `play_cue.partition`.
+  play_cue = {
+    bank = {},
+    partition = {}
+  }
+
 end
 
 
@@ -178,12 +185,33 @@ function m_seq.play_transport(i)
       SEQ_BAR = (step[i] - 1) // 16 + 1
     end
 
-    -- play track cue once back at 1
     if step[i] == 1 then
+      -- play track cue once back at 1
       for j=1,11 do
         if play_trigger[j] == i then
           step[j] = 1
           m_seq.start_transport(j)
+        end
+      end
+
+      -- if play_cue is set, then switch valid tracks to new bank/partition
+      if (#play_cue.bank == 2 and play_cue.bank[2] == i)
+        or (#play_cue.partition == 2 and play_cue.partition[2] == i) then
+        
+        -- sample tracks
+        if i < 8 then
+          BANK = play_cue.bank[1]
+          for j=1,7 do
+            m_seq.load_track_pool(j)
+            play_cue.bank = {}  -- reset bank cue
+          end
+        -- tape tracks
+        else
+          PARTITION = play_cue.partition[1]
+          for j=8,11 do
+            m_seq.load_track_pool(j)
+            play_cue.partition = {}  -- reset partition cue
+          end
         end
       end
     end

@@ -583,6 +583,22 @@ function m_grid.time_redraw(track_range)
     end
   end
 
+  -- bank cue
+  local bank_cue = track_range[2] < 8 and play_cue.bank or play_cue.partition
+
+  for b = 1,4 do
+    if bank_cue[1] and bank_cue[1] == b then
+      -- indicate the bank cued by the hold play trigger
+      if HOLD_PLAY_TRIGGER and bank_cue[2] == HOLD_PLAY_TRIGGER then
+        g:led(b, 8, g_brightness.clock_frac_selected)
+      else
+        g:led(b, 8, g_brightness.bank_sample_tracked)
+      end
+    else
+      g:led(b, 8, g_brightness.bank_sample_loaded)
+    end
+  end
+
 end
 
 function m_grid.time_key(x, y, z, track_range)
@@ -658,6 +674,27 @@ function m_grid.time_key(x, y, z, track_range)
         clock_range[track][2] = hold_span[2] - 3
       else
         KEY_HOLD[y][x] = 0
+      end
+    end
+  end
+
+  -- bank cue
+  if y == 8 and x < 5 and z == 1 then
+    if HOLD_PLAY_TRIGGER then
+      if track_range[2] < 8 then
+        play_cue.bank = {x, HOLD_PLAY_TRIGGER}
+      else
+        play_cue.partition = {x, HOLD_PLAY_TRIGGER}
+      end
+    else
+      if track_range[2] < 8
+        and play_cue.bank[1]
+        and play_cue.bank[1] == x then
+        play_cue.bank = {}
+      elseif track_range[2] > 8
+        and play_cue.partition[1]
+        and play_cue.partition[1] == x then
+        play_cue.partition = {}
       end
     end
   end
