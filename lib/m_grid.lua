@@ -39,7 +39,9 @@ g_brightness = {
   bar_populated = 3,
   bar_moving = 6,
   track_selected = 8,
-  track_playing = 10,
+  track_playing = 12,
+  track_cue_bright = 7,
+  track_cue_dim = 3,
   track_stopped = 0,
   time_beats = 10,
   time_seconds = 2,
@@ -543,10 +545,12 @@ function m_grid.time_redraw(track_range)
     local y = t - track_range[1] + 1
 
     -- play/stop column
-    if transport[t] then
+    if stop_trigger[t] then
+      g:led(1, y, g_brightness.track_cue_bright)
+    elseif transport[t] then
       g:led(1, y, g_brightness.track_playing)
     elseif play_trigger[t] then
-      g:led(1, y, g_brightness.level_highlighted)
+      g:led(1, y, g_brightness.track_cue_dim)
     else
       g:led(1, y, g_brightness.track_stopped)
     end
@@ -616,6 +620,9 @@ function m_grid.time_key(x, y, z, track_range)
           for t=track_range[1], track_range[2] do
             if transport[t] then m_seq.stop_transport(t) end
           end
+        elseif HOLD_PLAY_TRIGGER == track then
+          -- toggle transport stop trigger (cue to stop)
+          stop_trigger[track] = stop_trigger[track] == nil and 1 or nil
         else
           -- stop selected transport
           m_seq.stop_transport(track)

@@ -120,6 +120,10 @@ function m_seq.init()
   -- otherwise, is nil.
   play_trigger = {}
 
+  -- `stop_trigger[i] == 1`: track `i` stops at the end of the current bar
+  -- otherwise, is nil
+  stop_trigger = {}
+
   -- `play_cue.bank == {i, j}`: sample tracks switch to bank `i` when track `j` 
   -- reaches step 1. Analogously for `play_cue.partition`.
   play_cue = {
@@ -147,9 +151,10 @@ end
 
 function m_seq.play_transport(i)
   local wait = nil
+  local playing = true
   local prob_track, prob_step, prob
 
-  while true do
+  while playing do
     -- step plays, then waits before playing next step
     if pattern[i][bank[i]][step[i]] > 0 and #track_pool[i] > 0 then
       prob_track = params:get('track_' .. i .. '_prob')
@@ -183,6 +188,13 @@ function m_seq.play_transport(i)
     and TRACK == i 
     and (step[i] <= (SEQ_BAR - 1) * 16 or step[i] > SEQ_BAR * 16) then
       SEQ_BAR = (step[i] - 1) // 16 + 1
+    end
+
+    -- stop transport if set to stop at end of bar
+    if step[i] % 16 == 1 and stop_trigger[i] then
+      m_seq.stop_transport(i)
+      stop_trigger[i] = nil
+      playing = false
     end
 
     if step[i] == 1 then
