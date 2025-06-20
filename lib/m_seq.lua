@@ -197,8 +197,8 @@ function m_seq.play_transport(i)
       playing = false
     end
 
-    if step[i] == 1 then
-      -- play track cue once back at 1
+    if step[i] % 16 == 1 then
+      -- play cued tracks from step 1
       for j=1,11 do
         if play_trigger[j] == i then
           step[j] = 1
