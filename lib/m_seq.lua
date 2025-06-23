@@ -131,6 +131,13 @@ function m_seq.init()
     partition = {}
   }
 
+  -- define metronome clock routine
+  metronome = nil
+  metronome_flash = 0
+  last_time_type = 'beats'
+  last_clock_fraction = 8  -- 1 beat
+  m_seq.start_metronome()
+
 end
 
 
@@ -249,6 +256,31 @@ function m_seq.stop_transport(i)
     m_tape.stop_track(i)
   end
   
+end
+
+function m_seq.start_metronome()
+  metronome = clock.run(m_seq.metronome)
+end
+
+function m_seq.stop_metronome()
+  clock.cancel(metronome)
+  metronome = nil
+end
+
+function m_seq.metronome()
+  while true do
+    metronome_flash = (metronome_flash + 1) % 2
+    local wait = clock_fraction[last_clock_fraction]
+
+    if last_time_type == 'beats' then
+      clock.sync(wait)
+    else
+      clock.sleep(wait)
+    end
+
+    grid_dirty = true
+
+  end
 end
 
 

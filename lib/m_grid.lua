@@ -603,6 +603,9 @@ function m_grid.time_redraw(track_range)
     end
   end
 
+  -- metronome flash between pads 6 and 7
+  g:led(6 + metronome_flash, 8, g_brightness.clock_frac_selected)
+
 end
 
 function m_grid.time_key(x, y, z, track_range)
@@ -682,6 +685,10 @@ function m_grid.time_key(x, y, z, track_range)
       else
         KEY_HOLD[y][x] = 0
       end
+
+      -- save last clock setting to define metronome flashing
+      last_time_type = time_type[track]
+      last_clock_fraction = clock_range[track][2]
     end
   end
 
