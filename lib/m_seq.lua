@@ -221,16 +221,20 @@ function m_seq.play_transport(i)
         if i < 8 then
           BANK = play_cue.bank[1]
           for j=1,7 do
-            m_seq.load_track_pool(j)
-            play_cue.bank = {}  -- reset bank cue
+            if #track_pool_cue[j][BANK] > 0 then
+              m_seq.load_track_pool(j)
+            end
           end
+          play_cue.bank = {}  -- reset bank cue
         -- tape tracks
         else
           PARTITION = play_cue.partition[1]
           for j=8,11 do
-            m_seq.load_track_pool(j)
-            play_cue.partition = {}  -- reset partition cue
+            if #track_pool_cue[j][PARTITION] > 0 then
+              m_seq.load_track_pool(j)
+            end
           end
+          play_cue.partition = {}  -- reset partition cue
         end
       end
     end

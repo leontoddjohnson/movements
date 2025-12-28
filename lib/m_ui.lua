@@ -213,7 +213,12 @@ end
 function m_ui.sample_2_enc(n,d)
   -- focus params
   if n == 2 then
-    params:delta('track_' .. TRACK .. '_' .. PARAM, d)
+    if PARAM == 'filter' then
+      params:delta('track_' .. TRACK .. '_filter_freq', d)
+    else
+      params:delta('track_' .. TRACK .. '_' .. PARAM, d)
+    end
+    
   elseif n == 3 then
     params:delta('track_' .. TRACK .. '_noise', d)
   end
