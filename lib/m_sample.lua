@@ -116,6 +116,8 @@ function m_sample.build_sample_track_params()
           params:set('filter_type_' .. id, value)
         end
 
+        m_grid.mirror_filter(t)
+
         track_param_level[t]['filter_type'] = value
         screen_dirty = true
         grid_dirty = true

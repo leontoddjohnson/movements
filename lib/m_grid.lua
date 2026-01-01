@@ -1656,6 +1656,33 @@ function m_grid.select_param_value(param, i, current_value)
   end
 end
 
+-- when switching a filter from LP to HP (or vice versa),
+-- reset filter values to be their mirror image in reference to
+-- `param_levels.filter`. So, index 2 becomes index 4.
+function m_grid.mirror_filter(track)
+  local param_levels_, v_track, v_step
+
+  -- ignore the "-1" value at the end of the table
+  param_levels_ = table_slice(param_levels.filter, 1, 6)
+
+  -- mirror value for the whole track
+  v_track = params:get('track_' .. track .. '_filter_freq')
+  v_track = util.round(v_track, 0.001)  -- rounding fix
+  v_track_i = 7 - key_interval(param_levels_, v_track)
+  v_track = param_levels_[v_track_i]
+  params:set('track_' .. track .. '_filter_freq', v_track)
+
+  for bank_ = 1, 4 do
+    for step_ = 1, 128 do
+      -- mirror pattern values for all banks and steps
+      v_step = param_pattern.filter[track][bank_][step_]
+      v_step_i = 7 - tab.key(param_levels.filter, v_step)
+      v_step = param_levels.filter[v_step_i]
+      param_pattern.filter[track][bank_][step_] = v_step
+    end
+  end
+end
+
 -- manage actions needed when selecting a track
 function m_grid.set_track(track)
 
@@ -1743,6 +1770,25 @@ function flatten(t)
     end
   end
   return t_flat
+end
+
+-- for a **sorted** table `t`, return the *left-most* index
+-- corresponding to the range containing `value`.
+-- E.g.:
+-- `key_interval({1, 5, 30}, 4) = 1`
+-- `key_interval({1, 5, 30}, 30) = 30`
+-- `key_interval({1, 5, 30}, -3) = nil`
+function key_interval(t, value)
+  -- loop through items in table
+  for k = 1, #t - 1 do
+    if t[k] <= value and value < t[k+1] then
+      return k
+    end
+  end
+
+  -- for values >= the last value, return the last index
+  if value >= t[#t] then return #t end
+
 end
 
 return m_grid

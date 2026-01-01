@@ -185,6 +185,8 @@ function m_tape.build_tape_track_params()
         softcut.post_filter_hp(t - 7, value == 1 and 0 or 1)
         softcut.post_filter_dry(t - 7, 0)
 
+        m_grid.mirror_filter(t)
+
         track_param_level[t]['filter_type'] = value
         screen_dirty = true
         grid_dirty = true

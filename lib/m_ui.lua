@@ -207,7 +207,18 @@ function m_ui.sample_2_redraw()
 end
 
 function m_ui.sample_2_key(n,z)
-  -- 
+  -- reverse filter or scale type, if applicable
+  if n == 2 and z == 1 and tab.contains({'filter', 'scale'}, PARAM) then
+    -- name of parameter (track_x_filter_type or track_x_scale_type)
+    p_name = 'track_' .. TRACK .. '_' .. PARAM .. '_type'
+    p_type = params:get(p_name)
+
+    -- reverse
+    params:set(p_name, p_type % 2 + 1)
+  end
+
+  screen_dirty = true
+  grid_dirty = true
 end
 
 function m_ui.sample_2_enc(n,d)
@@ -409,13 +420,28 @@ function m_ui.tape_2_redraw()
 end
 
 function m_ui.tape_2_key(n,z)
-  -- 
+  -- reverse filter or scale type, if applicable
+  if n == 2 and z == 1 and tab.contains({'filter', 'scale'}, PARAM) then
+    -- name of parameter (track_x_filter_type or track_x_scale_type)
+    p_name = 'track_' .. TRACK .. '_' .. PARAM .. '_type'
+    p_type = params:get(p_name)
+
+    -- reverse
+    params:set(p_name, p_type % 2 + 1)
+  end
+
+  screen_dirty = true
+  grid_dirty = true
 end
 
 function m_ui.tape_2_enc(n,d)
   -- focus params
   if n == 2 then
-    params:delta('track_' .. TRACK .. '_' .. PARAM, d)
+    if PARAM == 'filter' then
+      params:delta('track_' .. TRACK .. '_filter_freq', d)
+    else
+      params:delta('track_' .. TRACK .. '_' .. PARAM, d)
+    end
   elseif n == 3 then
     params:delta('track_' .. TRACK .. '_pre', d)
   end
