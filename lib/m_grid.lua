@@ -1676,8 +1676,9 @@ function m_grid.mirror_filter(track)
     for step_ = 1, 128 do
       -- mirror pattern values for all banks and steps
       v_step = param_pattern.filter[track][bank_][step_]
-      v_step_i = 7 - tab.key(param_levels.filter, v_step)
-      v_step = param_levels.filter[v_step_i]
+      v_step = util.round(v_step, 0.001)
+      v_step_i = 7 - key_interval(param_levels_, v_step)
+      v_step = param_levels_[v_step_i]
       param_pattern.filter[track][bank_][step_] = v_step
     end
   end
