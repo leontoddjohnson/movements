@@ -7,7 +7,7 @@ m_seq = {}
 -----------------------------------------------------------------
 
 function m_seq.build_params()
-  p_options.PLAY_ORDER = {'forward', 'backward', 'random'}
+  p_options.PLAY_ORDER = {'forward', 'backward', 'random', 'fixed'}
 
   -- Forward/reverse (in order of selection), random
   params:add_option('play_order', 'play order', p_options.PLAY_ORDER, 1)
@@ -150,18 +150,49 @@ end
 function m_seq.start_transport(i)
   if span(pattern[i][bank[i]])[2] > 0 then
     play_trigger[i] = nil  -- remove any trigger
+    m_seq.set_track_pool_i(i)
     transport[i] = clock.run(m_seq.play_transport, i)
   else
     print("Pattern ".. i .. " is empty.")
   end
 end
 
+-- **After** moving the current `step` (or starting a transport),
+-- update the current `track_pool_i` track pool index. This acts on "forward"
+-- or "backward" play orders; otherwise, always sets to 0.
+function m_seq.set_track_pool_i(track)
+  local order_ = p_options.PLAY_ORDER[params:get('play_order')]
+  local pattern_range = pattern[track][bank[track]]
+  local start = span(step_range[track])[2] > 0 and step_range[track][1] or 1
+
+  -- define track pool counter using number of active steps
+  local before = table_slice(pattern_range, start, step[track])
+  local counter = sum(before) % #track_pool[track]
+
+  if order_ == 'forward' then
+    track_pool_i[track] = counter
+  elseif order_ == 'backward' then
+    track_pool_i[track] = #track_pool[track] - counter + 1
+  else
+    track_pool_i[track] = 0  -- pool index doesn't matter for random/fixed
+  end
+end
+
 function m_seq.play_transport(i)
   local wait = nil
   local playing = true
-  local prob_track, prob_step, prob
+  local prob_track, prob_step, prob, order_
 
   while playing do
+    -- if wrapping to beginning of pattern or step range, reset track pool index
+    -- note: no step_range --> step_range[track][1] == 0, an impossible step
+    if step[i] == 1 or step[i] == step_range[i][1] then
+      -- check play order
+      order_ = p_options.PLAY_ORDER[params:get('play_order')]
+      -- backward: 1 is subtracted, other: 1 is added, wrap does the rest
+      track_pool_i[i] = order_ == 'backward' and 1 or 0
+    end
+
     -- step plays, then waits before playing next step
     if pattern[i][bank[i]][step[i]] > 0 and #track_pool[i] > 0 then
       prob_track = params:get('track_' .. i .. '_prob')
@@ -375,6 +406,8 @@ function m_seq.play_track_pool(track)
     next_pool_i = util.wrap(pool_i - 1, 1, #pool_)
   elseif order_ == 'random' then
     next_pool_i = math.random(#pool_)
+  elseif order_ == 'fixed' then
+    next_pool_i = (step[track] - 1) % #pool_ + 1
   end
 
   local next_id = pool_[next_pool_i]

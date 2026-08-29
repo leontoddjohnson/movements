@@ -295,10 +295,12 @@ function m_grid.seq_key(x, y, z, track_range)
       if ALT then
         for track_ = track_range[1], track_range[2] do
           step[track_] = step_
+          m_seq.set_track_pool_i(track_)
         end
       -- move just the associated track to that step
       else
         step[track] = step_
+        m_seq.set_track_pool_i(track)
       end
     end
   end
