@@ -163,7 +163,7 @@ end
 function m_seq.set_track_pool_i(track)
   local order_ = p_options.PLAY_ORDER[params:get('play_order')]
   local pattern_range = pattern[track][bank[track]]
-  local start = span(step_range[track])[2] > 0 and step_range[track][1] or 1
+  local start = step_range[track][1] > 0 and step_range[track][1] or 1
 
   -- define track pool counter using number of active steps
   local before = table_slice(pattern_range, start, step[track])
